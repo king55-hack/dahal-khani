@@ -1,6 +1,6 @@
 // All on-screen text in 4 languages. Add a language by adding one more entry to STRINGS.
 import type { PointValues, TrumpMode } from '../engine';
-import type { ThemeId } from './themes';
+import type { BackgroundId, ThemeId } from './themes';
 
 export type Lang = 'ne' | 'neRom' | 'en' | 'ja';
 export const LANGS: readonly Lang[] = ['ne', 'neRom', 'en', 'ja'];
@@ -71,6 +71,12 @@ export interface Strings {
   modeNextRound: string;
   modeNow: string;
   themes: Record<ThemeId, string>;
+  background: string;
+  backgrounds: Record<BackgroundId, string>;
+  installApp: string;
+  installButton: string;
+  installHint: string;
+  installed: string;
   howToPlay: string;
   credits: string;
   close: string;
@@ -145,6 +151,12 @@ const ne: Strings = {
   modeNextRound: 'नयाँ मोड अर्को राउन्डदेखि लागू हुन्छ',
   modeNow: 'नयाँ मोडमा पत्ती फेरि बाँडियो',
   themes: { classic: 'क्लासिक', blue: 'निलो', dhaka: 'ढाका', neon: 'नियोन', gold: 'शाही सुनौलो' },
+  background: 'पृष्ठभूमि (टेबल)',
+  backgrounds: { normal: 'साधारण', gundri: 'गुन्द्री (परालको)', galaicha: 'गलैंचा' },
+  installApp: 'फोनमा एप जस्तै राख्नुहोस्',
+  installButton: '📲 एप इन्स्टल गर्नुहोस्',
+  installHint: 'Android Chrome: ⋮ मेनु → "Add to Home screen"। iPhone Safari: Share ⬆ → "Add to Home Screen"।',
+  installed: '✔ एप इन्स्टल भइसक्यो',
   howToPlay: 'कसरी खेल्ने',
   credits: 'बनाउने',
   close: 'बन्द',
@@ -256,6 +268,12 @@ const neRom: Strings = {
   modeNextRound: 'Naya mode arko round dekhi laagu hunchha',
   modeNow: 'Naya mode ma patti pheri baadiyo',
   themes: { classic: 'Classic', blue: 'Nilo', dhaka: 'Dhaka', neon: 'Neon', gold: 'Shahi sunaulo' },
+  background: 'Background (table)',
+  backgrounds: { normal: 'Normal', gundri: 'Gundri (paral ko)', galaicha: 'Galaicha' },
+  installApp: 'Phone ma app jastai raakhnus',
+  installButton: '📲 App install garnus',
+  installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
+  installed: '✔ App install bhaisakyo',
   howToPlay: 'Kasari khelne',
   credits: 'Banaune',
   close: 'Banda',
@@ -367,6 +385,12 @@ const en: Strings = {
   modeNextRound: 'The new mode starts next round',
   modeNow: 'Cards re-dealt in the new mode',
   themes: { classic: 'Classic', blue: 'Blue', dhaka: 'Dhaka', neon: 'Neon', gold: 'Royal gold' },
+  background: 'Table background',
+  backgrounds: { normal: 'Normal', gundri: 'Gundri (straw mat)', galaicha: 'Galaicha (carpet)' },
+  installApp: 'Install as an app',
+  installButton: '📲 Install app',
+  installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
+  installed: '✔ App installed',
   howToPlay: 'How to play',
   credits: 'Credits',
   close: 'Close',
@@ -478,6 +502,12 @@ const ja: Strings = {
   modeNextRound: '新しいモードは次のラウンドから適用されます',
   modeNow: '新しいモードで配り直しました',
   themes: { classic: 'クラシック', blue: 'ブルー', dhaka: 'ダカ', neon: 'ネオン', gold: 'ロイヤルゴールド' },
+  background: 'テーブルの背景',
+  backgrounds: { normal: 'ノーマル', gundri: 'グンドリ（わらのマット）', galaicha: 'ガライチャ（じゅうたん）' },
+  installApp: 'アプリとしてインストール',
+  installButton: '📲 アプリをインストール',
+  installHint: 'Android Chrome：⋮ メニュー →「ホーム画面に追加」。iPhone Safari：共有 ⬆ →「ホーム画面に追加」。',
+  installed: '✔ インストール済み',
   howToPlay: '遊び方',
   credits: 'クレジット',
   close: '閉じる',

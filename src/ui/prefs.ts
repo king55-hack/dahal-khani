@@ -2,12 +2,13 @@
 // and every storage access is guarded, so private mode or blocked storage still works.
 import type { TrumpMode } from '../engine';
 import { LANGS, type Lang } from './i18n';
-import { isThemeId, type ThemeId } from './themes';
+import { isBackgroundId, isThemeId, type BackgroundId, type ThemeId } from './themes';
 
 export interface Prefs {
   /** null until the player picks a language on first launch */
   lang: Lang | null;
   theme: ThemeId;
+  background: BackgroundId;
   sound: boolean;
   mode: TrumpMode;
   coins: number;
@@ -20,6 +21,7 @@ const MODES: readonly TrumpMode[] = ['open', 'bandHukum', 'cutHukum'];
 export const DEFAULT_PREFS: Prefs = {
   lang: null,
   theme: 'classic',
+  background: 'normal',
   sound: true,
   mode: 'open',
   coins: 0,
@@ -38,6 +40,7 @@ export function loadPrefs(): Prefs {
   const prefs: Prefs = {
     lang: LANGS.includes(r.lang as Lang) ? (r.lang as Lang) : null,
     theme: isThemeId(r.theme) ? r.theme : DEFAULT_PREFS.theme,
+    background: isBackgroundId(r.background) ? r.background : DEFAULT_PREFS.background,
     sound: typeof r.sound === 'boolean' ? r.sound : DEFAULT_PREFS.sound,
     mode: MODES.includes(r.mode as TrumpMode) ? (r.mode as TrumpMode) : DEFAULT_PREFS.mode,
     coins:

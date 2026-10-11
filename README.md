@@ -5,7 +5,9 @@ You play against 3 computer bots (partner Sita; opponents Gajendra and Ranjana).
 Works on phones (portrait and landscape).
 
 Features: 4 languages (नेपाली, Nepali Roman, English, 日本語), 3 trump modes (Normal, Band hukum,
-Cut hukum), coins for winning rounds, unlockable card designs, sound on/off — all in ⚙ Settings.
+Cut hukum), coins for winning rounds, unlockable card designs, table backgrounds (Normal, Gundri
+straw mat, Galaicha carpet), sound on/off — all in ⚙ Settings. Installable on phones (Add to Home Screen)
+and playable offline after the first visit.
 
 **Play online:** https://king55-hack.github.io/dahal-khani/
 

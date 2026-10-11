@@ -541,3 +541,56 @@ button.danger { margin-top: 16px; width: 100%; padding: 10px; color: #b91c1c; bo
 .lang-pick h2 { font-size: 26px; margin: 2px 0; }
 .lang-pick .muted { color: #555; font-size: 14px; margin: 4px 0 14px; }
 .suits-line.big { font-size: 30px; color: #0f5a33; }
+
+/* ---------- table backgrounds (body.bg-x, and .bg-preview.bg-x in settings) ----------
+   --table-bg is declared on the element that uses it, so "normal" picks up the card theme's felt. */
+.bg-normal {
+  --table-bg: radial-gradient(ellipse at center, var(--felt-light) 0%, var(--felt) 45%, var(--felt-dark) 100%);
+}
+/* Gundri: mat woven from paral (rice straw) */
+.bg-gundri {
+  --table-bg:
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 35%, rgba(45,25,5,.6) 100%),
+    repeating-linear-gradient(0deg, rgba(60,35,5,.18) 0 2px, rgba(0,0,0,0) 2px 70px),
+    repeating-linear-gradient(90deg, rgba(85,52,12,.28) 0 1px, rgba(0,0,0,0) 1px 3px),
+    repeating-linear-gradient(0deg, rgba(255,238,190,.14) 0 1px, rgba(0,0,0,0) 1px 3px),
+    conic-gradient(from 90deg at 50% 50%, #b38a49 0 25%, #a37b3c 0 50%, #b38a49 0 75%, #a37b3c 0) 0 0 / 20px 20px,
+    #ab8443;
+}
+/* Galaicha: Nepali carpet — red field, diamond pattern, centre medallion */
+.bg-galaicha {
+  --table-bg:
+    radial-gradient(circle at 50% 50%, rgba(0,0,0,0) 0 13%, #d4a017 13% 13.7%, #1e3a8a 13.7% 18%,
+      #d4a017 18% 18.7%, rgba(0,0,0,0) 18.7%),
+    radial-gradient(ellipse at center, rgba(0,0,0,0) 45%, rgba(35,0,0,.6) 100%),
+    repeating-conic-gradient(from 45deg at 50% 50%, #931e1e 0 25%, #7a1414 0 50%) 0 0 / 30px 30px,
+    #851818;
+}
+html { background: #0a3f24; }
+body[class*='bg-'] { background: var(--table-bg); }
+body.bg-galaicha::before {
+  content: '';
+  position: fixed;
+  inset: 3px;
+  pointer-events: none;
+  border: 7px solid transparent;
+  border-image: repeating-linear-gradient(45deg, #d4a017 0 5px, #1e3a8a 5px 10px, #f5ecd7 10px 12px) 7;
+}
+/* keep text readable on light / busy backgrounds */
+.status, .seat .name, header .score, header .round { text-shadow: 0 1px 3px rgba(0,0,0,.7); }
+.bg-gundri .trick, .bg-galaicha .trick { background: rgba(0,0,0,.18); }
+
+.bgs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.bg-tile {
+  border: 1.5px solid #cbd5e1; background: #fff; color: #1f2937; border-radius: 10px;
+  padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+}
+.bg-tile.on { border-color: #0f5a33; background: #ecfdf5; box-shadow: 0 0 0 1.5px #0f5a33; }
+.bg-preview { width: 100%; height: 56px; border-radius: 8px; background: var(--table-bg); }
+.bg-preview.bg-galaicha { box-shadow: inset 0 0 0 3px #d4a017, inset 0 0 0 5px #1e3a8a; }
+.install-box { margin-top: 4px; }
+.install-box p { font-size: 13px; color: #4b5563; margin: 4px 0 0; }
+button.install {
+  width: 100%; padding: 10px; border-radius: 10px; border: none;
+  background: #0f5a33; color: #fff; font-weight: 700; font-size: 15px;
+}

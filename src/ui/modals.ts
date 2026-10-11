@@ -4,7 +4,7 @@ import type { TrumpMode } from '../engine';
 import { COIN_REWARDS, GAME_SETTINGS } from '../settings';
 import { LANGS, STRINGS, type Strings } from './i18n';
 import type { Prefs } from './prefs';
-import { THEMES } from './themes';
+import { BACKGROUNDS, THEMES } from './themes';
 
 export type Modal = { kind: 'lang' } | { kind: 'info'; tab: 'rules' | 'credits' } | { kind: 'settings' };
 
@@ -60,7 +60,24 @@ export function infoHtml(t: Strings, tab: 'rules' | 'credits'): string {
   );
 }
 
-export function settingsHtml(t: Strings, prefs: Prefs, message: string): string {
+export interface InstallState {
+  /** the browser offered an install prompt we can trigger */
+  canPrompt: boolean;
+  /** already running as an installed app */
+  installed: boolean;
+}
+
+export function settingsHtml(t: Strings, prefs: Prefs, message: string, install: InstallState): string {
+  const bgs = BACKGROUNDS.map(
+    (b) => `<button class="bg-tile ${prefs.background === b ? 'on' : ''}" data-bg="${b}">
+      <span class="bg-preview bg-${b}"></span>
+      <span class="theme-name">${t.backgrounds[b]}</span>
+    </button>`,
+  ).join('');
+  const installBox = install.installed
+    ? `<p>${t.installed}</p>`
+    : `${install.canPrompt ? `<button class="install" data-m="install">${t.installButton}</button>` : ''}
+       <p>${t.installHint}</p>`;
   const modes = MODES.map(
     (m) => `<button class="mode-opt ${prefs.mode === m ? 'on' : ''}" data-mode="${m}">
       <b>${t.modes[m].name}</b><small>${t.modes[m].desc}</small>
@@ -101,6 +118,14 @@ export function settingsHtml(t: Strings, prefs: Prefs, message: string): string 
     <section>
       <h3>${t.cardDesign}</h3>
       <div class="themes">${themes}</div>
+    </section>
+    <section>
+      <h3>${t.background}</h3>
+      <div class="bgs">${bgs}</div>
+    </section>
+    <section>
+      <h3>${t.installApp}</h3>
+      <div class="install-box">${installBox}</div>
     </section>
     <button class="danger" data-m="newgame">↺ ${t.newGame}</button>`,
     { closable: true, cls: 'settings-modal', label: t.settings },

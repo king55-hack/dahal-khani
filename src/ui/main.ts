@@ -33,7 +33,7 @@ import { LANGS, STRINGS, type Lang, type Strings } from './i18n';
 import { infoHtml, languagePickerHtml, settingsHtml, type Modal } from './modals';
 import { loadPrefs, savePrefs } from './prefs';
 import { setSoundEnabled, sfx, unlockAudio } from './sound';
-import { isThemeId, THEMES } from './themes';
+import { isBackgroundId, isThemeId, THEMES } from './themes';
 
 const HUMAN: Seat = 0;
 /** Screen position for each seat (play goes counter-clockwise: bottom → right → top → left). */
@@ -359,7 +359,7 @@ function renderModal() {
   if (!modal) modalRoot.innerHTML = '';
   else if (modal.kind === 'lang') modalRoot.innerHTML = languagePickerHtml();
   else if (modal.kind === 'info') modalRoot.innerHTML = infoHtml(t, modal.tab);
-  else modalRoot.innerHTML = settingsHtml(t, prefs, settingsMsg);
+  else modalRoot.innerHTML = settingsHtml(t, prefs, settingsMsg, installState());
   const who = modalRoot.querySelector('.who');
   if (who) who.textContent = CREATOR_NAME; // never parsed as HTML
   const overlay = modalRoot.querySelector('.overlay');
@@ -377,7 +377,7 @@ function openModal(m: Modal | null) {
 }
 
 function applyLookAndLanguage() {
-  document.body.className = `theme-${prefs.theme}`;
+  document.body.className = `theme-${prefs.theme} bg-${prefs.background}`;
   document.documentElement.lang = t.htmlLang;
 }
 
@@ -432,7 +432,9 @@ function pickTheme(id: string) {
 
 modalRoot.addEventListener('click', (e) => {
   const target = e.target as HTMLElement;
-  const el = target.closest<HTMLElement>('[data-m],[data-tab],[data-lang],[data-sound],[data-mode],[data-theme]');
+  const el = target.closest<HTMLElement>(
+    '[data-m],[data-tab],[data-lang],[data-sound],[data-mode],[data-theme],[data-bg]',
+  );
   if (!el) return;
   const d = el.dataset;
   if (d.m === 'close' || (d.m === 'backdrop' && el === target && modal?.kind !== 'lang')) return openModal(null);
@@ -454,7 +456,48 @@ modalRoot.addEventListener('click', (e) => {
   }
   if (d.mode === 'open' || d.mode === 'bandHukum' || d.mode === 'cutHukum') return setMode(d.mode);
   if (d.theme) return pickTheme(d.theme);
+  if (d.bg && isBackgroundId(d.bg)) {
+    prefs.background = d.bg;
+    savePrefs(prefs);
+    applyLookAndLanguage();
+    return renderModal();
+  }
+  if (d.m === 'install' && installPrompt) {
+    const p = installPrompt;
+    installPrompt = null;
+    void p.prompt();
+    void p.userChoice.finally(renderModal);
+  }
 });
+
+// ---------- install as an app (PWA) ----------
+
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+let installPrompt: BeforeInstallPromptEvent | null = null;
+
+function installState() {
+  const standalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  return { canPrompt: installPrompt !== null, installed: standalone };
+}
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault(); // offer our own Install button in settings instead of the browser mini-bar
+  installPrompt = e as BeforeInstallPromptEvent;
+  if (modal?.kind === 'settings') renderModal();
+});
+
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {
+      /* offline support is optional */
+    });
+  });
+}
 
 // ---------- input ----------
 

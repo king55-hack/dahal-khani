@@ -1,0 +1,17 @@
+{
+  "name": "Dahal Khani — Nepali card game",
+  "short_name": "Dahal Khani",
+  "description": "Traditional Nepali card game Dahal Khani (Dahal Mara). Play against 3 bots.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0a3f24",
+  "theme_color": "#0d4d2b",
+  "lang": "ne",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

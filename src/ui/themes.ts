@@ -15,3 +15,8 @@ export const THEMES: readonly Theme[] = [
 ];
 
 export const isThemeId = (v: unknown): v is ThemeId => THEMES.some((t) => t.id === v);
+
+/** Table backgrounds (styling in style.css under .bg-<id>). All free. */
+export type BackgroundId = 'normal' | 'gundri' | 'galaicha';
+export const BACKGROUNDS: readonly BackgroundId[] = ['normal', 'gundri', 'galaicha'];
+export const isBackgroundId = (v: unknown): v is BackgroundId => BACKGROUNDS.includes(v as BackgroundId);

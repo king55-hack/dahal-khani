@@ -1,7 +1,7 @@
 // Simple, sensible bot heuristics. Pure functions: they only read the game state.
 
 import { createDeck, isTen, sameCard, SUITS } from './cards';
-import { currentTrump, legalCards, partnerOf, teamOf, trickWinner } from './game';
+import { legalCards, partnerOf, teamOf, trickWinner, visibleTrump } from './game';
 import type { Card, GameState, Play, Seat, Suit } from './types';
 
 /** Pick the suit with the most cards; break ties by high cards (A, then K, ...). */
@@ -108,10 +108,20 @@ export function botChooseCard(state: GameState, seat: Seat): Card {
   const legal = legalCards(state, seat);
   if (legal.length === 0) throw new Error('Bot has no legal card');
   if (legal.length === 1) return legal[0];
-  const trump = currentTrump(state);
   const trick = state.currentTrick;
+  // Only use trump knowledge this bot really has (band hukum hides it from all but the chooser).
+  let trump = visibleTrump(state, seat);
 
   if (trick.length === 0) return chooseLead(legal, trump);
+
+  const led = trick[0].card.suit;
+  const cannotFollow = !state.hands[seat].some((c) => c.suit === led);
+  if (cannotFollow && !state.trumpRevealed) {
+    // Band hukum: our play reveals the trump to everyone, so reason with it.
+    if (state.settings.trumpMode === 'bandHukum') trump = state.trump;
+    // Cut hukum: whatever we play becomes trump and wins the trick so far.
+    if (state.settings.trumpMode === 'cutHukum') return chooseCut(state, seat, legal);
+  }
 
   const winSeat = trickWinner(trick, trump);
   const partnerWinning = winSeat === partnerOf(seat);
@@ -154,4 +164,21 @@ export function botChooseCard(state: GameState, seat: Seat): Card {
 
   // 4. Can't (or won't) win → throw the lowest useless card, never a 10 if avoidable.
   return cheapest(nonTens.length ? nonTens : legal, trump);
+}
+
+/**
+ * Cut hukum, first player unable to follow: our card sets the trump for the whole round.
+ * Give partner a 10 if they are surely winning; otherwise cut with a low card of our longest suit,
+ * so that suit (where we hold the most) becomes trump.
+ */
+function chooseCut(state: GameState, seat: Seat, legal: Card[]): Card {
+  const trick = state.currentTrick;
+  const partnerWinning = trickWinner(trick, null) === partnerOf(seat);
+  const tens = legal.filter(isTen);
+  if (partnerWinning && trick.length === 3 && tens.length) return tens[0];
+  const count = (suit: Suit) => legal.filter((c) => c.suit === suit).length;
+  const suits = SUITS.filter((s) => legal.some((c) => c.suit === s && !isTen(c)));
+  if (!suits.length) return tens[0];
+  suits.sort((a, b) => count(b) - count(a));
+  return cheapest(legal.filter((c) => c.suit === suits[0] && !isTen(c)), null);
 }

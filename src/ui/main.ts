@@ -5,6 +5,8 @@ import {
   botChooseTrump,
   chooseTrump,
   collectTrick,
+  currentTrump,
+  dealRound,
   isRed,
   isTen,
   legalCards,
@@ -19,39 +21,99 @@ import {
   SUIT_SYMBOL,
   teamOf,
   trickWinner,
+  visibleTrump,
   type Card,
   type GameState,
   type Seat,
   type Suit,
+  type TrumpMode,
 } from '../engine';
-import { BOT_DELAY_MS, GAME_SETTINGS, TRICK_PAUSE_MS } from '../settings';
-import { renderInfo, type InfoTab } from './info';
+import { BOT_DELAY_MS, COIN_REWARDS, CREATOR_NAME, GAME_SETTINGS, TRICK_PAUSE_MS } from '../settings';
+import { LANGS, STRINGS, type Lang, type Strings } from './i18n';
+import { infoHtml, languagePickerHtml, settingsHtml, type Modal } from './modals';
+import { loadPrefs, savePrefs } from './prefs';
+import { setSoundEnabled, sfx, unlockAudio } from './sound';
+import { isThemeId, THEMES } from './themes';
 
 const HUMAN: Seat = 0;
-const NAMES: Record<Seat, string> = { 0: 'Tapaai', 1: 'Hari', 2: 'Sita', 3: 'Gopal' };
-const TEAM_NAMES = ['Hamro team', 'Uniharu'] as const;
 /** Screen position for each seat (play goes counter-clockwise: bottom → right → top → left). */
 const POS: Record<Seat, string> = { 0: 'bottom', 1: 'right', 2: 'top', 3: 'left' };
 
 /** Debug: open with ?autoplay to let a bot play your seat too (useful for testing). */
 const AUTOPLAY = new URLSearchParams(location.search).has('autoplay');
 
+const prefs = loadPrefs();
+if (AUTOPLAY && !prefs.lang) prefs.lang = 'neRom';
+setSoundEnabled(prefs.sound);
+let t: Strings = STRINGS[prefs.lang ?? 'neRom'];
+
 const app = document.getElementById('app')!;
-const infoRoot = document.createElement('div');
-document.body.appendChild(infoRoot);
-/** Which info tab is open; bots pause while it's open. */
-let infoTab: InfoTab | null = null;
-let state: GameState = newGame(GAME_SETTINGS);
+const modalRoot = document.createElement('div');
+document.body.appendChild(modalRoot);
+
+/** Open dialog; bots pause while one is open. First launch asks for the language. */
+let modal: Modal | null = prefs.lang ? null : { kind: 'lang' };
+let settingsMsg = '';
+let state: GameState = newGame({ ...GAME_SETTINGS, trumpMode: prefs.mode });
 let timer: number | null = null;
 let toast: string | null = null;
 let toastTimer: number | null = null;
+/** Coins earned in the round that just ended (shown in the summary). */
+let roundCoins = 0;
 
 // ---------- flow ----------
 
+const name = (seat: Seat) => t.names[seat];
+const suitLabel = (s: Suit) => `${SUIT_SYMBOL[s]} ${SUIT_NAME[s]}`;
+
 function apply(next: GameState) {
+  const prev = state;
   state = next;
+  react(prev, next);
   render();
   schedule();
+}
+
+/** Sounds, toasts and coins, derived from what changed between two states. */
+function react(prev: GameState, next: GameState) {
+  const mode = next.settings.trumpMode;
+  if (prev.phase === 'choosingTrump' && next.phase === 'playing' && next.trump) {
+    if (mode === 'open') showToast(t.toastTrumpChosen(name(next.trumpChooser), suitLabel(next.trump)), 2200);
+    else if (next.trumpChooser !== HUMAN) showToast(t.toastTrumpHidden(name(next.trumpChooser)), 2200);
+  } else if (!prev.trumpRevealed && next.trumpRevealed && next.trump && prev.phase !== 'choosingTrump') {
+    sfx.reveal();
+    showToast(
+      mode === 'cutHukum'
+        ? t.toastCut(name(next.trumpChooser), suitLabel(next.trump))
+        : t.toastReveal(suitLabel(next.trump)),
+      2400,
+    );
+  }
+
+  if (next.currentTrick.length > prev.currentTrick.length) sfx.card();
+
+  if (next.completedTricks.length > prev.completedTricks.length && next.completedTricks.length > 0) {
+    const last = next.completedTricks[next.completedTricks.length - 1];
+    const tens = last.plays.filter((p) => isTen(p.card)).length;
+    if (tens > 0) {
+      sfx.dahal();
+      showToast(t.toastDahal(name(last.winner), tens), 1500);
+    } else sfx.trick();
+  }
+
+  if (prev.phase !== 'roundOver' && next.phase === 'roundOver' && next.lastResult) {
+    const r = next.lastResult;
+    roundCoins = r.winningTeam === 0 ? COIN_REWARDS[r.kind] : 0;
+    if (roundCoins > 0) {
+      prefs.coins += roundCoins;
+      savePrefs(prefs);
+      window.setTimeout(() => sfx.coin(), 900);
+    }
+    if (r.kind === 'baunne') sfx.baunne();
+    else if (r.kind === 'kot') sfx.kot();
+    else if (r.winningTeam === 0) sfx.win();
+    else sfx.lose();
+  }
 }
 
 function showToast(text: string, ms = 1800) {
@@ -63,23 +125,23 @@ function showToast(text: string, ms = 1800) {
   }, ms);
 }
 
+function stopTimer() {
+  if (timer !== null) clearTimeout(timer);
+  timer = null;
+}
+
 function schedule() {
-  if (timer !== null || infoTab !== null) return;
+  if (timer !== null || modal !== null) return;
   const s = state;
   if (s.phase === 'trickComplete') {
     timer = window.setTimeout(() => {
       timer = null;
-      const winner = trickWinner(s.currentTrick, s.trump);
-      const tens = s.currentTrick.filter((p) => isTen(p.card)).length;
-      if (tens > 0) showToast(`${NAMES[winner]} le ${tens} Dahal jityo!`, 1400);
       apply(collectTrick(s));
     }, AUTOPLAY ? 80 : TRICK_PAUSE_MS);
   } else if (s.phase === 'choosingTrump' && (s.trumpChooser !== HUMAN || AUTOPLAY)) {
     timer = window.setTimeout(() => {
       timer = null;
-      const suit = botChooseTrump(s.hands[s.trumpChooser]);
-      showToast(`${NAMES[s.trumpChooser]} le TURUP chunyo: ${SUIT_SYMBOL[suit]} ${SUIT_NAME[suit]}`, 2200);
-      apply(chooseTrump(s, s.trumpChooser, suit));
+      apply(chooseTrump(s, s.trumpChooser, botChooseTrump(s.hands[s.trumpChooser])));
     }, BOT_DELAY_MS * 1.5);
   } else if (s.phase === 'playing' && (s.turn !== HUMAN || AUTOPLAY)) {
     timer = window.setTimeout(() => {
@@ -89,15 +151,24 @@ function schedule() {
   } else if (s.phase === 'roundOver' && AUTOPLAY && s.lastResult?.kind === 'normal') {
     timer = window.setTimeout(() => {
       timer = null;
-      apply(nextRound(s));
+      startNextRound();
     }, 800);
   }
 }
 
+/** The chosen mode is only applied at a fresh deal, never in the middle of a round. */
+function withChosenMode(s: GameState): GameState {
+  return { ...s, settings: { ...s.settings, trumpMode: prefs.mode } };
+}
+
+function startNextRound() {
+  apply(nextRound(withChosenMode(state)));
+}
+
 function resetGame() {
-  if (timer !== null) clearTimeout(timer);
-  timer = null;
-  apply(newGame(GAME_SETTINGS));
+  stopTimer();
+  roundCoins = 0;
+  apply(newGame({ ...GAME_SETTINGS, trumpMode: prefs.mode }));
 }
 
 // ---------- rendering helpers ----------
@@ -121,13 +192,15 @@ function seatHtml(seat: Seat): string {
   const s = state;
   const active =
     (s.phase === 'playing' && s.turn === seat) || (s.phase === 'choosingTrump' && s.trumpChooser === seat);
-  const dealer = s.dealer === seat ? '<span class="chip">Dealer</span>' : '';
-  const chooser = s.trumpChooser === seat && s.trump ? '<span class="chip gold">TURUP</span>' : '';
-  const partner = seat === 2 ? ' <small>(Saathi)</small>' : '';
+  const dealer = s.dealer === seat ? `<span class="chip">${t.dealer}</span>` : '';
+  let chooser = '';
+  if (s.trumpChooser === seat && s.trumpRevealed) chooser = `<span class="chip gold">${t.trump}</span>`;
+  else if (s.trumpChooser === seat && s.trump) chooser = `<span class="chip gold">🔒</span>`;
+  const partner = seat === 2 ? ` <small>${t.partner}</small>` : '';
   const n = s.hands[seat].length;
   const backs = Array.from({ length: Math.min(n, 13) }, () => '<i class="back"></i>').join('');
   return `<div class="seat seat-${POS[seat]} team${teamOf(seat)} ${active ? 'active' : ''}">
-    <div class="name">${NAMES[seat]}${partner}</div>
+    <div class="name">${name(seat)}${partner}</div>
     <div class="backs">${backs}</div>
     <div class="chips">${dealer}${chooser}<span class="count">${n}</span></div>
   </div>`;
@@ -135,17 +208,17 @@ function seatHtml(seat: Seat): string {
 
 function trickHtml(): string {
   const s = state;
-  const winner =
-    s.phase === 'trickComplete' ? trickWinner(s.currentTrick, s.trump) : null;
+  const winner = s.phase === 'trickComplete' ? trickWinner(s.currentTrick, currentTrump(s)) : null;
   const slots = s.currentTrick
     .map((p) => cardHtml(p.card, { cls: `slot slot-${POS[p.seat]} ${p.seat === winner ? 'winner' : ''}` }))
     .join('');
   let center = '';
   if (s.phase === 'choosingTrump' && s.trumpChooser === HUMAN) {
+    const hidden = s.settings.trumpMode === 'bandHukum';
     const hand = s.hands[HUMAN];
     center = `<div class="trump-pick">
-      <div class="title">TURUP chunnus</div>
-      <div class="sub">Tapaaiko 5 patti herera rang chunnus</div>
+      <div class="title">${hidden ? t.chooseTrumpHidden : t.chooseTrump}</div>
+      <div class="sub">${hidden ? t.chooseTrumpHiddenSub : t.chooseTrumpSub}</div>
       <div class="suits">${SUITS.map(
         (suit) => `<button class="suit-btn ${isRed(suit) ? 'red' : 'black'}" data-suit="${suit}" aria-label="${SUIT_NAME[suit]}">
           <span>${SUIT_SYMBOL[suit]}</span><small>${hand.filter((c) => c.suit === suit).length}</small>
@@ -153,40 +226,38 @@ function trickHtml(): string {
       ).join('')}</div>
     </div>`;
   } else if (s.phase === 'choosingTrump') {
-    center = `<div class="waiting">${NAMES[s.trumpChooser]} TURUP chundai chha…</div>`;
+    center = `<div class="waiting">${t.waitingTrump(name(s.trumpChooser))}</div>`;
   }
   return `<div class="trick">${slots}${center}</div>`;
 }
 
 function statusText(): string {
   const s = state;
-  if (s.phase === 'choosingTrump') return s.trumpChooser === HUMAN ? 'Tapaaiko paalo: TURUP chunnus' : '';
-  if (s.phase === 'trickComplete') {
-    const w = trickWinner(s.currentTrick, s.trump);
-    return `${NAMES[w]} le haat jityo`;
-  }
+  if (s.phase === 'choosingTrump') return s.trumpChooser === HUMAN ? t.yourTurnChooseTrump : '';
+  if (s.phase === 'trickComplete') return t.trickWonBy(name(trickWinner(s.currentTrick, currentTrump(s))));
   if (s.phase === 'playing') {
-    if (s.turn !== HUMAN) return `${NAMES[s.turn]} ko paalo…`;
-    if (s.currentTrick.length === 0) return 'Tapaaiko paalo — jun patti pani khelna milchha';
+    if (s.turn !== HUMAN) return t.turnOf(name(s.turn));
+    if (s.currentTrick.length === 0) return t.yourTurnLead;
     const led = s.currentTrick[0].card.suit;
-    const canFollow = s.hands[HUMAN].some((c) => c.suit === led);
-    return canFollow
-      ? `Tapaaiko paalo — ${SUIT_SYMBOL[led]} khelnu parchha`
-      : `Tapaaiko paalo — ${SUIT_SYMBOL[led]} chhaina, TURUP ya jun sukai`;
+    const sym = SUIT_SYMBOL[led];
+    if (s.hands[HUMAN].some((c) => c.suit === led)) return t.yourTurnFollow(sym);
+    if (!s.trumpRevealed && s.settings.trumpMode === 'bandHukum') return t.yourTurnVoidBand(sym);
+    if (!s.trumpRevealed && s.settings.trumpMode === 'cutHukum') return t.yourTurnVoidCut(sym);
+    return t.yourTurnVoid(sym);
   }
   return '';
 }
 
 function handHtml(): string {
   const s = state;
-  const hand = sortHand(s.hands[HUMAN], s.trump);
+  const hand = sortHand(s.hands[HUMAN], visibleTrump(s, HUMAN));
   const legal = legalCards(s, HUMAN);
   const cards = hand
     .map((card, i) => {
       const ok = legal.some((l) => sameCard(l, card));
       return cardHtml(card, {
         cls: ok ? 'playable' : s.phase === 'playing' && s.turn === HUMAN ? 'disabled' : '',
-        data: `data-card="${i}" style="--i:${i}"`,
+        data: `data-card="${i}"`,
       });
     })
     .join('');
@@ -196,10 +267,26 @@ function handHtml(): string {
 function teamPanel(team: 0 | 1): string {
   const s = state;
   return `<div class="team-panel team${team}">
-    <div class="tname">${TEAM_NAMES[team]}</div>
-    <div class="stat"><span>Dahal</span><b>${tensDots(s.tensWon[team])}</b></div>
-    <div class="stat"><span>Haat</span><b>${s.tricksWon[team]}</b></div>
+    <div class="tname">${team === 0 ? t.teamUs : t.teamThem}</div>
+    <div class="stat"><span>${t.dahal}</span><b>${tensDots(s.tensWon[team])}</b></div>
+    <div class="stat"><span>${t.haat}</span><b>${s.tricksWon[team]}</b></div>
   </div>`;
+}
+
+function trumpBadge(): string {
+  const s = state;
+  const label = `<span class="tlabel">${t.trump}</span>`;
+  if (s.trumpRevealed && s.trump) {
+    return `<span class="trump-badge ${isRed(s.trump) ? 'red' : 'black'}">${label} <b>${SUIT_SYMBOL[s.trump]}</b></span>`;
+  }
+  const mine = visibleTrump(s, HUMAN);
+  if (s.settings.trumpMode === 'bandHukum' && s.trump) {
+    return mine
+      ? `<span class="trump-badge secret ${isRed(mine) ? 'red' : 'black'}">🔒 <b>${SUIT_SYMBOL[mine]}</b></span>`
+      : `<span class="trump-badge none">🔒 ${t.trump} ?</span>`;
+  }
+  if (s.settings.trumpMode === 'cutHukum') return `<span class="trump-badge none">✂ ${t.trump} ?</span>`;
+  return `<span class="trump-badge none">${t.trump} ?</span>`;
 }
 
 function summaryHtml(): string {
@@ -207,16 +294,16 @@ function summaryHtml(): string {
   const r = s.lastResult;
   if (s.phase !== 'roundOver' || !r) return '';
   const weWon = r.winningTeam === 0;
-  const kindTitle =
-    r.kind === 'baunne' ? 'BAUNNE! (52)' : r.kind === 'kot' ? 'KOT!' : weWon ? 'Jityo!' : 'Haryo';
+  const teamName = (team: 0 | 1) => (team === 0 ? t.teamUs : t.teamThem);
+  const kindTitle = r.kind === 'baunne' ? t.baunne : r.kind === 'kot' ? t.kot : weWon ? t.win : t.lose;
   const why =
     r.kind === 'baunne'
-      ? 'Sabai 13 haat jityo!'
+      ? t.whyBaunne
       : r.kind === 'kot'
-        ? 'Chaarai Dahal (10) jityo!'
+        ? t.whyKot
         : r.tens[r.winningTeam] >= 3
-          ? `${r.tens[r.winningTeam]} ota Dahal jityo`
-          : `2–2 Dahal, dherai haat (${r.tricks[r.winningTeam]}) jityo`;
+          ? t.whyTens(r.tens[r.winningTeam])
+          : t.whyTricks(r.tricks[r.winningTeam]);
   const confettiCount = r.kind === 'baunne' ? 120 : r.kind === 'kot' ? 60 : 0;
   const confetti = Array.from({ length: confettiCount }, (_, i) => {
     const colors = ['#ffd54a', '#ff5a5f', '#4ade80', '#60a5fa', '#f472b6', '#fff'];
@@ -229,31 +316,30 @@ function summaryHtml(): string {
     ${confetti}
     <div class="modal">
       <div class="result-title ${r.kind} ${weWon ? 'win' : 'lose'}">${kindTitle}</div>
-      <div class="result-team">${TEAM_NAMES[r.winningTeam]} le round jityo (+${r.points})</div>
+      <div class="result-team">${t.roundWonBy(teamName(r.winningTeam), r.points)}</div>
       <div class="why">${why}</div>
+      ${roundCoins > 0 ? `<div class="coins-earned">${t.coinsEarned(roundCoins)}</div>` : ''}
       <table>
-        <tr><th></th><th>${TEAM_NAMES[0]}</th><th>${TEAM_NAMES[1]}</th></tr>
-        <tr><td>Dahal</td><td>${r.tens[0]}</td><td>${r.tens[1]}</td></tr>
-        <tr><td>Haat</td><td>${r.tricks[0]}</td><td>${r.tricks[1]}</td></tr>
-        <tr class="total"><td>Jamma score</td><td>${s.score[0]}</td><td>${s.score[1]}</td></tr>
+        <tr><th></th><th>${t.teamUs}</th><th>${t.teamThem}</th></tr>
+        <tr><td>${t.dahal}</td><td>${r.tens[0]}</td><td>${r.tens[1]}</td></tr>
+        <tr><td>${t.haat}</td><td>${r.tricks[0]}</td><td>${r.tricks[1]}</td></tr>
+        <tr class="total"><td>${t.totalScore}</td><td>${s.score[0]}</td><td>${s.score[1]}</td></tr>
       </table>
-      <button class="primary" data-action="next">Next round ▶</button>
+      <button class="primary" data-action="next">${t.nextRound}</button>
     </div>
   </div>`;
 }
 
 function render() {
   const s = state;
-  const trump = s.trump
-    ? `<span class="trump-badge ${isRed(s.trump) ? 'red' : 'black'}">TURUP <b>${SUIT_SYMBOL[s.trump]}</b></span>`
-    : `<span class="trump-badge none">TURUP ?</span>`;
   app.innerHTML = `
     <header>
-      <div class="score"><span class="team0">Hami ${s.score[0]}</span> – <span class="team1">${s.score[1]} Uniharu</span></div>
-      <div class="round">Round ${s.roundNumber}</div>
-      ${trump}
-      <button class="small" data-action="info" title="Kasari khelne / Banaune" aria-label="Info">ⓘ</button>
-      <button class="small" data-action="reset" title="Naya khel" aria-label="Naya khel">↺</button>
+      <div class="score"><span class="team0">${t.us} ${s.score[0]}</span> – <span class="team1">${s.score[1]} ${t.them}</span></div>
+      <div class="round">${t.round(s.roundNumber)}</div>
+      ${trumpBadge()}
+      <span class="coin-chip" title="${t.coins}">🪙 ${prefs.coins}</span>
+      <button class="small" data-action="info" title="${t.info}" aria-label="${t.info}">ⓘ</button>
+      <button class="small" data-action="settings" title="${t.settings}" aria-label="${t.settings}">⚙</button>
     </header>
     <div class="panels">${teamPanel(0)}${teamPanel(1)}</div>
     <main class="table">
@@ -266,48 +352,134 @@ function render() {
   `;
 }
 
+// ---------- dialogs ----------
+
+function renderModal() {
+  const prevScroll = modalRoot.querySelector('.overlay')?.scrollTop ?? 0;
+  if (!modal) modalRoot.innerHTML = '';
+  else if (modal.kind === 'lang') modalRoot.innerHTML = languagePickerHtml();
+  else if (modal.kind === 'info') modalRoot.innerHTML = infoHtml(t, modal.tab);
+  else modalRoot.innerHTML = settingsHtml(t, prefs, settingsMsg);
+  const who = modalRoot.querySelector('.who');
+  if (who) who.textContent = CREATOR_NAME; // never parsed as HTML
+  const overlay = modalRoot.querySelector('.overlay');
+  if (overlay) overlay.scrollTop = prevScroll;
+}
+
+function openModal(m: Modal | null) {
+  const sameKind = modal && m && modal.kind === m.kind;
+  modal = m;
+  if (!sameKind) settingsMsg = '';
+  if (m) stopTimer(); // pause bots; schedule() restarts from the current state
+  renderModal();
+  if (!sameKind) modalRoot.querySelector('.overlay')?.scrollTo(0, 0);
+  if (!m) schedule();
+}
+
+function applyLookAndLanguage() {
+  document.body.className = `theme-${prefs.theme}`;
+  document.documentElement.lang = t.htmlLang;
+}
+
+function setLanguage(lang: Lang) {
+  prefs.lang = lang;
+  t = STRINGS[lang];
+  savePrefs(prefs);
+  applyLookAndLanguage();
+  render();
+  if (modal?.kind === 'lang') openModal(null);
+  else renderModal();
+}
+
+function setMode(mode: TrumpMode) {
+  if (mode === prefs.mode) return;
+  prefs.mode = mode;
+  savePrefs(prefs);
+  // If no card has been played yet this round, re-deal right away in the new mode.
+  const untouched =
+    state.phase !== 'roundOver' && state.completedTricks.length === 0 && state.currentTrick.length === 0;
+  if (untouched) {
+    stopTimer();
+    state = dealRound(withChosenMode({ ...state, roundNumber: state.roundNumber - 1 }), state.dealer, Math.random);
+    settingsMsg = t.modeNow;
+    render();
+  } else {
+    settingsMsg = t.modeNextRound;
+  }
+  renderModal();
+}
+
+function pickTheme(id: string) {
+  if (!isThemeId(id)) return;
+  const theme = THEMES.find((th) => th.id === id)!;
+  settingsMsg = '';
+  if (!prefs.unlocked.includes(id)) {
+    if (prefs.coins < theme.price) {
+      settingsMsg = t.notEnoughCoins(theme.price - prefs.coins);
+      renderModal();
+      return;
+    }
+    prefs.coins -= theme.price;
+    prefs.unlocked.push(id);
+    sfx.coin();
+  }
+  prefs.theme = id;
+  savePrefs(prefs);
+  applyLookAndLanguage();
+  render();
+  renderModal();
+}
+
+modalRoot.addEventListener('click', (e) => {
+  const target = e.target as HTMLElement;
+  const el = target.closest<HTMLElement>('[data-m],[data-tab],[data-lang],[data-sound],[data-mode],[data-theme]');
+  if (!el) return;
+  const d = el.dataset;
+  if (d.m === 'close' || (d.m === 'backdrop' && el === target && modal?.kind !== 'lang')) return openModal(null);
+  if (d.m === 'newgame') {
+    if (confirm(t.confirmReset)) {
+      openModal(null);
+      resetGame();
+    }
+    return;
+  }
+  if (d.tab === 'rules' || d.tab === 'credits') return openModal({ kind: 'info', tab: d.tab });
+  if (d.lang && LANGS.includes(d.lang as Lang)) return setLanguage(d.lang as Lang);
+  if (d.sound) {
+    prefs.sound = d.sound === 'on';
+    setSoundEnabled(prefs.sound);
+    savePrefs(prefs);
+    sfx.click();
+    return renderModal();
+  }
+  if (d.mode === 'open' || d.mode === 'bandHukum' || d.mode === 'cutHukum') return setMode(d.mode);
+  if (d.theme) return pickTheme(d.theme);
+});
+
 // ---------- input ----------
 
 app.addEventListener('click', (e) => {
   const el = (e.target as HTMLElement).closest<HTMLElement>('[data-card],[data-suit],[data-action]');
   if (!el) return;
-  if (el.dataset.action === 'next') return apply(nextRound(state));
-  if (el.dataset.action === 'info') return setInfo('rules');
-  if (el.dataset.action === 'reset') {
-    if (confirm('Naya khel suru garne? Score 0 hunchha.')) resetGame();
+  if (el.dataset.action === 'next' && state.phase === 'roundOver') return startNextRound();
+  if (el.dataset.action === 'info') return openModal({ kind: 'info', tab: 'rules' });
+  if (el.dataset.action === 'settings') return openModal({ kind: 'settings' });
+  if (el.dataset.suit && state.phase === 'choosingTrump' && state.trumpChooser === HUMAN) {
+    if (SUITS.includes(el.dataset.suit as Suit)) apply(chooseTrump(state, HUMAN, el.dataset.suit as Suit));
     return;
   }
-  if (el.dataset.suit && state.phase === 'choosingTrump' && state.trumpChooser === HUMAN) {
-    return apply(chooseTrump(state, HUMAN, el.dataset.suit as Suit));
-  }
   if (el.dataset.card !== undefined && state.phase === 'playing' && state.turn === HUMAN) {
-    const card = sortHand(state.hands[HUMAN], state.trump)[Number(el.dataset.card)];
+    const card = sortHand(state.hands[HUMAN], visibleTrump(state, HUMAN))[Number(el.dataset.card)];
     if (card && legalCards(state, HUMAN).some((c) => sameCard(c, card))) apply(playCard(state, HUMAN, card));
   }
 });
 
-function setInfo(tab: InfoTab | null) {
-  infoTab = tab;
-  if (tab && timer !== null) {
-    clearTimeout(timer); // pause bots; schedule() restarts from the current state
-    timer = null;
-  }
-  renderInfo(infoRoot, tab);
-  if (!tab) schedule();
-}
-
-infoRoot.addEventListener('click', (e) => {
-  const target = e.target as HTMLElement;
-  const el = target.closest<HTMLElement>('[data-info]');
-  if (!el) return;
-  const what = el.dataset.info;
-  if (what === 'close' || (what === 'backdrop' && el === target)) setInfo(null);
-  else if (what === 'rules' || what === 'credits') setInfo(what);
-});
-
+document.addEventListener('pointerdown', unlockAudio, { once: true });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && infoTab) setInfo(null);
+  if (e.key === 'Escape' && modal && modal.kind !== 'lang') openModal(null);
 });
 
+applyLookAndLanguage();
 render();
+renderModal();
 schedule();

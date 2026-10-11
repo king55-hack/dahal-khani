@@ -52,6 +52,7 @@ export function newGame(settings: GameSettings, opts: NewGameOptions = {}): Game
     hands: [[], [], [], []],
     undealt: [],
     trump: null,
+    trumpRevealed: false,
     trumpChooser: 0,
     turn: 0,
     leader: 0,
@@ -71,7 +72,10 @@ export function nextRound(state: GameState, rng: Rng = Math.random): GameState {
   return dealRound(state, nextSeat(state.dealer), rng);
 }
 
-/** Shuffle and deal the first 5 cards each. Trump is chosen before the rest are dealt. */
+/**
+ * Shuffle and deal the first 5 cards each. Trump is chosen before the rest are dealt.
+ * In cut hukum nobody chooses trump, so all 13 cards are dealt straight away.
+ */
 export function dealRound(state: GameState, dealer: Seat, rng: Rng, deck?: Card[]): GameState {
   const cards = deck ? deck.slice() : shuffle(createDeck(), rng);
   if (cards.length !== 52) throw new Error('Deck must have 52 cards');
@@ -82,6 +86,7 @@ export function dealRound(state: GameState, dealer: Seat, rng: Rng, deck?: Card[
   for (const seat of dealOrder(dealer)) s.hands[seat] = cards.splice(0, 5);
   s.undealt = cards;
   s.trump = null;
+  s.trumpRevealed = false;
   s.trumpChooser = nextSeat(dealer);
   s.turn = s.trumpChooser;
   s.leader = s.trumpChooser;
@@ -91,34 +96,44 @@ export function dealRound(state: GameState, dealer: Seat, rng: Rng, deck?: Card[
   s.tensWon = [0, 0];
   s.lastResult = null;
   s.phase = 'choosingTrump';
+  if (s.settings.trumpMode === 'cutHukum') {
+    dealRemaining(s);
+    s.phase = 'playing';
+  }
   return s;
+}
+
+/** Deal the remaining 8 cards each, in two packets of 4. Mutates `s`. */
+function dealRemaining(s: GameState) {
+  for (let packet = 0; packet < 2; packet++) {
+    for (const seat of dealOrder(s.dealer)) s.hands[seat].push(...s.undealt.splice(0, 4));
+  }
 }
 
 export function chooseTrump(state: GameState, seat: Seat, suit: Suit): GameState {
   if (state.phase !== 'choosingTrump') throw new Error('Not choosing trump now');
   if (seat !== state.trumpChooser) throw new Error('Only the trump chooser can choose trump');
   if (!SUITS.includes(suit)) throw new Error('Invalid suit');
-  if (state.settings.trumpMode !== 'open') {
-    throw new Error(`Trump mode "${state.settings.trumpMode}" is not implemented yet`);
-  }
   const s = clone(state);
-  // Deal the remaining 8 cards each, in two packets of 4.
-  for (let packet = 0; packet < 2; packet++) {
-    for (const seat of dealOrder(s.dealer)) s.hands[seat].push(...s.undealt.splice(0, 4));
-  }
+  dealRemaining(s);
   s.trump = suit;
+  s.trumpRevealed = s.settings.trumpMode === 'open'; // band hukum: secret until someone can't follow
   s.phase = 'playing';
   s.leader = seat;
   s.turn = seat;
   return s;
 }
 
-/**
- * The trump suit in effect right now. Variants (band hukum / cut hukum) will hook in here,
- * since trump may be hidden or not yet set during play in those modes.
- */
+/** The trump suit in effect right now: only a revealed trump counts. */
 export function currentTrump(state: GameState): Suit | null {
-  return state.trump;
+  return state.trumpRevealed ? state.trump : null;
+}
+
+/** The trump as one player knows it (in band hukum the chooser knows the secret trump). */
+export function visibleTrump(state: GameState, seat: Seat): Suit | null {
+  if (state.trumpRevealed) return state.trump;
+  if (state.settings.trumpMode === 'bandHukum' && seat === state.trumpChooser) return state.trump;
+  return null;
 }
 
 export function legalCards(state: GameState, seat: Seat): Card[] {
@@ -156,6 +171,17 @@ export function playCard(state: GameState, seat: Seat, card: Card): GameState {
   if (seat !== state.turn) throw new Error(`Not seat ${seat}'s turn`);
   if (!isLegal(state, seat, card)) throw new Error('Illegal card');
   const s = clone(state);
+  if (s.currentTrick.length > 0 && !s.trumpRevealed) {
+    const led = s.currentTrick[0].card.suit;
+    const cannotFollow = !s.hands[seat].some((c) => c.suit === led);
+    if (cannotFollow && s.settings.trumpMode === 'bandHukum') {
+      s.trumpRevealed = true; // hukum khulchha: the hidden trump is shown before this card counts
+    } else if (cannotFollow && s.settings.trumpMode === 'cutHukum') {
+      s.trump = card.suit; // this card "cuts" and its suit becomes trump for the round
+      s.trumpRevealed = true;
+      s.trumpChooser = seat;
+    }
+  }
   s.hands[seat] = s.hands[seat].filter((c) => !sameCard(c, card));
   s.currentTrick.push({ seat, card });
   if (s.currentTrick.length === 4) s.phase = 'trickComplete';

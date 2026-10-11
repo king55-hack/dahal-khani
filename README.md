@@ -1,7 +1,11 @@
 # Dahal Khani (Dahal Mara)
 
 Traditional Nepali 4-player card game (2 teams, like Mendikot / Dehla Pakad), as a browser prototype.
-You play against 3 computer bots. Works on phones (portrait and landscape).
+You play against 3 computer bots (partner Sita; opponents Gajendra and Ranjana).
+Works on phones (portrait and landscape).
+
+Features: 4 languages (नेपाली, Nepali Roman, English, 日本語), 3 trump modes (Normal, Band hukum,
+Cut hukum), coins for winning rounds, unlockable card designs, sound on/off — all in ⚙ Settings.
 
 **Play online:** https://king55-hack.github.io/dahal-khani/
 
@@ -20,8 +24,9 @@ npm run build    # production build in dist/
 
 - `src/engine/` — pure rules engine (no UI): dealing, TURUP, legal moves, Haat, Dahal, scoring, bots.
   It validates every move, so it can run on a server for online multiplayer later.
-- `src/ui/` — browser UI only (`info.ts` is the ⓘ How to play / Credits dialog).
-- `src/settings.ts` — point values (normal / Kot / Baunne), trump mode, bot speed, creator name.
+- `src/ui/` — browser UI only: `i18n.ts` (all text, 4 languages), `modals.ts` (settings / info /
+  language dialogs), `themes.ts` (card designs and prices), `sound.ts`, `prefs.ts` (saved in the browser).
+- `src/settings.ts` — point values, coin rewards, default trump mode, bot speed, creator name.
 - Debug: add `?autoplay` to the URL to watch bots play every seat.
 
 ## Rules (short)

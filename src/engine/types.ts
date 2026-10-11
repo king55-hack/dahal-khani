@@ -17,9 +17,9 @@ export type Team = 0 | 1;
 
 /**
  * How the trump suit (TURUP / Rang) is decided.
- * - open:      the player after the dealer picks trump openly after seeing 5 cards (implemented)
- * - bandHukum: trump is chosen face-down and revealed when someone first cannot follow suit (TODO)
- * - cutHukum:  the first card played by someone who cannot follow suit sets the trump (TODO)
+ * - open:      the player after the dealer picks trump openly after seeing 5 cards
+ * - bandHukum: the same player picks trump secretly; it is revealed when someone first cannot follow suit
+ * - cutHukum:  nobody picks; the first card played by someone who cannot follow suit sets the trump
  */
 export type TrumpMode = 'open' | 'bandHukum' | 'cutHukum';
 
@@ -64,7 +64,11 @@ export interface GameState {
   hands: [Card[], Card[], Card[], Card[]];
   /** Cards not yet dealt (the 32 remaining while trump is being chosen). */
   undealt: Card[];
+  /** The trump suit. In band hukum it is set but secret until trumpRevealed; in cut hukum it starts null. */
   trump: Suit | null;
+  /** Whether everyone can see the trump. Only revealed trump counts when deciding tricks. */
+  trumpRevealed: boolean;
+  /** Who chose the trump (open / band) or set it by cutting (cut hukum). */
   trumpChooser: Seat;
   /** Whose action is awaited. During 'trickComplete' this is meaningless. */
   turn: Seat;

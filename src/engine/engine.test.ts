@@ -5,6 +5,8 @@ import {
   cardId,
   chooseTrump,
   collectTrick,
+  currentTrump,
+  visibleTrump,
   computeRoundResult,
   createDeck,
   dealRound,
@@ -47,6 +49,7 @@ function stateWithHands(hands: Card[][], trump: Suit, turn: Seat = 0): GameState
     hands: hands.map((h) => h.slice()) as GameState['hands'],
     undealt: [],
     trump,
+    trumpRevealed: true,
     turn,
     leader: turn,
   };
@@ -55,7 +58,9 @@ function stateWithHands(hands: Card[][], trump: Suit, turn: Seat = 0): GameState
 /** Play out a whole round with bots in every seat. */
 function playRoundWithBots(state: GameState): GameState {
   let s = state;
-  s = chooseTrump(s, s.trumpChooser, botChooseTrump(s.hands[s.trumpChooser]));
+  if (s.phase === 'choosingTrump') {
+    s = chooseTrump(s, s.trumpChooser, botChooseTrump(s.hands[s.trumpChooser]));
+  }
   while (s.phase !== 'roundOver') {
     if (s.phase === 'trickComplete') s = collectTrick(s);
     else s = playCard(s, s.turn, botChooseCard(s, s.turn));
@@ -115,11 +120,6 @@ describe('dealing and trump', () => {
     expect(() => chooseTrump(g, 0, 'X' as Suit)).toThrow(/Invalid suit/);
   });
 
-  it('rejects trump modes that are not implemented yet', () => {
-    const g = newGame({ ...SETTINGS, trumpMode: 'bandHukum' }, { rng: seeded(3) });
-    expect(() => chooseTrump(g, g.trumpChooser, 'S')).toThrow(/not implemented/);
-  });
-
   it('rotates the dealer every round', () => {
     let s = newGame(SETTINGS, { rng: seeded(5), firstDealer: 3 });
     const dealers: Seat[] = [];
@@ -129,6 +129,72 @@ describe('dealing and trump', () => {
       s = nextRound(s, seeded(i));
     }
     expect(dealers).toEqual([3, 0, 1, 2, 3]);
+  });
+});
+
+describe('band hukum (hidden trump)', () => {
+  const BAND: GameSettings = { ...SETTINGS, trumpMode: 'bandHukum' };
+
+  it('keeps the chosen trump secret until someone cannot follow suit', () => {
+    const g = newGame(BAND, { rng: seeded(11), firstDealer: 3 });
+    const s = chooseTrump(g, 0, 'H');
+    expect(s.trump).toBe('H');
+    expect(s.trumpRevealed).toBe(false);
+    expect(currentTrump(s)).toBeNull();
+    expect(visibleTrump(s, 0)).toBe('H'); // the chooser knows
+    expect(visibleTrump(s, 1)).toBeNull(); // others don't
+  });
+
+  it('reveals the trump when a player cannot follow, and that trump then wins', () => {
+    let s = stateWithHands(
+      [[c(14, 'S')], [c(2, 'H'), c(9, 'C')], [c(3, 'S')], [c(4, 'S')]],
+      'H',
+    );
+    s = { ...s, settings: BAND, trumpRevealed: false, trumpChooser: 2 };
+    s = playCard(s, 0, c(14, 'S'));
+    expect(s.trumpRevealed).toBe(false);
+    s = playCard(s, 1, c(2, 'H')); // seat 1 has no spades → hukum khulchha
+    expect(s.trumpRevealed).toBe(true);
+    s = playCard(s, 2, c(3, 'S'));
+    s = playCard(s, 3, c(4, 'S'));
+    expect(collectTrick(s).completedTricks[0].winner).toBe(1);
+  });
+
+  it('does not reveal while everyone follows suit', () => {
+    let s = stateWithHands([[c(14, 'S')], [c(2, 'S')], [c(3, 'S')], [c(4, 'S')]], 'H');
+    s = { ...s, settings: BAND, trumpRevealed: false };
+    for (const [seat, card] of [[0, c(14, 'S')], [1, c(2, 'S')], [2, c(3, 'S')], [3, c(4, 'S')]] as const) {
+      s = playCard(s, seat, card);
+    }
+    expect(s.trumpRevealed).toBe(false);
+  });
+});
+
+describe('cut hukum (first cut sets trump)', () => {
+  const CUT: GameSettings = { ...SETTINGS, trumpMode: 'cutHukum' };
+
+  it('deals all 13 cards at once and nobody chooses trump', () => {
+    const g = newGame(CUT, { rng: seeded(12), firstDealer: 3 });
+    expect(g.phase).toBe('playing');
+    expect(g.hands.map((h) => h.length)).toEqual([13, 13, 13, 13]);
+    expect(g.trump).toBeNull();
+    expect(g.turn).toBe(0); // player after the dealer leads
+    expect(() => chooseTrump(g, 0, 'S')).toThrow();
+  });
+
+  it('the first card played by a player who cannot follow becomes trump', () => {
+    let s = stateWithHands(
+      [[c(14, 'S')], [c(5, 'D'), c(9, 'C')], [c(3, 'S')], [c(2, 'D'), c(13, 'C')]],
+      'H',
+    );
+    s = { ...s, settings: CUT, trump: null, trumpRevealed: false };
+    s = playCard(s, 0, c(14, 'S'));
+    s = playCard(s, 1, c(5, 'D')); // cuts with ♦ → ♦ is trump
+    expect(s.trump).toBe('D');
+    expect(s.trumpChooser).toBe(1);
+    s = playCard(s, 2, c(3, 'S'));
+    s = playCard(s, 3, c(13, 'C')); // ♣ is not trump, cannot win
+    expect(collectTrick(s).completedTricks[0].winner).toBe(1);
   });
 });
 
@@ -256,8 +322,10 @@ describe('bots', () => {
     expect(cardId(botChooseCard(s, 3))).toBe('10S');
   });
 
-  it('always make legal moves over many full rounds, with consistent totals', () => {
-    let s = newGame(SETTINGS, { rng: seeded(99) });
+  it.each(['open', 'bandHukum', 'cutHukum'] as const)(
+    'always make legal moves over many full rounds (%s), with consistent totals',
+    (trumpMode) => {
+    let s = newGame({ ...SETTINGS, trumpMode }, { rng: seeded(99) });
     let totalPoints = 0;
     for (let round = 0; round < 200; round++) {
       s = playRoundWithBots(s);
@@ -268,5 +336,6 @@ describe('bots', () => {
       expect(s.score[0] + s.score[1]).toBe(totalPoints);
       s = nextRound(s, seeded(round + 1000));
     }
-  });
+    },
+  );
 });

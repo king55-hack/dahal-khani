@@ -1,0 +1,14 @@
+{
+  // Cloudflare Worker for online rooms. Deploy with: npm run server:deploy
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "dahal-khani",
+  "main": "server/worker.ts",
+  "compatibility_date": "2026-10-01",
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "RoomDO" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomDO"] }],
+  "vars": {
+    "ALLOWED_ORIGINS": "https://king55-hack.github.io"
+  }
+}

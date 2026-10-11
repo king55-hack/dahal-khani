@@ -26,6 +26,9 @@ jobs:
       - run: npm ci
       - run: npm test
       - run: npm run build
+        env:
+          # online room server (Cloudflare Worker); set with: gh variable set SERVER_URL
+          VITE_SERVER_URL: ${{ vars.SERVER_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

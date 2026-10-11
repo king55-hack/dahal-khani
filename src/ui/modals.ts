@@ -1,12 +1,17 @@
-// HTML for the dialogs: first-launch language picker, ⓘ info (how to play / credits) and ⚙ settings.
+// HTML for the dialogs: first-launch language picker, ⓘ info (how to play / all rules / credits),
+// ⚙ settings and the 🌐 online lobby.
 // All text comes from i18n.ts; the creator name is inserted with textContent by main.ts.
 import type { TrumpMode } from '../engine';
 import { COIN_REWARDS, GAME_SETTINGS } from '../settings';
-import { LANGS, STRINGS, type Strings } from './i18n';
+import type { ServerMsg } from '../online/protocol';
+import { escapeHtml } from './html';
+import { LANGS, STRINGS, type Lang, type Strings } from './i18n';
 import type { Prefs } from './prefs';
+import { FULL_RULES } from './rules';
 import { BACKGROUNDS, THEMES } from './themes';
 
-export type Modal = { kind: 'lang' } | { kind: 'info'; tab: 'rules' | 'credits' } | { kind: 'settings' };
+export type InfoTab = 'rules' | 'allRules' | 'credits';
+export type Modal = { kind: 'lang' } | { kind: 'info'; tab: InfoTab } | { kind: 'settings' } | { kind: 'online' };
 
 const MODES: readonly TrumpMode[] = ['open', 'bandHukum', 'cutHukum'];
 
@@ -38,21 +43,24 @@ export function languagePickerHtml(): string {
   );
 }
 
-export function infoHtml(t: Strings, tab: 'rules' | 'credits'): string {
+export function infoHtml(t: Strings, lang: Lang, tab: InfoTab): string {
   const body =
     tab === 'rules'
       ? t.rulesHtml(GAME_SETTINGS.points, COIN_REWARDS)
-      : `<h2>${t.credits}</h2>
+      : tab === 'allRules'
+        ? FULL_RULES[lang](GAME_SETTINGS.points, COIN_REWARDS)
+        : `<h2>${t.credits}</h2>
          <div class="credit-card">
            <div class="by">${t.creditsBy}</div>
            <div class="who"></div>
-           <div class="sub">Dahal Khani · Dahal Mara</div>
+           <div class="sub">Dahal Khani · Dahal Mara · Dahal Jeet</div>
            <div class="suits-line">♠ ♥ ♣ ♦</div>
          </div>
          <p>${t.creditsText}</p>`;
   return shell(
     `<div class="tabs">
       <button data-tab="rules" class="${tab === 'rules' ? 'on' : ''}">${t.howToPlay}</button>
+      <button data-tab="allRules" class="${tab === 'allRules' ? 'on' : ''}">${t.allRules}</button>
       <button data-tab="credits" class="${tab === 'credits' ? 'on' : ''}">${t.credits}</button>
     </div>
     ${body}`,
@@ -67,7 +75,13 @@ export interface InstallState {
   installed: boolean;
 }
 
-export function settingsHtml(t: Strings, prefs: Prefs, message: string, install: InstallState): string {
+export function settingsHtml(
+  t: Strings,
+  prefs: Prefs,
+  message: string,
+  install: InstallState,
+  online = false,
+): string {
   const bgs = BACKGROUNDS.map(
     (b) => `<button class="bg-tile ${prefs.background === b ? 'on' : ''}" data-bg="${b}">
       <span class="bg-preview bg-${b}"></span>
@@ -127,7 +141,113 @@ export function settingsHtml(t: Strings, prefs: Prefs, message: string, install:
       <h3>${t.installApp}</h3>
       <div class="install-box">${installBox}</div>
     </section>
-    <button class="danger" data-m="newgame">↺ ${t.newGame}</button>`,
+    ${
+      online
+        ? `<button class="danger" data-m="leave">${t.leaveRoom}</button>`
+        : `<button class="danger" data-m="newgame">↺ ${t.newGame}</button>`
+    }`,
     { closable: true, cls: 'settings-modal', label: t.settings },
+  );
+}
+
+// ---------- online lobby ----------
+
+export type RoomInfo = Extract<ServerMsg, { t: 'room' }>;
+
+export interface OnlineView {
+  /** null when no server is configured */
+  available: boolean;
+  name: string;
+  codeInput: string;
+  busy: boolean;
+  status: 'connecting' | 'open' | 'reconnecting' | null;
+  room: RoomInfo | null;
+  error: string;
+  notice: string;
+}
+
+function seatCard(t: Strings, room: RoomInfo, seat: number): string {
+  const s = room.seats[seat];
+  if (!s) {
+    return `<button class="seat-card empty" data-sit="${seat}">
+      <span class="seat-name">${t.emptySeat}</span><small>${t.sitHere} · 🤖 ${t.botTag}</small>
+    </button>`;
+  }
+  const tags = [
+    seat === room.you ? `<b class="tag you">${t.youTag}</b>` : '',
+    seat === room.host ? `<b class="tag host">👑 ${t.hostTag}</b>` : '',
+    s.bot ? `<b class="tag">🤖 ${t.botTag}</b>` : '',
+    !s.bot && !s.connected ? `<b class="tag away">${t.awayTag}</b>` : '',
+  ].join('');
+  return `<div class="seat-card ${seat === room.you ? 'me' : ''}">
+    <span class="seat-name">${escapeHtml(s.name)}</span><span class="tags">${tags}</span>
+  </div>`;
+}
+
+export function onlineHtml(t: Strings, v: OnlineView): string {
+  const banner = [
+    v.error ? `<div class="online-error" role="alert">${v.error}</div>` : '',
+    v.notice ? `<div class="settings-msg" role="status">${escapeHtml(v.notice)}</div>` : '',
+    v.status && v.status !== 'open' ? `<div class="online-status">⏳ ${v.status === 'reconnecting' ? t.reconnecting : t.connecting}</div>` : '',
+  ].join('');
+
+  if (!v.available) {
+    return shell(`<h2>🌐 ${t.online}</h2><p>${t.onlineUnavailable}</p>`, {
+      closable: true,
+      cls: 'online-modal',
+      label: t.online,
+    });
+  }
+
+  if (!v.room) {
+    return shell(
+      `<h2>🌐 ${t.online}</h2>
+      <p class="muted">${t.onlineIntro}</p>
+      ${banner}
+      <label class="field">${t.yourName}
+        <input id="online-name" maxlength="16" autocomplete="nickname" value="${escapeHtml(v.name)}" />
+      </label>
+      <button class="primary" data-m="create" ${v.busy ? 'disabled' : ''}>${t.createRoom}</button>
+      <h3>${t.orJoin}</h3>
+      <div class="join-row">
+        <input id="online-code" maxlength="5" autocapitalize="characters" autocomplete="off" spellcheck="false"
+          placeholder="${t.roomCode}" value="${escapeHtml(v.codeInput)}" />
+        <button class="primary" data-m="join" ${v.busy ? 'disabled' : ''}>${t.join}</button>
+      </div>`,
+      { closable: true, cls: 'online-modal', label: t.online },
+    );
+  }
+
+  const r = v.room;
+  const isHost = r.host === r.you || r.host === null || !r.seats[r.host]?.connected;
+  const modes = MODES.map(
+    (m) => `<button class="mode-opt ${r.mode === m ? 'on' : ''}" data-online-mode="${m}" ${isHost ? '' : 'disabled'}>
+      <b>${t.modes[m].name}</b><small>${t.modes[m].desc}</small>
+    </button>`,
+  ).join('');
+  return shell(
+    `<h2>🌐 ${t.lobbyTitle} <span class="room-code">${escapeHtml(r.code)}</span></h2>
+    ${banner}
+    <button class="primary share" data-m="share">${t.shareInvite}</button>
+    <div class="teams">
+      <div class="team-col team0"><h3>${t.teamA}</h3>${seatCard(t, r, 0)}${seatCard(t, r, 2)}</div>
+      <div class="team-col team1"><h3>${t.teamB}</h3>${seatCard(t, r, 1)}${seatCard(t, r, 3)}</div>
+    </div>
+    ${
+      r.started
+        ? `<p class="muted">${t.modes[r.mode].name}</p>`
+        : `<p class="muted">${t.botsFill}</p>
+    <section>
+      <h3>${t.gameMode}</h3>
+      <div class="modes">${modes}</div>
+    </section>
+    ${
+      isHost
+        ? `<button class="primary start" data-m="start">${t.startGame}</button>`
+        : `<p class="waiting-host">${t.waitingHost}</p>`
+    }`
+    }
+    <button class="danger" data-m="leave">${t.leaveRoom}</button>`,
+    { closable: true, cls: 'online-modal', label: t.online },
   );
 }

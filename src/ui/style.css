@@ -594,3 +594,47 @@ button.install {
   width: 100%; padding: 10px; border-radius: 10px; border: none;
   background: #0f5a33; color: #fff; font-weight: 700; font-size: 15px;
 }
+
+/* ---------- online lobby ---------- */
+.sheet .muted, .sheet p.muted { color: #555; font-size: 13px; }
+.field { display: flex; flex-direction: column; gap: 4px; font-weight: 700; font-size: 14px; color: #0f5a33; margin: 10px 0; }
+.field input, .join-row input {
+  font: inherit; font-size: 17px; padding: 10px 12px; border-radius: 10px;
+  border: 1.5px solid #cbd5e1; color: #111; background: #fff; font-weight: 600;
+}
+.join-row { display: flex; gap: 8px; }
+.join-row input { flex: 1; min-width: 0; letter-spacing: 3px; text-transform: uppercase; }
+.join-row button.primary { width: auto; padding: 10px 18px; }
+button.primary:disabled { opacity: .55; }
+.online-error { background: #fef2f2; color: #991b1b; border-radius: 8px; padding: 8px 10px; font-size: 13px; margin: 8px 0; }
+.online-status { color: #92400e; font-size: 13px; margin: 6px 0; }
+.room-code {
+  display: inline-block; background: #0f5a33; color: #ffd54a; border-radius: 8px; padding: 2px 10px;
+  letter-spacing: 4px; font-family: ui-monospace, Consolas, monospace; user-select: text;
+}
+button.share { margin: 6px 0 10px; background: #2563eb; box-shadow: 0 3px 0 #1e40af; }
+.teams { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.team-col h3 { font-size: 13px !important; margin: 0 0 4px !important; }
+.team-col.team0 h3 { color: #0369a1 !important; }
+.team-col.team1 h3 { color: #be123c !important; }
+.seat-card {
+  display: flex; flex-direction: column; gap: 3px; padding: 8px; margin-bottom: 6px; border-radius: 10px;
+  border: 1.5px solid #cbd5e1; background: #fff; color: #1f2937; text-align: left; min-height: 54px; width: 100%;
+}
+.seat-card.me { border-color: #0f5a33; background: #ecfdf5; }
+.seat-card.empty { border-style: dashed; background: #f8fafc; }
+.seat-card .seat-name { font-weight: 800; font-size: 15px; overflow-wrap: anywhere; }
+.seat-card small { color: #64748b; }
+.tags { display: flex; flex-wrap: wrap; gap: 3px; }
+.tag { font-size: 10px; padding: 1px 6px; border-radius: 999px; background: #e2e8f0; color: #334155; }
+.tag.you { background: #0f5a33; color: #fff; }
+.tag.host { background: #fef3c7; color: #92400e; }
+.tag.away { background: #fee2e2; color: #991b1b; }
+.mode-opt:disabled { opacity: .7; }
+button.start { margin-top: 12px; }
+.waiting-host { text-align: center; color: #92400e; font-weight: 700; }
+.room-chip { font-size: 12px !important; font-weight: 700; letter-spacing: 1px; white-space: nowrap; }
+@media (max-width: 420px) {
+  button.small { padding: 2px 7px; }
+  .coin-chip { padding: 2px 6px; font-size: 12px; }
+}

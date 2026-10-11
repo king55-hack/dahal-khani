@@ -1,5 +1,6 @@
 // All on-screen text in 4 languages. Add a language by adding one more entry to STRINGS.
 import type { PointValues, TrumpMode } from '../engine';
+import type { FatalReason } from './online';
 import type { BackgroundId, ThemeId } from './themes';
 
 export type Lang = 'ne' | 'neRom' | 'en' | 'ja';
@@ -77,6 +78,36 @@ export interface Strings {
   installButton: string;
   installHint: string;
   installed: string;
+  allRules: string;
+  online: string;
+  playOnline: string;
+  onlineIntro: string;
+  yourName: string;
+  createRoom: string;
+  orJoin: string;
+  roomCode: string;
+  join: string;
+  lobbyTitle: string;
+  shareInvite: string;
+  copied: string;
+  inviteText: (code: string) => string;
+  teamA: string;
+  teamB: string;
+  emptySeat: string;
+  sitHere: string;
+  hostTag: string;
+  botTag: string;
+  youTag: string;
+  awayTag: string;
+  botsFill: string;
+  startGame: string;
+  waitingHost: string;
+  leaveRoom: string;
+  connecting: string;
+  reconnecting: string;
+  onlineUnavailable: string;
+  modeHostOnly: string;
+  onlineErrors: Record<FatalReason | 'illegal' | 'bad_request' | 'not_host' | 'started' | 'rate_limited', string>;
   howToPlay: string;
   credits: string;
   close: string;
@@ -157,13 +188,53 @@ const ne: Strings = {
   installButton: '📲 एप इन्स्टल गर्नुहोस्',
   installHint: 'Android Chrome: ⋮ मेनु → "Add to Home screen"। iPhone Safari: Share ⬆ → "Add to Home Screen"।',
   installed: '✔ एप इन्स्टल भइसक्यो',
+  allRules: 'सबै नियम',
+  online: 'अनलाइन',
+  playOnline: '🌐 साथीसँग अनलाइन खेल्नुहोस्',
+  onlineIntro: 'रुम बनाएर कोड वा लिंक साथीलाई पठाउनुहोस्। खाली सिटमा बोट खेल्छ।',
+  yourName: 'तपाईंको नाम',
+  createRoom: 'नयाँ रुम बनाउनुहोस्',
+  orJoin: 'वा साथीको रुममा जानुहोस्',
+  roomCode: 'रुम कोड',
+  join: 'जोडिनुहोस्',
+  lobbyTitle: 'रुम',
+  shareInvite: '📤 साथीलाई लिंक पठाउनुहोस्',
+  copied: 'लिंक कपी भयो!',
+  inviteText: (code) => `दहल खानी खेल्न आऊ! रुम कोड: ${code}`,
+  teamA: 'टिम क',
+  teamB: 'टिम ख',
+  emptySeat: 'खाली',
+  sitHere: 'यहाँ बस्नुहोस्',
+  hostTag: 'होस्ट',
+  botTag: 'बोट',
+  youTag: 'तपाईं',
+  awayTag: 'बाहिर',
+  botsFill: 'खाली सिटमा बोट खेल्छ।',
+  startGame: '▶ खेल सुरु गर्नुहोस्',
+  waitingHost: 'होस्टले खेल सुरु गर्ने प्रतीक्षा…',
+  leaveRoom: '🚪 रुम छोड्नुहोस्',
+  connecting: 'जोडिँदै…',
+  reconnecting: 'फेरि जोडिँदै…',
+  onlineUnavailable: 'अनलाइन सर्भर अहिले उपलब्ध छैन।',
+  modeHostOnly: 'अनलाइनमा होस्टले रुममै मोड छान्छ।',
+  onlineErrors: {
+    not_found: 'रुम भेटिएन। कोड जाँच्नुहोस्।',
+    room_full: 'रुम भरिसक्यो।',
+    network: 'सर्भरसँग जोड्न सकिएन। इन्टरनेट जाँच्नुहोस्।',
+    replaced: 'यो सिट अर्को ट्याब वा फोनमा खोलियो।',
+    illegal: 'यो चाल मिलेन।',
+    bad_request: 'केही गडबड भयो।',
+    not_host: 'होस्टले मात्र गर्न मिल्छ।',
+    started: 'खेल सुरु भइसक्यो।',
+    rate_limited: 'धेरै छिटो! अलि पर्खनुहोस्।',
+  },
   howToPlay: 'कसरी खेल्ने',
   credits: 'बनाउने',
   close: 'बन्द',
   info: 'जानकारी',
   creditsBy: 'यो खेल बनाउने',
   creditsText:
-    'दहल खानी (दहल मारा) नेपालको परम्परागत तास खेल हो, भारतको मेन्डीकोट / देहला पकड जस्तै। यो ब्राउजर प्रोटोटाइप हो — तपाईं ३ वटा कम्प्युटर बोटसँग खेल्नुहुन्छ।',
+    'दहल खानी (दहल मारा, दहल जित) नेपालको परम्परागत तास खेल हो, भारतको मेन्डीकोट / देहला पकड जस्तै। यो ब्राउजर प्रोटोटाइप हो — तपाईं ३ वटा कम्प्युटर बोटसँग खेल्नुहुन्छ।',
   chooseLanguage: 'भाषा छान्नुहोस्',
   rulesHtml: (p, c) => `
     <h2>कसरी खेल्ने?</h2>
@@ -274,13 +345,53 @@ const neRom: Strings = {
   installButton: '📲 App install garnus',
   installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
   installed: '✔ App install bhaisakyo',
+  allRules: 'Sabai niyam',
+  online: 'Online',
+  playOnline: '🌐 Saathi sanga online khelnus',
+  onlineIntro: 'Room banayera code wa link saathi lai pathaunus. Khaali seat ma bot khelchha.',
+  yourName: 'Tapaaiko naam',
+  createRoom: 'Naya room banaunus',
+  orJoin: 'Wa saathi ko room ma jaanus',
+  roomCode: 'Room code',
+  join: 'Jodinus',
+  lobbyTitle: 'Room',
+  shareInvite: '📤 Saathi lai link pathaunus',
+  copied: 'Link copy bhayo!',
+  inviteText: (code) => `Dahal Khani khelna aau! Room code: ${code}`,
+  teamA: 'Team A',
+  teamB: 'Team B',
+  emptySeat: 'Khaali',
+  sitHere: 'Yaha basnus',
+  hostTag: 'Host',
+  botTag: 'Bot',
+  youTag: 'Tapaai',
+  awayTag: 'Bahira',
+  botsFill: 'Khaali seat ma bot khelchha.',
+  startGame: '▶ Khel suru garnus',
+  waitingHost: 'Host le khel suru garne parkhai…',
+  leaveRoom: '🚪 Room chhodnus',
+  connecting: 'Jodindai…',
+  reconnecting: 'Pheri jodindai…',
+  onlineUnavailable: 'Online server ahile chhaina.',
+  modeHostOnly: 'Online ma host le room mai mode chhanchha.',
+  onlineErrors: {
+    not_found: 'Room bhetiyena. Code check garnus.',
+    room_full: 'Room bharisakyo.',
+    network: 'Server sanga jodna sakiyena. Internet check garnus.',
+    replaced: 'Yo seat arko tab wa phone ma kholiyo.',
+    illegal: 'Yo chaal milena.',
+    bad_request: 'Kehi gadbad bhayo.',
+    not_host: 'Host le matra garna milchha.',
+    started: 'Khel suru bhaisakyo.',
+    rate_limited: 'Dherai chhito! Ali parkhanus.',
+  },
   howToPlay: 'Kasari khelne',
   credits: 'Banaune',
   close: 'Banda',
   info: 'Jaankari',
   creditsBy: 'Yo game banaune',
   creditsText:
-    'Dahal Khani (Dahal Mara) Nepal ko paramparaagat taas khel ho, Bharat ko Mendikot / Dehla Pakad jastai. Yo browser prototype ho — tapaai 3 ota computer bot sanga khelnuhunchha.',
+    'Dahal Khani (Dahal Mara, Dahal Jeet) Nepal ko paramparaagat taas khel ho, Bharat ko Mendikot / Dehla Pakad jastai. Yo browser prototype ho — tapaai 3 ota computer bot sanga khelnuhunchha.',
   chooseLanguage: 'Bhasa chunnus',
   rulesHtml: (p, c) => `
     <h2>Kasari khelne?</h2>
@@ -391,13 +502,53 @@ const en: Strings = {
   installButton: '📲 Install app',
   installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
   installed: '✔ App installed',
+  allRules: 'All rules',
+  online: 'Online',
+  playOnline: '🌐 Play online with friends',
+  onlineIntro: 'Create a room and send the code or link to friends. Bots fill empty seats.',
+  yourName: 'Your name',
+  createRoom: 'Create a room',
+  orJoin: "Or join a friend's room",
+  roomCode: 'Room code',
+  join: 'Join',
+  lobbyTitle: 'Room',
+  shareInvite: '📤 Send link to friends',
+  copied: 'Link copied!',
+  inviteText: (code) => `Come play Dahal Khani! Room code: ${code}`,
+  teamA: 'Team A',
+  teamB: 'Team B',
+  emptySeat: 'Empty',
+  sitHere: 'Sit here',
+  hostTag: 'Host',
+  botTag: 'Bot',
+  youTag: 'You',
+  awayTag: 'Away',
+  botsFill: 'Bots play in empty seats.',
+  startGame: '▶ Start game',
+  waitingHost: 'Waiting for the host to start…',
+  leaveRoom: '🚪 Leave room',
+  connecting: 'Connecting…',
+  reconnecting: 'Reconnecting…',
+  onlineUnavailable: 'The online server is not available right now.',
+  modeHostOnly: 'Online, the host picks the mode in the room.',
+  onlineErrors: {
+    not_found: 'Room not found. Check the code.',
+    room_full: 'The room is full.',
+    network: 'Could not reach the server. Check your internet.',
+    replaced: 'This seat was opened in another tab or phone.',
+    illegal: "That move isn't allowed.",
+    bad_request: 'Something went wrong.',
+    not_host: 'Only the host can do that.',
+    started: 'The game has already started.',
+    rate_limited: 'Too fast! Please wait a moment.',
+  },
   howToPlay: 'How to play',
   credits: 'Credits',
   close: 'Close',
   info: 'Info',
   creditsBy: 'Game created by',
   creditsText:
-    'Dahal Khani (Dahal Mara) is a traditional Nepali card game, similar to Mendikot / Dehla Pakad in India. This is a browser prototype — you play against 3 computer bots.',
+    'Dahal Khani (also Dahal Mara or Dahal Jeet) is a traditional Nepali card game, similar to Mendikot / Dehla Pakad in India. This is a browser prototype — you play against 3 computer bots.',
   chooseLanguage: 'Choose language',
   rulesHtml: (p, c) => `
     <h2>How to play</h2>
@@ -508,13 +659,53 @@ const ja: Strings = {
   installButton: '📲 アプリをインストール',
   installHint: 'Android Chrome：⋮ メニュー →「ホーム画面に追加」。iPhone Safari：共有 ⬆ →「ホーム画面に追加」。',
   installed: '✔ インストール済み',
+  allRules: '全ルール',
+  online: 'オンライン',
+  playOnline: '🌐 友達とオンライン対戦',
+  onlineIntro: 'ルームを作ってコードかリンクを友達に送ってください。空いた席はボットが担当します。',
+  yourName: 'あなたの名前',
+  createRoom: 'ルームを作成',
+  orJoin: '友達のルームに参加',
+  roomCode: 'ルームコード',
+  join: '参加',
+  lobbyTitle: 'ルーム',
+  shareInvite: '📤 友達にリンクを送る',
+  copied: 'リンクをコピーしました！',
+  inviteText: (code) => `ダハル・カニで遊ぼう！ ルームコード：${code}`,
+  teamA: 'チームA',
+  teamB: 'チームB',
+  emptySeat: '空席',
+  sitHere: 'ここに座る',
+  hostTag: 'ホスト',
+  botTag: 'ボット',
+  youTag: 'あなた',
+  awayTag: '離席',
+  botsFill: '空席はボットがプレイします。',
+  startGame: '▶ ゲーム開始',
+  waitingHost: 'ホストの開始を待っています…',
+  leaveRoom: '🚪 ルームを出る',
+  connecting: '接続中…',
+  reconnecting: '再接続中…',
+  onlineUnavailable: 'オンラインサーバーは現在利用できません。',
+  modeHostOnly: 'オンラインではホストがルームでモードを選びます。',
+  onlineErrors: {
+    not_found: 'ルームが見つかりません。コードを確認してください。',
+    room_full: 'ルームは満員です。',
+    network: 'サーバーに接続できません。インターネットを確認してください。',
+    replaced: 'この席は別のタブまたはスマホで開かれました。',
+    illegal: 'その手は出せません。',
+    bad_request: '問題が発生しました。',
+    not_host: 'ホストだけが操作できます。',
+    started: 'ゲームはすでに始まっています。',
+    rate_limited: '速すぎます！少し待ってください。',
+  },
   howToPlay: '遊び方',
   credits: 'クレジット',
   close: '閉じる',
   info: '情報',
   creditsBy: 'このゲームの作者',
   creditsText:
-    'ダハル・カニ（ダハル・マラ）はネパールの伝統的なトランプゲームで、インドのメンディコート／デーラ・パカドに似ています。これはブラウザ版のプロトタイプで、3体のコンピューターと対戦します。',
+    'ダハル・カニ（ダハル・マラ、ダハル・ジート）はネパールの伝統的なトランプゲームで、インドのメンディコート／デーラ・パカドに似ています。これはブラウザ版のプロトタイプで、3体のコンピューターと対戦します。',
   chooseLanguage: '言語を選択',
   rulesHtml: (p, c) => `
     <h2>遊び方</h2>

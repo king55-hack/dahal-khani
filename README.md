@@ -1,4 +1,4 @@
-# Dahal Khani (Dahal Mara)
+# Dahal Khani (Dahal Mara / Dahal Jeet)
 
 Traditional Nepali 4-player card game (2 teams, like Mendikot / Dehla Pakad), as a browser prototype.
 You play against 3 computer bots (partner Sita; opponents Gajendra and Ranjana).
@@ -22,10 +22,31 @@ npm test         # rules-engine unit tests
 npm run build    # production build in dist/
 ```
 
+## Online play (friends + bots)
+
+🌐 in the header → create a room → send the link. Empty seats are filled by bots, the host picks the
+mode and starts. Every move is checked on the server, and each player only receives their own cards.
+
+The room server is a Cloudflare Worker + Durable Objects (free plan) in `server/worker.ts`; the room
+logic itself is plain TypeScript in `src/online/` and is unit-tested.
+
+```
+npm run server:dev                  # local server on :8787 (the dev site uses it automatically)
+node scripts/online-smoke.mjs       # end-to-end test against it
+npx wrangler login                  # once, opens Cloudflare in the browser
+npm run server:deploy               # prints https://dahal-khani.<account>.workers.dev
+gh variable set SERVER_URL --body https://dahal-khani.<account>.workers.dev
+```
+
+After `SERVER_URL` is set, the next GitHub Pages deploy shows the 🌐 button on the live site.
+Allowed sites are set in `wrangler.jsonc` (`ALLOWED_ORIGINS`).
+
 ## Project layout
 
-- `src/engine/` — pure rules engine (no UI): dealing, TURUP, legal moves, Haat, Dahal, scoring, bots.
-  It validates every move, so it can run on a server for online multiplayer later.
+- `src/engine/` — pure rules engine (no UI): dealing, TURUP, legal moves, Haat, Dahal, scoring, bots,
+  and per-player views (no peeking at other hands).
+- `src/online/` — room logic and message format shared by browser and server.
+- `server/` — Cloudflare Worker / Durable Object glue.
 - `src/ui/` — browser UI only: `i18n.ts` (all text, 4 languages), `modals.ts` (settings / info /
   language dialogs), `themes.ts` (card designs and prices), `sound.ts`, `prefs.ts` (saved in the browser).
 - `src/settings.ts` — point values, coin rewards, default trump mode, bot speed, creator name.

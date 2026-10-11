@@ -14,6 +14,7 @@ import {
   nextRound,
   playCard,
   rankLabel,
+  rotateView,
   sameCard,
   sortHand,
   SUITS,
@@ -24,13 +25,17 @@ import {
   visibleTrump,
   type Card,
   type GameState,
+  type PlayerView,
   type Seat,
   type Suit,
   type TrumpMode,
 } from '../engine';
 import { BOT_DELAY_MS, COIN_REWARDS, CREATOR_NAME, GAME_SETTINGS, TRICK_PAUSE_MS } from '../settings';
+import { cleanName, isRoomCode, normalizeRoomCode, type ServerMsg } from '../online/protocol';
+import { escapeHtml } from './html';
 import { LANGS, STRINGS, type Lang, type Strings } from './i18n';
-import { infoHtml, languagePickerHtml, settingsHtml, type Modal } from './modals';
+import { infoHtml, languagePickerHtml, onlineHtml, settingsHtml, type Modal, type RoomInfo } from './modals';
+import { createRoom, OnlineClient, SERVER_URL, type ConnStatus, type FatalReason } from './online';
 import { loadPrefs, savePrefs } from './prefs';
 import { setSoundEnabled, sfx, unlockAudio } from './sound';
 import { isBackgroundId, isThemeId, THEMES } from './themes';
@@ -61,9 +66,41 @@ let toastTimer: number | null = null;
 /** Coins earned in the round that just ended (shown in the summary). */
 let roundCoins = 0;
 
+/** Online session (null = playing offline against bots). */
+interface OnlineSession {
+  client: OnlineClient;
+  code: string;
+  /** my real seat on the server; the view is rotated so I am always at the bottom */
+  seat: Seat;
+  room: RoomInfo | null;
+  status: ConnStatus | null;
+  /** first game state after connecting: don't play sounds for the jump from the offline game */
+  fresh: boolean;
+  /** a move was sent and we wait for the server's answer (ignore double taps) */
+  waiting: boolean;
+}
+let online: OnlineSession | null = null;
+const roomFromUrl = new URLSearchParams(location.search).get('room');
+const onlineForm = {
+  name: prefs.playerName,
+  codeInput: roomFromUrl && isRoomCode(normalizeRoomCode(roomFromUrl)) ? normalizeRoomCode(roomFromUrl) : '',
+  busy: false,
+  error: '',
+  notice: '',
+};
+
 // ---------- flow ----------
 
-const name = (seat: Seat) => t.names[seat];
+/** Display name for a (local) seat — already HTML-escaped. */
+function name(seat: Seat): string {
+  const info = online?.room?.seats[(seat + online.seat) % 4];
+  if (!online || !info || seat === HUMAN) return t.names[seat];
+  return escapeHtml((info.bot ? '🤖 ' : '') + info.name);
+}
+
+function handCount(seat: Seat): number {
+  return online ? ((state as PlayerView).handCounts?.[seat] ?? 0) : state.hands[seat].length;
+}
 const suitLabel = (s: Suit) => `${SUIT_SYMBOL[s]} ${SUIT_NAME[s]}`;
 
 function apply(next: GameState) {
@@ -77,9 +114,12 @@ function apply(next: GameState) {
 /** Sounds, toasts and coins, derived from what changed between two states. */
 function react(prev: GameState, next: GameState) {
   const mode = next.settings.trumpMode;
-  if (prev.phase === 'choosingTrump' && next.phase === 'playing' && next.trump) {
-    if (mode === 'open') showToast(t.toastTrumpChosen(name(next.trumpChooser), suitLabel(next.trump)), 2200);
-    else if (next.trumpChooser !== HUMAN) showToast(t.toastTrumpHidden(name(next.trumpChooser)), 2200);
+  if (prev.phase === 'choosingTrump' && next.phase === 'playing') {
+    if (mode === 'open' && next.trump) {
+      showToast(t.toastTrumpChosen(name(next.trumpChooser), suitLabel(next.trump)), 2200);
+    } else if (mode === 'bandHukum' && next.trumpChooser !== HUMAN) {
+      showToast(t.toastTrumpHidden(name(next.trumpChooser)), 2200);
+    }
   } else if (!prev.trumpRevealed && next.trumpRevealed && next.trump && prev.phase !== 'choosingTrump') {
     sfx.reveal();
     showToast(
@@ -131,7 +171,7 @@ function stopTimer() {
 }
 
 function schedule() {
-  if (timer !== null || modal !== null) return;
+  if (online || timer !== null || modal !== null) return;
   const s = state;
   if (s.phase === 'trickComplete') {
     timer = window.setTimeout(() => {
@@ -162,6 +202,7 @@ function withChosenMode(s: GameState): GameState {
 }
 
 function startNextRound() {
+  if (online) return sendMove({ t: 'next' });
   apply(nextRound(withChosenMode(state)));
 }
 
@@ -197,7 +238,7 @@ function seatHtml(seat: Seat): string {
   if (s.trumpChooser === seat && s.trumpRevealed) chooser = `<span class="chip gold">${t.trump}</span>`;
   else if (s.trumpChooser === seat && s.trump) chooser = `<span class="chip gold">🔒</span>`;
   const partner = seat === 2 ? ` <small>${t.partner}</small>` : '';
-  const n = s.hands[seat].length;
+  const n = handCount(seat);
   const backs = Array.from({ length: Math.min(n, 13) }, () => '<i class="back"></i>').join('');
   return `<div class="seat seat-${POS[seat]} team${teamOf(seat)} ${active ? 'active' : ''}">
     <div class="name">${name(seat)}${partner}</div>
@@ -280,7 +321,8 @@ function trumpBadge(): string {
     return `<span class="trump-badge ${isRed(s.trump) ? 'red' : 'black'}">${label} <b>${SUIT_SYMBOL[s.trump]}</b></span>`;
   }
   const mine = visibleTrump(s, HUMAN);
-  if (s.settings.trumpMode === 'bandHukum' && s.trump) {
+  // band hukum: trump picked but secret (online, only the chooser's view contains it)
+  if (s.settings.trumpMode === 'bandHukum' && s.phase !== 'choosingTrump' && s.phase !== 'roundOver') {
     return mine
       ? `<span class="trump-badge secret ${isRed(mine) ? 'red' : 'black'}">🔒 <b>${SUIT_SYMBOL[mine]}</b></span>`
       : `<span class="trump-badge none">🔒 ${t.trump} ?</span>`;
@@ -338,6 +380,13 @@ function render() {
       <div class="round">${t.round(s.roundNumber)}</div>
       ${trumpBadge()}
       <span class="coin-chip" title="${t.coins}">🪙 ${prefs.coins}</span>
+      ${
+        online
+          ? `<button class="small room-chip" data-action="online" title="${t.online}">${online.status === 'open' ? '🌐' : '⏳'} ${online.code}</button>`
+          : SERVER_URL
+            ? `<button class="small" data-action="online" title="${t.playOnline}" aria-label="${t.online}">🌐</button>`
+            : ''
+      }
       <button class="small" data-action="info" title="${t.info}" aria-label="${t.info}">ⓘ</button>
       <button class="small" data-action="settings" title="${t.settings}" aria-label="${t.settings}">⚙</button>
     </header>
@@ -358,8 +407,19 @@ function renderModal() {
   const prevScroll = modalRoot.querySelector('.overlay')?.scrollTop ?? 0;
   if (!modal) modalRoot.innerHTML = '';
   else if (modal.kind === 'lang') modalRoot.innerHTML = languagePickerHtml();
-  else if (modal.kind === 'info') modalRoot.innerHTML = infoHtml(t, modal.tab);
-  else modalRoot.innerHTML = settingsHtml(t, prefs, settingsMsg, installState());
+  else if (modal.kind === 'info') modalRoot.innerHTML = infoHtml(t, prefs.lang ?? 'neRom', modal.tab);
+  else if (modal.kind === 'online') {
+    modalRoot.innerHTML = onlineHtml(t, {
+      available: SERVER_URL !== null,
+      name: onlineForm.name,
+      codeInput: onlineForm.codeInput,
+      busy: onlineForm.busy,
+      status: online?.status ?? null,
+      room: online?.room ?? null,
+      error: onlineForm.error,
+      notice: onlineForm.notice,
+    });
+  } else modalRoot.innerHTML = settingsHtml(t, prefs, settingsMsg, installState(), online !== null);
   const who = modalRoot.querySelector('.who');
   if (who) who.textContent = CREATOR_NAME; // never parsed as HTML
   const overlay = modalRoot.querySelector('.overlay');
@@ -387,11 +447,15 @@ function setLanguage(lang: Lang) {
   savePrefs(prefs);
   applyLookAndLanguage();
   render();
-  if (modal?.kind === 'lang') openModal(null);
+  if (modal?.kind === 'lang') openModal(onlineForm.codeInput && SERVER_URL ? { kind: 'online' } : null);
   else renderModal();
 }
 
 function setMode(mode: TrumpMode) {
+  if (online) {
+    settingsMsg = t.modeHostOnly;
+    return renderModal();
+  }
   if (mode === prefs.mode) return;
   prefs.mode = mode;
   savePrefs(prefs);
@@ -433,7 +497,7 @@ function pickTheme(id: string) {
 modalRoot.addEventListener('click', (e) => {
   const target = e.target as HTMLElement;
   const el = target.closest<HTMLElement>(
-    '[data-m],[data-tab],[data-lang],[data-sound],[data-mode],[data-theme],[data-bg]',
+    '[data-m],[data-tab],[data-lang],[data-sound],[data-mode],[data-theme],[data-bg],[data-sit],[data-online-mode]',
   );
   if (!el) return;
   const d = el.dataset;
@@ -445,7 +509,15 @@ modalRoot.addEventListener('click', (e) => {
     }
     return;
   }
-  if (d.tab === 'rules' || d.tab === 'credits') return openModal({ kind: 'info', tab: d.tab });
+  if (d.tab === 'rules' || d.tab === 'allRules' || d.tab === 'credits') return openModal({ kind: 'info', tab: d.tab });
+  if (d.m === 'create') return void onlineCreate();
+  if (d.m === 'join') return onlineJoin();
+  if (d.m === 'share') return void onlineShare();
+  if (d.m === 'leave') return onlineLeave();
+  if (d.m === 'start') return online?.client.send({ t: 'start' });
+  if (d.sit !== undefined) return online?.client.send({ t: 'sit', seat: Number(d.sit) as Seat });
+  const om = d.onlineMode;
+  if (om === 'open' || om === 'bandHukum' || om === 'cutHukum') return online?.client.send({ t: 'mode', mode: om });
   if (d.lang && LANGS.includes(d.lang as Lang)) return setLanguage(d.lang as Lang);
   if (d.sound) {
     prefs.sound = d.sound === 'on';
@@ -468,6 +540,164 @@ modalRoot.addEventListener('click', (e) => {
     void p.prompt();
     void p.userChoice.finally(renderModal);
   }
+});
+
+modalRoot.addEventListener('input', (e) => {
+  const el = e.target as HTMLInputElement;
+  if (el.id === 'online-name') onlineForm.name = el.value;
+  if (el.id === 'online-code') {
+    const v = normalizeRoomCode(el.value);
+    if (v !== el.value) el.value = v;
+    onlineForm.codeInput = v;
+  }
+});
+modalRoot.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && (e.target as HTMLElement).id === 'online-code') onlineJoin();
+});
+
+// ---------- online play ----------
+
+function onlineName(): string {
+  const n = cleanName(onlineForm.name, '');
+  if (n) {
+    prefs.playerName = n;
+    savePrefs(prefs);
+  }
+  return n || t.names[HUMAN];
+}
+
+function setRoomInUrl(code: string | null) {
+  const url = new URL(location.href);
+  if (code) url.searchParams.set('room', code);
+  else url.searchParams.delete('room');
+  history.replaceState(null, '', url);
+}
+
+async function onlineCreate() {
+  if (!SERVER_URL || onlineForm.busy) return;
+  onlineForm.busy = true;
+  onlineForm.error = '';
+  renderModal();
+  try {
+    connectTo(await createRoom(SERVER_URL));
+  } catch {
+    onlineForm.error = t.onlineErrors.network;
+  } finally {
+    onlineForm.busy = false;
+    renderModal();
+  }
+}
+
+function onlineJoin() {
+  const code = normalizeRoomCode(onlineForm.codeInput);
+  if (!isRoomCode(code)) {
+    onlineForm.error = t.onlineErrors.not_found;
+    return renderModal();
+  }
+  connectTo(code);
+}
+
+function connectTo(code: string) {
+  if (!SERVER_URL) return;
+  online?.client.stop();
+  stopTimer();
+  onlineForm.error = '';
+  onlineForm.notice = '';
+  const client = new OnlineClient(SERVER_URL, code, onlineName(), {
+    onMessage: onServerMessage,
+    onStatus: (st) => {
+      if (online?.client !== client) return;
+      online.status = st;
+      render();
+      if (modal?.kind === 'online') renderModal();
+    },
+    onFatal: (reason) => {
+      if (online?.client === client) leaveOnline(reason);
+    },
+  });
+  online = { client, code, seat: 0, room: null, status: 'connecting', fresh: true, waiting: false };
+  setRoomInUrl(code);
+  client.connect();
+  render();
+  renderModal();
+}
+
+function onServerMessage(m: ServerMsg) {
+  if (!online) return;
+  if (m.t === 'welcome') online.seat = m.seat;
+  else if (m.t === 'room') {
+    online.room = m;
+    online.seat = m.you;
+    if (!m.started && modal?.kind !== 'online') openModal({ kind: 'online' });
+    else if (modal?.kind === 'online') renderModal();
+    render();
+  } else if (m.t === 'state') {
+    online.waiting = false;
+    const next = rotateView(m.view, online.seat);
+    if (online.fresh) {
+      online.fresh = false;
+      roundCoins = 0;
+      state = next;
+      if (modal?.kind === 'online') openModal(null);
+      render();
+      return;
+    }
+    const prev = state;
+    state = next;
+    react(prev, next);
+    render();
+  } else if (m.t === 'error') {
+    online.waiting = false;
+    const msg = t.onlineErrors[m.code];
+    if (modal?.kind === 'online') {
+      onlineForm.error = msg;
+      renderModal();
+    } else showToast(msg, 2200);
+  }
+}
+
+function sendMove(msg: Parameters<OnlineClient['send']>[0]) {
+  if (!online || online.waiting) return;
+  online.waiting = true;
+  online.client.send(msg);
+}
+
+async function onlineShare() {
+  if (!online) return;
+  const url = new URL(location.href);
+  url.search = `?room=${online.code}`;
+  const text = t.inviteText(online.code);
+  try {
+    if (navigator.share) {
+      await navigator.share({ title: 'Dahal Khani', text, url: url.href });
+      return;
+    }
+    await navigator.clipboard.writeText(`${text}\n${url.href}`);
+    onlineForm.notice = t.copied;
+  } catch {
+    onlineForm.notice = url.href;
+  }
+  renderModal();
+}
+
+/** Back to the offline game (after leaving, or when the room is gone). */
+function leaveOnline(reason?: FatalReason) {
+  online?.client.stop();
+  online = null;
+  setRoomInUrl(null);
+  onlineForm.error = reason ? t.onlineErrors[reason] : '';
+  onlineForm.notice = '';
+  resetGame();
+  if (reason) openModal({ kind: 'online' });
+}
+
+function onlineLeave() {
+  leaveOnline();
+  openModal(null);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') online?.client.wake();
 });
 
 // ---------- install as an app (PWA) ----------
@@ -507,13 +737,19 @@ app.addEventListener('click', (e) => {
   if (el.dataset.action === 'next' && state.phase === 'roundOver') return startNextRound();
   if (el.dataset.action === 'info') return openModal({ kind: 'info', tab: 'rules' });
   if (el.dataset.action === 'settings') return openModal({ kind: 'settings' });
+  if (el.dataset.action === 'online') return openModal({ kind: 'online' });
   if (el.dataset.suit && state.phase === 'choosingTrump' && state.trumpChooser === HUMAN) {
-    if (SUITS.includes(el.dataset.suit as Suit)) apply(chooseTrump(state, HUMAN, el.dataset.suit as Suit));
+    const suit = el.dataset.suit as Suit;
+    if (!SUITS.includes(suit)) return;
+    if (online) sendMove({ t: 'trump', suit });
+    else apply(chooseTrump(state, HUMAN, suit));
     return;
   }
   if (el.dataset.card !== undefined && state.phase === 'playing' && state.turn === HUMAN) {
     const card = sortHand(state.hands[HUMAN], visibleTrump(state, HUMAN))[Number(el.dataset.card)];
-    if (card && legalCards(state, HUMAN).some((c) => sameCard(c, card))) apply(playCard(state, HUMAN, card));
+    if (!card || !legalCards(state, HUMAN).some((c) => sameCard(c, card))) return;
+    if (online) sendMove({ t: 'play', card });
+    else apply(playCard(state, HUMAN, card));
   }
 });
 
@@ -523,6 +759,17 @@ document.addEventListener('keydown', (e) => {
 });
 
 applyLookAndLanguage();
+// Opened from an invite link: rejoin straight away if we were already in that room, else ask for a name.
+if (onlineForm.codeInput && SERVER_URL && prefs.lang) {
+  let rejoin = false;
+  try {
+    rejoin = !!localStorage.getItem(`dahal-khani:token:${onlineForm.codeInput}`) && !!prefs.playerName;
+  } catch {
+    /* no storage */
+  }
+  if (rejoin) connectTo(onlineForm.codeInput);
+  else modal = { kind: 'online' };
+}
 render();
 renderModal();
 schedule();

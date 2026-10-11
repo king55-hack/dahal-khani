@@ -1,7 +1,7 @@
 {
   "name": "Dahal Khani — Nepali card game",
   "short_name": "Dahal Khani",
-  "description": "Traditional Nepali card game Dahal Khani (Dahal Mara). Play against 3 bots.",
+  "description": "Traditional Nepali card game Dahal Khani (Dahal Mara, Dahal Jeet). Play against 3 bots.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",

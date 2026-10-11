@@ -5,9 +5,12 @@
   "main": "server/worker.ts",
   "compatibility_date": "2026-10-01",
   "durable_objects": {
-    "bindings": [{ "name": "ROOMS", "class_name": "RoomDO" }]
+    "bindings": [
+      { "name": "ROOMS", "class_name": "RoomDO" },
+      { "name": "LOBBY", "class_name": "LobbyDO" }
+    ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomDO"] }],
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["RoomDO", "LobbyDO"] }],
   "vars": {
     "ALLOWED_ORIGINS": "https://king55-hack.github.io"
   }

@@ -3,7 +3,7 @@
 // All text comes from i18n.ts; the creator name is inserted with textContent by main.ts.
 import type { TrumpMode } from '../engine';
 import { COIN_REWARDS, GAME_SETTINGS } from '../settings';
-import type { ServerMsg } from '../online/protocol';
+import type { RoomListing, ServerMsg } from '../online/protocol';
 import { escapeHtml } from './html';
 import { LANGS, STRINGS, type Lang, type Strings } from './i18n';
 import type { Prefs } from './prefs';
@@ -159,6 +159,11 @@ export interface OnlineView {
   available: boolean;
   name: string;
   codeInput: string;
+  joinPassword: string;
+  roomName: string;
+  createPassword: string;
+  /** null while loading */
+  rooms: RoomListing[] | null;
   busy: boolean;
   status: 'connecting' | 'open' | 'reconnecting' | null;
   room: RoomInfo | null;
@@ -200,6 +205,19 @@ export function onlineHtml(t: Strings, v: OnlineView): string {
   }
 
   if (!v.room) {
+    const rooms =
+      v.rooms === null
+        ? `<p class="muted">⏳</p>`
+        : v.rooms.length === 0
+          ? `<p class="muted">${t.noRooms}</p>`
+          : `<div class="room-list">${v.rooms
+              .map(
+                (r) => `<button class="room-row" data-pick="${r.code}">
+                  <span class="room-row-name">${r.locked ? '🔒 ' : ''}${escapeHtml(r.name)}</span>
+                  <small>#${r.code} · ${t.playersCount(r.players, r.free)} · ${r.started ? t.inGame : t.inLobby}</small>
+                </button>`,
+              )
+              .join('')}</div>`;
     return shell(
       `<h2>🌐 ${t.online}</h2>
       <p class="muted">${t.onlineIntro}</p>
@@ -207,13 +225,35 @@ export function onlineHtml(t: Strings, v: OnlineView): string {
       <label class="field">${t.yourName}
         <input id="online-name" maxlength="16" autocomplete="nickname" value="${escapeHtml(v.name)}" />
       </label>
-      <button class="primary" data-m="create" ${v.busy ? 'disabled' : ''}>${t.createRoom}</button>
-      <h3>${t.orJoin}</h3>
-      <div class="join-row">
-        <input id="online-code" maxlength="5" autocapitalize="characters" autocomplete="off" spellcheck="false"
-          placeholder="${t.roomCode}" value="${escapeHtml(v.codeInput)}" />
-        <button class="primary" data-m="join" ${v.busy ? 'disabled' : ''}>${t.join}</button>
-      </div>`,
+
+      <section>
+        <div class="section-head"><h3>${t.openRooms}</h3><button class="link" data-m="refresh">${t.refresh}</button></div>
+        ${rooms}
+      </section>
+
+      <section>
+        <h3>${t.joinSection}</h3>
+        <div class="join-grid">
+          <input id="online-code" inputmode="numeric" maxlength="6" autocomplete="off" placeholder="${t.roomNumber}"
+            value="${escapeHtml(v.codeInput)}" />
+          <input id="online-join-pw" type="password" maxlength="32" autocomplete="off" placeholder="${t.password}"
+            value="${escapeHtml(v.joinPassword)}" />
+          <button class="primary" data-m="join" ${v.busy ? 'disabled' : ''}>${t.join}</button>
+        </div>
+      </section>
+
+      <section>
+        <h3>${t.createSection}</h3>
+        <label class="field">${t.roomName}
+          <input id="online-room-name" maxlength="24" autocomplete="off"
+            placeholder="${escapeHtml(t.roomNamePlaceholder(v.name || t.names[0]))}" value="${escapeHtml(v.roomName)}" />
+        </label>
+        <label class="field">${t.passwordOptional}
+          <input id="online-create-pw" maxlength="32" autocomplete="off" value="${escapeHtml(v.createPassword)}" />
+        </label>
+        <p class="muted">${t.publicHint}</p>
+        <button class="primary" data-m="create" ${v.busy ? 'disabled' : ''}>${t.createRoom}</button>
+      </section>`,
       { closable: true, cls: 'online-modal', label: t.online },
     );
   }
@@ -226,7 +266,9 @@ export function onlineHtml(t: Strings, v: OnlineView): string {
     </button>`,
   ).join('');
   return shell(
-    `<h2>🌐 ${t.lobbyTitle} <span class="room-code">${escapeHtml(r.code)}</span></h2>
+    `<h2>🌐 ${escapeHtml(r.name)}</h2>
+    <p class="room-meta"><span class="room-code">${escapeHtml(r.code)}</span>
+      <span class="tag ${r.locked ? 'host' : ''}">${r.locked ? t.privateTag : t.publicTag}</span></p>
     ${banner}
     <button class="primary share" data-m="share">${t.shareInvite}</button>
     <div class="teams">

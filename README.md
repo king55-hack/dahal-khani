@@ -24,8 +24,11 @@ npm run build    # production build in dist/
 
 ## Online play (friends + bots)
 
-🌐 in the header → create a room → send the link. Empty seats are filled by bots, the host picks the
-mode and starts. Every move is checked on the server, and each player only receives their own cards.
+🌐 in the header → pick a room from **Open rooms**, join with a **6-digit room number + password**, or
+create your own room (with a password = private 🔒, without = public). Empty seats are filled by bots,
+the host picks the mode and starts. Every move is checked on the server, each player only receives
+their own cards, and room passwords are stored only as salted PBKDF2 hashes (10 wrong tries per
+10 minutes per room).
 
 The room server is a Cloudflare Worker + Durable Objects (free plan) in `server/worker.ts`; the room
 logic itself is plain TypeScript in `src/online/` and is unit-tested.

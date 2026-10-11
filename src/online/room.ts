@@ -15,7 +15,8 @@ import {
   type TrumpMode,
 } from '../engine';
 import { GAME_SETTINGS } from '../settings';
-import type { ClientMsg, ErrorCode, SeatPublic, ServerMsg } from './protocol';
+import type { PasswordHash } from './password';
+import type { ClientMsg, ErrorCode, RoomListing, SeatPublic, ServerMsg } from './protocol';
 
 export interface SeatInfo {
   name: string;
@@ -26,6 +27,11 @@ export interface SeatInfo {
 
 export interface RoomData {
   code: string;
+  name: string;
+  /** null = public room */
+  password: PasswordHash | null;
+  /** wrong-password attempts in the current window (brute-force protection) */
+  failed: { count: number; since: number };
   seats: (SeatInfo | null)[];
   host: Seat | null;
   mode: TrumpMode;
@@ -45,14 +51,24 @@ export const TIMING = {
   disconnected: 1500, // a disconnected player's turn is played by a bot
   afk: 60_000, // a connected player who doesn't move for this long gets an automatic move
   idleExpiry: 6 * 60 * 60_000, // rooms are deleted after 6 hours without activity
+  passwordWindow: 10 * 60_000, // at most PASSWORD_TRIES wrong passwords per 10 minutes
 };
+export const PASSWORD_TRIES = 10;
 
 /** Seats are filled so the first two players are partners: 0, then 2, then 1, 3. */
 const JOIN_ORDER: Seat[] = [0, 2, 1, 3];
 
-export function createRoom(code: string, now: number): RoomData {
+export function createRoom(
+  code: string,
+  now: number,
+  name = 'Dahal Khani',
+  password: PasswordHash | null = null,
+): RoomData {
   return {
     code,
+    name,
+    password,
+    failed: { count: 0, since: now },
     seats: [null, null, null, null],
     host: null,
     mode: GAME_SETTINGS.trumpMode,
@@ -194,5 +210,43 @@ export function roomMessage(room: RoomData, you: Seat, connected: readonly boole
   const seats: (SeatPublic | null)[] = room.seats.map((s, i) =>
     s ? { name: s.name, bot: s.bot, connected: s.bot || connected[i] } : null,
   );
-  return { t: 'room', code: room.code, you, host: room.host, mode: room.mode, started: room.game !== null, seats };
+  return {
+    t: 'room',
+    code: room.code,
+    name: room.name,
+    locked: room.password !== null,
+    you,
+    host: room.host,
+    mode: room.mode,
+    started: room.game !== null,
+    seats,
+  };
+}
+
+/** May another password guess be checked now? */
+export function passwordAttemptAllowed(room: RoomData, now: number): boolean {
+  if (now - room.failed.since > TIMING.passwordWindow) room.failed = { count: 0, since: now };
+  return room.failed.count < PASSWORD_TRIES;
+}
+
+export function recordWrongPassword(room: RoomData, now: number) {
+  if (now - room.failed.since > TIMING.passwordWindow) room.failed = { count: 0, since: now };
+  room.failed.count++;
+}
+
+/** How the room appears in the public list, or null if nobody could join it right now. */
+export function listingFor(room: RoomData, connected: readonly boolean[], now: number): RoomListing | null {
+  const players = room.seats.filter((s, i) => s && !s.bot && connected[i]).length;
+  const free = room.seats.filter((s) => (room.game ? s?.bot : s === null)).length;
+  if (players === 0 || free === 0) return null;
+  return {
+    code: room.code,
+    name: room.name,
+    locked: room.password !== null,
+    players,
+    free,
+    started: room.game !== null,
+    mode: room.mode,
+    updatedAt: now,
+  };
 }

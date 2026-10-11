@@ -31,11 +31,11 @@ import {
   type TrumpMode,
 } from '../engine';
 import { BOT_DELAY_MS, COIN_REWARDS, CREATOR_NAME, GAME_SETTINGS, TRICK_PAUSE_MS } from '../settings';
-import { cleanName, isRoomCode, normalizeRoomCode, type ServerMsg } from '../online/protocol';
+import { cleanName, isRoomCode, normalizeRoomCode, ROOM_NAME_MAX, type RoomListing, type ServerMsg } from '../online/protocol';
 import { escapeHtml } from './html';
 import { LANGS, STRINGS, type Lang, type Strings } from './i18n';
 import { infoHtml, languagePickerHtml, onlineHtml, settingsHtml, type Modal, type RoomInfo } from './modals';
-import { createRoom, OnlineClient, SERVER_URL, type ConnStatus, type FatalReason } from './online';
+import { createRoom, listRooms, OnlineClient, SERVER_URL, type ConnStatus, type FatalReason } from './online';
 import { loadPrefs, savePrefs } from './prefs';
 import { setSoundEnabled, sfx, unlockAudio } from './sound';
 import { isBackgroundId, isThemeId, THEMES } from './themes';
@@ -84,6 +84,12 @@ const roomFromUrl = new URLSearchParams(location.search).get('room');
 const onlineForm = {
   name: prefs.playerName,
   codeInput: roomFromUrl && isRoomCode(normalizeRoomCode(roomFromUrl)) ? normalizeRoomCode(roomFromUrl) : '',
+  joinPassword: '',
+  roomName: '',
+  createPassword: '',
+  rooms: null as RoomListing[] | null,
+  /** password of the room this browser created, so the invite can include it */
+  created: null as { code: string; password: string } | null,
   busy: false,
   error: '',
   notice: '',
@@ -413,6 +419,10 @@ function renderModal() {
       available: SERVER_URL !== null,
       name: onlineForm.name,
       codeInput: onlineForm.codeInput,
+      joinPassword: onlineForm.joinPassword,
+      roomName: onlineForm.roomName,
+      createPassword: onlineForm.createPassword,
+      rooms: onlineForm.rooms,
       busy: onlineForm.busy,
       status: online?.status ?? null,
       room: online?.room ?? null,
@@ -433,6 +443,7 @@ function openModal(m: Modal | null) {
   if (m) stopTimer(); // pause bots; schedule() restarts from the current state
   renderModal();
   if (!sameKind) modalRoot.querySelector('.overlay')?.scrollTo(0, 0);
+  if (!sameKind && m?.kind === 'online' && !online) void refreshRooms();
   if (!m) schedule();
 }
 
@@ -497,7 +508,7 @@ function pickTheme(id: string) {
 modalRoot.addEventListener('click', (e) => {
   const target = e.target as HTMLElement;
   const el = target.closest<HTMLElement>(
-    '[data-m],[data-tab],[data-lang],[data-sound],[data-mode],[data-theme],[data-bg],[data-sit],[data-online-mode]',
+    '[data-m],[data-tab],[data-lang],[data-sound],[data-mode],[data-theme],[data-bg],[data-sit],[data-online-mode],[data-pick]',
   );
   if (!el) return;
   const d = el.dataset;
@@ -511,6 +522,8 @@ modalRoot.addEventListener('click', (e) => {
   }
   if (d.tab === 'rules' || d.tab === 'allRules' || d.tab === 'credits') return openModal({ kind: 'info', tab: d.tab });
   if (d.m === 'create') return void onlineCreate();
+  if (d.m === 'refresh') return void refreshRooms();
+  if (d.pick) return pickRoom(d.pick);
   if (d.m === 'join') return onlineJoin();
   if (d.m === 'share') return void onlineShare();
   if (d.m === 'leave') return onlineLeave();
@@ -545,6 +558,9 @@ modalRoot.addEventListener('click', (e) => {
 modalRoot.addEventListener('input', (e) => {
   const el = e.target as HTMLInputElement;
   if (el.id === 'online-name') onlineForm.name = el.value;
+  if (el.id === 'online-join-pw') onlineForm.joinPassword = el.value;
+  if (el.id === 'online-room-name') onlineForm.roomName = el.value;
+  if (el.id === 'online-create-pw') onlineForm.createPassword = el.value;
   if (el.id === 'online-code') {
     const v = normalizeRoomCode(el.value);
     if (v !== el.value) el.value = v;
@@ -552,7 +568,8 @@ modalRoot.addEventListener('input', (e) => {
   }
 });
 modalRoot.addEventListener('keydown', (e) => {
-  if (e.key === 'Enter' && (e.target as HTMLElement).id === 'online-code') onlineJoin();
+  const id = (e.target as HTMLElement).id;
+  if (e.key === 'Enter' && (id === 'online-code' || id === 'online-join-pw')) onlineJoin();
 });
 
 // ---------- online play ----------
@@ -578,8 +595,13 @@ async function onlineCreate() {
   onlineForm.busy = true;
   onlineForm.error = '';
   renderModal();
+  const name = onlineName();
+  const roomName = cleanName(onlineForm.roomName, t.roomNamePlaceholder(name), ROOM_NAME_MAX);
+  const password = onlineForm.createPassword;
   try {
-    connectTo(await createRoom(SERVER_URL));
+    const code = await createRoom(SERVER_URL, { name: roomName, password });
+    onlineForm.created = { code, password };
+    connectTo(code, password);
   } catch {
     onlineForm.error = t.onlineErrors.network;
   } finally {
@@ -594,16 +616,42 @@ function onlineJoin() {
     onlineForm.error = t.onlineErrors.not_found;
     return renderModal();
   }
-  connectTo(code);
+  connectTo(code, onlineForm.joinPassword);
 }
 
-function connectTo(code: string) {
+async function refreshRooms() {
+  if (!SERVER_URL) return;
+  onlineForm.rooms = null;
+  if (modal?.kind === 'online') renderModal();
+  try {
+    onlineForm.rooms = await listRooms(SERVER_URL);
+  } catch {
+    onlineForm.rooms = [];
+    onlineForm.error = t.onlineErrors.network;
+  }
+  if (modal?.kind === 'online' && !online) renderModal();
+}
+
+/** Tap on a room in the list: join right away, or ask for its password first. */
+function pickRoom(code: string) {
+  const room = onlineForm.rooms?.find((r) => r.code === code);
+  if (!room) return;
+  if (!room.locked) return connectTo(code, '');
+  onlineForm.codeInput = code;
+  onlineForm.joinPassword = '';
+  onlineForm.error = '';
+  onlineForm.notice = t.enterPasswordFor(room.name);
+  renderModal();
+  modalRoot.querySelector<HTMLInputElement>('#online-join-pw')?.focus();
+}
+
+function connectTo(code: string, password = '') {
   if (!SERVER_URL) return;
   online?.client.stop();
   stopTimer();
   onlineForm.error = '';
   onlineForm.notice = '';
-  const client = new OnlineClient(SERVER_URL, code, onlineName(), {
+  const client = new OnlineClient(SERVER_URL, code, onlineName(), password, {
     onMessage: onServerMessage,
     onStatus: (st) => {
       if (online?.client !== client) return;
@@ -666,7 +714,8 @@ async function onlineShare() {
   if (!online) return;
   const url = new URL(location.href);
   url.search = `?room=${online.code}`;
-  const text = t.inviteText(online.code);
+  const pw = onlineForm.created?.code === online.code ? onlineForm.created.password : '';
+  const text = t.inviteText(online.code) + (pw ? `\n${t.invitePassword(pw)}` : '');
   try {
     if (navigator.share) {
       await navigator.share({ title: 'Dahal Khani', text, url: url.href });
@@ -682,6 +731,8 @@ async function onlineShare() {
 
 /** Back to the offline game (after leaving, or when the room is gone). */
 function leaveOnline(reason?: FatalReason) {
+  // keep the number typed in, so a wrong password can simply be retried
+  if (online && (reason === 'wrong_password' || reason === 'too_many_attempts')) onlineForm.codeInput = online.code;
   online?.client.stop();
   online = null;
   setRoomInUrl(null);

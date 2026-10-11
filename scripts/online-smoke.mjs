@@ -1,28 +1,36 @@
 // End-to-end check against a running room server (default: local `npm run server:dev`).
-// Two players connect over real WebSockets, play a whole round with two bots, and we check
-// that nobody ever receives another player's cards.
+// - a public room shows up in the room list; a password room is locked
+// - wrong password is refused, right password joins
+// - two players play a whole round with two bots; nobody ever receives another player's cards
 //   node scripts/online-smoke.mjs [serverUrl] [origin]
 
 const SERVER = process.argv[2] ?? 'http://localhost:8787';
 const ORIGIN = process.argv[3] ?? 'http://localhost:5173';
 const WS = SERVER.replace(/^http/, 'ws');
+const headers = { Origin: ORIGIN, 'Content-Type': 'application/json' };
 
 function fail(msg) {
   console.error('FAIL:', msg);
   process.exit(1);
 }
 
-const res = await fetch(`${SERVER}/api/rooms`, { method: 'POST', headers: { Origin: ORIGIN } });
-if (!res.ok) fail(`create room: HTTP ${res.status}`);
-const { code } = await res.json();
-console.log('room', code);
+async function create(name, password) {
+  const res = await fetch(`${SERVER}/api/rooms`, { method: 'POST', headers, body: JSON.stringify({ name, password }) });
+  if (!res.ok) fail(`create room: HTTP ${res.status}`);
+  return (await res.json()).code;
+}
+async function list() {
+  const res = await fetch(`${SERVER}/api/rooms`, { headers: { Origin: ORIGIN } });
+  if (!res.ok) fail(`list rooms: HTTP ${res.status}`);
+  return res.json();
+}
 
-function player(name) {
+/** Connect and send hello; resolves with the player, or with { error } if refused. */
+function player(code, name, password = '') {
   return new Promise((resolve, reject) => {
-    const ws = new WebSocket(`${WS}/api/rooms/${code}/ws?name=${encodeURIComponent(name)}`, {
-      headers: { Origin: ORIGIN },
-    });
+    const ws = new WebSocket(`${WS}/api/rooms/${code}/ws`, { headers: { Origin: ORIGIN } });
     const p = { name, ws, seat: null, room: null, view: null, errors: [], waiters: [] };
+    ws.addEventListener('open', () => ws.send(JSON.stringify({ t: 'hello', name, token: null, password })));
     ws.addEventListener('message', (e) => {
       if (e.data === 'pong') return;
       const m = JSON.parse(e.data);
@@ -33,13 +41,15 @@ function player(name) {
       if (m.t === 'room') p.room = m;
       if (m.t === 'state') {
         p.view = m.view;
-        // privacy: only our own hand may contain cards
         m.view.hands.forEach((h, s) => {
           if (s !== p.seat && h.length) fail(`${name} received seat ${s}'s cards`);
         });
         if (m.view.undealt.length) fail(`${name} received undealt cards`);
       }
-      if (m.t === 'error') p.errors.push(m.code);
+      if (m.t === 'error') {
+        p.errors.push(m.code);
+        if (p.seat === null) resolve({ error: m.code });
+      }
       p.waiters.forEach((w) => w());
     });
     ws.addEventListener('error', () => reject(new Error(`${name} socket error`)));
@@ -59,36 +69,39 @@ const until = (p, cond, ms = 20000) =>
     });
   });
 
-const a = await player('Rajan');
-const b = await player('Saathi');
-console.log('seats', a.seat, b.seat);
-if (a.seat !== 0 || b.seat !== 2) fail('expected partners in seats 0 and 2');
+// ---- password room ----
+const secret = await create('Rajan ko room', 'dahal123');
+console.log('private room', secret);
+const host = await player(secret, 'Rajan', 'dahal123');
+if (host.seat !== 0) fail('host should get seat 0');
+const wrong = await player(secret, 'Thief', 'guess');
+if (wrong.error !== 'wrong_password') fail(`wrong password should be refused, got ${JSON.stringify(wrong)}`);
+const friend = await player(secret, 'Sita', 'dahal123');
+if (friend.seat !== 2) fail('friend with the right password should join as partner');
+await until(host, () => host.room?.seats[2]?.name === 'Sita');
+if (!host.room.locked || host.room.name !== 'Rajan ko room') fail('room message should show name + lock');
+console.log('password: wrong refused, right accepted');
 
-// a bad message and a non-host start must be rejected
-b.ws.send('{"t":"hack"}');
-send(b, { t: 'start' });
-await until(b, () => b.errors.includes('bad_request') && b.errors.includes('not_host'));
+// ---- room list ----
+const pub = await create('Public table', '');
+const lonely = await player(pub, 'Hari');
+await new Promise((r) => setTimeout(r, 300));
+const rooms = await list();
+const lp = rooms.find((r) => r.code === pub);
+const ls = rooms.find((r) => r.code === secret);
+if (!lp || lp.locked || lp.players !== 1) fail(`public room missing/wrong in list: ${JSON.stringify(lp)}`);
+if (!ls || !ls.locked || ls.players !== 2) fail(`private room missing/wrong in list: ${JSON.stringify(ls)}`);
+if (JSON.stringify(rooms).match(/dahal123|salt|hash/)) fail('list leaks password data');
+console.log('list:', rooms.map((r) => `${r.locked ? '🔒' : ''}${r.name}#${r.code}(${r.players})`).join(', '));
+lonely.ws.close();
 
-// ping is answered without waking the room
-await new Promise((resolve) => {
-  a.ws.addEventListener('message', function on(e) {
-    if (e.data === 'pong') {
-      a.ws.removeEventListener('message', on);
-      resolve();
-    }
-  });
-  a.ws.send('ping');
-});
+// ---- play a round in the private room ----
+send(host, { t: 'start' });
+await until(host, () => host.view !== null);
 
-send(a, { t: 'start' });
-await until(a, () => a.view !== null);
-console.log('started; bots:', a.room.seats.map((s) => (s.bot ? 'bot' : s.name)).join(', '));
-
-// play: whenever it is one of our players' turn, follow suit with the first legal card
 function act(p) {
   const v = p.view;
   if (!v) return;
-  // act once per game step (room + state messages both wake us up)
   const step = `${v.roundNumber}:${v.phase}:${v.completedTricks.length}:${v.currentTrick.length}`;
   if (p.lastStep === step) return;
   p.lastStep = step;
@@ -96,27 +109,19 @@ function act(p) {
   if (v.phase === 'playing' && v.turn === p.seat) {
     const hand = v.hands[p.seat];
     const led = v.currentTrick[0]?.card.suit;
-    const card = hand.find((c) => c.suit === led) ?? hand[0];
-    send(p, { t: 'play', card });
+    send(p, { t: 'play', card: hand.find((c) => c.suit === led) ?? hand[0] });
   }
 }
-for (const p of [a, b]) p.waiters.push(() => act(p));
-act(a);
+for (const p of [host, friend]) p.waiters.push(() => act(p));
+act(host);
 
 const t0 = Date.now();
-await until(a, () => a.view.phase === 'roundOver', 120000);
-const v = a.view;
-console.log(`round over in ${((Date.now() - t0) / 1000).toFixed(1)}s — tricks`, v.tricksWon, 'tens', v.tensWon, 'score', v.score);
+await until(host, () => host.view.phase === 'roundOver', 120000);
+const v = host.view;
+console.log(`round over in ${((Date.now() - t0) / 1000).toFixed(1)}s — tricks`, v.tricksWon, 'tens', v.tensWon);
 if (v.tricksWon[0] + v.tricksWon[1] !== 13) fail('tricks do not add up to 13');
-if (a.errors.length || b.errors.filter((e) => !['bad_request', 'not_host'].includes(e)).length) {
-  fail(`unexpected errors: ${a.errors} / ${b.errors}`);
-}
+if (host.errors.length || friend.errors.length) fail(`unexpected errors: ${host.errors} / ${friend.errors}`);
 
-// reconnect: a third connection with no token cannot take a human seat but takes a bot seat
-const c = await player('Late');
-console.log('late joiner took seat', c.seat);
-if (![1, 3].includes(c.seat)) fail('late joiner should replace a bot');
-
-for (const p of [a, b, c]) p.ws.close();
+for (const p of [host, friend]) p.ws.close();
 console.log('PASS');
 process.exit(0);

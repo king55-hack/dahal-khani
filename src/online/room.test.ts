@@ -9,8 +9,22 @@ import {
   type GameState,
   type Seat,
 } from '../engine';
-import { cleanName, parseClientMsg, isRoomCode, randomRoomCode } from './protocol';
-import { createRoom, handle, join, nextAutoAt, runAuto, TIMING, type RoomData } from './room';
+import { hashPassword, verifyPassword } from './password';
+import { cleanName, cleanPassword, parseClientMsg, parseCreateRoom, parseHello, isRoomCode, randomRoomCode } from './protocol';
+import {
+  createRoom,
+  handle,
+  join,
+  listingFor,
+  nextAutoAt,
+  passwordAttemptAllowed,
+  PASSWORD_TRIES,
+  recordWrongPassword,
+  roomMessage,
+  runAuto,
+  TIMING,
+  type RoomData,
+} from './room';
 
 let tokenN = 0;
 const token = () => `00000000-0000-0000-0000-${String(++tokenN).padStart(12, '0')}`;
@@ -26,7 +40,7 @@ function seeded(seed: number) {
 }
 
 function lobbyWith(...names: string[]): { room: RoomData; seats: Seat[]; tokens: string[] } {
-  const room = createRoom('ABCDE', 0);
+  const room = createRoom('123456', 0);
   const seats: Seat[] = [];
   const tokens: string[] = [];
   for (const n of names) {
@@ -61,10 +75,82 @@ describe('protocol', () => {
     expect(cleanName(42)).toBe('Player');
   });
 
-  it('makes readable room codes', () => {
-    const code = randomRoomCode((max) => Math.floor(Math.random() * max));
-    expect(isRoomCode(code)).toBe(true);
-    expect(isRoomCode('AB0O1')).toBe(false);
+  it('makes 6-digit room numbers without a leading zero', () => {
+    for (let i = 0; i < 50; i++) {
+      const code = randomRoomCode((max) => Math.floor(Math.random() * max));
+      expect(isRoomCode(code)).toBe(true);
+      expect(code[0]).not.toBe('0');
+    }
+    expect(isRoomCode('12345')).toBe(false);
+    expect(isRoomCode('12a456')).toBe(false);
+  });
+
+  it('validates hello and create-room messages', () => {
+    expect(parseHello('{"t":"hello","name":" Rajan ","token":null,"password":"abc"}')).toEqual({
+      t: 'hello',
+      name: 'Rajan',
+      token: null,
+      password: 'abc',
+    });
+    expect(parseHello('{"t":"hello","name":"x","token":"not-a-token","password":""}')!.token).toBeNull();
+    expect(parseHello('{"t":"hello","name":"x","password":"' + 'p'.repeat(40) + '"}')).toBeNull();
+    expect(parseCreateRoom('{"name":"<b>Party</b>","password":""}')).toEqual({ name: 'bParty/b', password: '' });
+    expect(parseCreateRoom('{"name":"x","password":42}')).toBeNull();
+    expect(cleanPassword('with space ')).toBe('with space ');
+    expect(cleanPassword('bad')).toBeNull();
+  });
+});
+
+describe('room passwords', () => {
+  it('stores only a salted hash and verifies it', async () => {
+    const stored = await hashPassword('dahal123');
+    expect(JSON.stringify(stored)).not.toContain('dahal123');
+    expect(await verifyPassword('dahal123', stored)).toBe(true);
+    expect(await verifyPassword('dahal124', stored)).toBe(false);
+    expect(await verifyPassword('', stored)).toBe(false);
+    const again = await hashPassword('dahal123');
+    expect(again.salt).not.toBe(stored.salt); // same password, different salt and hash
+    expect(again.hash).not.toBe(stored.hash);
+  });
+
+  it('limits wrong guesses per room, then allows again after the window', () => {
+    const room = createRoom('123456', 0);
+    for (let i = 0; i < PASSWORD_TRIES; i++) {
+      expect(passwordAttemptAllowed(room, 1000)).toBe(true);
+      recordWrongPassword(room, 1000);
+    }
+    expect(passwordAttemptAllowed(room, 2000)).toBe(false);
+    expect(passwordAttemptAllowed(room, 1000 + TIMING.passwordWindow + 1)).toBe(true);
+  });
+
+  it('room messages say whether a room is locked but never include the password', async () => {
+    const room = createRoom('123456', 0, 'Rajan ko room', await hashPassword('secret'));
+    join(room, 'Rajan', null, token, 0);
+    const msg = roomMessage(room, 0, ALL);
+    expect(msg).toMatchObject({ name: 'Rajan ko room', locked: true });
+    expect(JSON.stringify(msg)).not.toMatch(/salt|hash|secret/);
+  });
+});
+
+describe('room list', () => {
+  it('lists rooms with someone connected and a free seat', () => {
+    const { room } = lobbyWith('a', 'b');
+    expect(listingFor(room, [true, false, true, false], 5)).toMatchObject({
+      code: '123456',
+      players: 2,
+      free: 2,
+      locked: false,
+      started: false,
+    });
+    expect(listingFor(room, [false, false, false, false], 5)).toBeNull(); // nobody there
+  });
+
+  it('after the start, bot seats count as free; a full human table is not listed', () => {
+    const { room } = lobbyWith('a', 'b');
+    handle(room, 0, { t: 'start' }, ALL, 0, seeded(9));
+    expect(listingFor(room, ALL, 5)).toMatchObject({ free: 2, started: true });
+    const full = lobbyWith('a', 'b', 'c', 'd').room;
+    expect(listingFor(full, ALL, 5)).toBeNull();
   });
 });
 

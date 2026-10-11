@@ -4,6 +4,14 @@
 import { SUITS } from '../engine/cards';
 import type { Card, PlayerView, Rank, Seat, Suit, TrumpMode } from '../engine';
 
+/** First message on a new connection. The password travels here, never in the URL. */
+export interface Hello {
+  t: 'hello';
+  name: string;
+  token: string | null;
+  password: string;
+}
+
 export type ClientMsg =
   | { t: 'sit'; seat: Seat }
   | { t: 'mode'; mode: TrumpMode }
@@ -21,6 +29,8 @@ export interface SeatPublic {
 export type ErrorCode =
   | 'not_found'
   | 'room_full'
+  | 'wrong_password'
+  | 'too_many_attempts'
   | 'bad_request'
   | 'not_host'
   | 'illegal'
@@ -32,6 +42,8 @@ export type ServerMsg =
   | {
       t: 'room';
       code: string;
+      name: string;
+      locked: boolean;
       you: Seat;
       host: Seat | null;
       mode: TrumpMode;
@@ -41,57 +53,108 @@ export type ServerMsg =
   | { t: 'state'; view: PlayerView }
   | { t: 'error'; code: ErrorCode };
 
+/** One row of the public room list. */
+export interface RoomListing {
+  code: string;
+  name: string;
+  /** needs a password */
+  locked: boolean;
+  /** humans currently connected */
+  players: number;
+  /** seats a newcomer can take (empty, or a bot's seat once the game runs) */
+  free: number;
+  started: boolean;
+  mode: TrumpMode;
+  updatedAt: number;
+}
+
+/** Body of POST /api/rooms */
+export interface CreateRoomRequest {
+  name: string;
+  /** empty = public room without password */
+  password: string;
+}
+
 /** Raw text the client sends to keep the connection alive; the server answers PONG without waking up. */
 export const PING = 'ping';
 export const PONG = 'pong';
 
 export const MAX_MESSAGE_LENGTH = 1000;
 export const NAME_MAX = 16;
+export const ROOM_NAME_MAX = 24;
+export const PASSWORD_MAX = 32;
 
-// No I, O, 0, 1 — easy to read aloud and type on a phone.
-export const ROOM_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-export const ROOM_CODE_LENGTH = 5;
-const CODE_RE = new RegExp(`^[${ROOM_CODE_ALPHABET}]{${ROOM_CODE_LENGTH}}$`);
+/** Room numbers: 6 digits, easy to type on a phone keypad and to say aloud. */
+export const ROOM_CODE_LENGTH = 6;
+const CODE_RE = /^[0-9]{6}$/;
 
 export function isRoomCode(v: unknown): v is string {
   return typeof v === 'string' && CODE_RE.test(v);
 }
 
 export function normalizeRoomCode(v: string): string {
-  return v.toUpperCase().replace(/[^A-Z0-9]/g, '');
+  return v.replace(/[^0-9]/g, '').slice(0, ROOM_CODE_LENGTH);
 }
 
 export function randomRoomCode(randomInt: (max: number) => number): string {
-  let code = '';
-  for (let i = 0; i < ROOM_CODE_LENGTH; i++) code += ROOM_CODE_ALPHABET[randomInt(ROOM_CODE_ALPHABET.length)];
+  let code = String(1 + randomInt(9)); // no leading zero
+  while (code.length < ROOM_CODE_LENGTH) code += String(randomInt(10));
   return code;
 }
 
 /** Trim, drop control/format characters and angle brackets, collapse spaces, limit length. */
-export function cleanName(raw: unknown, fallback = 'Player'): string {
+export function cleanName(raw: unknown, fallback = 'Player', max = NAME_MAX): string {
   if (typeof raw !== 'string') return fallback;
   const name = raw
     .replace(/[\p{Cc}\p{Cf}<>]/gu, '')
     .replace(/\s+/g, ' ')
     .trim();
-  return [...name].slice(0, NAME_MAX).join('') || fallback;
+  return [...name].slice(0, max).join('') || fallback;
+}
+
+/** Passwords are kept as typed (no trimming), but must be printable and at most PASSWORD_MAX long. */
+export function cleanPassword(raw: unknown): string | null {
+  if (raw === undefined || raw === null || raw === '') return '';
+  if (typeof raw !== 'string' || [...raw].length > PASSWORD_MAX || /[\p{Cc}]/u.test(raw)) return null;
+  return raw;
 }
 
 const isSeat = (v: unknown): v is Seat => v === 0 || v === 1 || v === 2 || v === 3;
 const isSuit = (v: unknown): v is Suit => SUITS.includes(v as Suit);
 const isRank = (v: unknown): v is Rank => Number.isInteger(v) && (v as number) >= 2 && (v as number) <= 14;
 const isMode = (v: unknown): v is TrumpMode => v === 'open' || v === 'bandHukum' || v === 'cutHukum';
+const TOKEN_RE = /^[0-9a-f-]{36}$/;
 
-export function parseClientMsg(raw: unknown): ClientMsg | null {
+function parseObject(raw: unknown): Record<string, unknown> | null {
   if (typeof raw !== 'string' || raw.length > MAX_MESSAGE_LENGTH) return null;
-  let m: Record<string, unknown>;
   try {
     const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== 'object') return null;
-    m = parsed as Record<string, unknown>;
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null;
   } catch {
     return null;
   }
+}
+
+export function parseHello(raw: unknown): Hello | null {
+  const m = parseObject(raw);
+  if (!m || m.t !== 'hello') return null;
+  const password = cleanPassword(m.password);
+  if (password === null) return null;
+  const token = typeof m.token === 'string' && TOKEN_RE.test(m.token) ? m.token : null;
+  return { t: 'hello', name: cleanName(m.name), token, password };
+}
+
+export function parseCreateRoom(raw: unknown): CreateRoomRequest | null {
+  const m = parseObject(raw);
+  if (!m) return null;
+  const password = cleanPassword(m.password);
+  if (password === null) return null;
+  return { name: cleanName(m.name, 'Dahal Khani', ROOM_NAME_MAX), password };
+}
+
+export function parseClientMsg(raw: unknown): ClientMsg | null {
+  const m = parseObject(raw);
+  if (!m) return null;
   switch (m.t) {
     case 'sit':
       return isSeat(m.seat) ? { t: 'sit', seat: m.seat } : null;

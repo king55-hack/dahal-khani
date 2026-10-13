@@ -16,6 +16,6 @@
     { "tag": "v2", "new_sqlite_classes": ["PresenceDO"] }
   ],
   "vars": {
-    "ALLOWED_ORIGINS": "https://king55-hack.github.io"
+    "ALLOWED_ORIGINS": "https://king55-hack.github.io,https://dahal-mara-game.rajanrimal.com.np"
   }
 }

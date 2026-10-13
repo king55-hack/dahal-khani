@@ -423,7 +423,7 @@ function summaryHtml(): string {
     'normal-lose': t.lose,
     'kot-win': t.kot,
     'kot-lose': t.kotAgainst,
-    'baunne-win': t.khatra,
+    'baunne-win': t.flawless,
     'baunne-lose': t.baunneAgainst,
   };
   const why =

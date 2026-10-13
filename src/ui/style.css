@@ -778,7 +778,7 @@ body.no-anim .fx-card { display: none; }
 }
 @keyframes thud { 0% { transform: translateY(-60px) scale(1.4); opacity: 0; } 100% { transform: none; opacity: 1; } }
 
-/* Baunne win: "KHATRA! SUPERB!" zooms in big */
+/* Baunne win: "Flawless victory" title zooms in big */
 .result-title.baunne.win {
   font-size: 40px; line-height: 1.1;
   animation: shine 1.5s linear infinite, superb .9s cubic-bezier(.2, 1.8, .4, 1) both;

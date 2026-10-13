@@ -58,7 +58,7 @@ export interface Strings {
   baunneAgainst: string;
   whyKotAgainst: string;
   whyBaunneAgainst: string;
-  khatra: string;
+  flawless: string;
   whyTens: (n: number) => string;
   whyTricks: (n: number) => string;
   totalScore: string;
@@ -191,7 +191,7 @@ const ne: Strings = {
   baunneAgainst: 'बाउन्ने लाग्यो! 😵',
   whyKotAgainst: 'उनीहरूले चारै दहल लगे…',
   whyBaunneAgainst: 'उनीहरूले सबै ५२ पत्ती लगे…',
-  khatra: 'खतरा! सुपर्ब! 🔥',
+  flawless: 'शानदार! पूर्ण विजय! 👑',
   whyTens: (n) => `${n} वटा दहल जित्यो`,
   whyTricks: (n) => `२–२ दहल, धेरै हात (${n}) जित्यो`,
   totalScore: 'जम्मा स्कोर',
@@ -388,7 +388,7 @@ const neRom: Strings = {
   baunneAgainst: 'BAUNNE LAGYO! 😵',
   whyKotAgainst: 'Uniharu le chaarai Dahal lage…',
   whyBaunneAgainst: 'Uniharu le sabai 52 patti lage…',
-  khatra: 'KHATRA! SUPERB! 🔥',
+  flawless: 'SHAANDAAR! PURNA BIJAY! 👑',
   whyTens: (n) => `${n} ota Dahal jityo`,
   whyTricks: (n) => `2–2 Dahal, dherai haat (${n}) jityo`,
   totalScore: 'Jamma score',
@@ -585,7 +585,7 @@ const en: Strings = {
   baunneAgainst: 'BAUNNE AGAINST YOU! 😵',
   whyKotAgainst: 'They took all four 10s…',
   whyBaunneAgainst: 'They took all 52 cards…',
-  khatra: 'INCREDIBLE! SUPERB! 🔥',
+  flawless: 'FLAWLESS VICTORY! 👑',
   whyTens: (n) => `Captured ${n} tens`,
   whyTricks: (n) => `Tens 2–2, more tricks (${n})`,
   totalScore: 'Total score',
@@ -782,7 +782,7 @@ const ja: Strings = {
   baunneAgainst: 'バウンネされた！ 😵',
   whyKotAgainst: '10を4枚すべて取られた…',
   whyBaunneAgainst: '52枚すべて取られた…',
-  khatra: '最高！スーパー！ 🔥',
+  flawless: '完全勝利！ 👑',
   whyTens: (n) => `ダハルを${n}枚獲得`,
   whyTricks: (n) => `ダハル2対2、トリック数(${n})で勝利`,
   totalScore: '合計スコア',

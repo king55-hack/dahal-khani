@@ -88,6 +88,7 @@ export interface Strings {
   installHint: string;
   installed: string;
   allRules: string;
+  liveTitle: (n: number) => string;
   nameTitle: string;
   nameHint: string;
   namePlaceholder: string;
@@ -236,6 +237,7 @@ const ne: Strings = {
   installHint: 'Android Chrome: ⋮ मेनु → "Add to Home screen"। iPhone Safari: Share ⬆ → "Add to Home Screen"।',
   installed: '✔ एप इन्स्टल भइसक्यो',
   allRules: 'सबै नियम',
+  liveTitle: (n) => `${n} जना अहिले अनलाइन`,
   nameTitle: 'तपाईंको नाम के हो?',
   nameHint: 'अनलाइन खेल्दा साथीहरूले यही नाम देख्छन्। छोटो नाम (क, ख, a, b) पनि हुन्छ।',
   namePlaceholder: 'नाम लेख्नुहोस्',
@@ -485,6 +487,7 @@ const neRom: Strings = {
   installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
   installed: '✔ App install bhaisakyo',
   allRules: 'Sabai niyam',
+  liveTitle: (n) => `${n} jana ahile online`,
   nameTitle: 'Tapaaiko naam ke ho?',
   nameHint: 'Online khelda saathi haru le yahi naam dekhchhan. Chhoto naam (a, b, c) pani hunchha.',
   namePlaceholder: 'Naam lekhnus',
@@ -734,6 +737,7 @@ const en: Strings = {
   installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
   installed: '✔ App installed',
   allRules: 'All rules',
+  liveTitle: (n) => `${n} online now`,
   nameTitle: "What's your name?",
   nameHint: 'Friends see this name when you play online. A short one (a, b, c) is fine.',
   namePlaceholder: 'Your name',
@@ -983,6 +987,7 @@ const ja: Strings = {
   installHint: 'Android Chrome：⋮ メニュー →「ホーム画面に追加」。iPhone Safari：共有 ⬆ →「ホーム画面に追加」。',
   installed: '✔ インストール済み',
   allRules: '全ルール',
+  liveTitle: (n) => `現在${n}人がオンライン`,
   nameTitle: 'お名前は？',
   nameHint: 'オンライン対戦で友達に表示される名前です。短い名前（a、b など）でもOK。',
   namePlaceholder: '名前を入力',

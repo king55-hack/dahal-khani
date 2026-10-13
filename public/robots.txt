@@ -1,0 +1,4 @@
+# Used once the game moves to its own domain (crawlers only read robots.txt at a domain's root).
+User-agent: *
+Allow: /
+Sitemap: https://king55-hack.github.io/dahal-khani/sitemap.xml

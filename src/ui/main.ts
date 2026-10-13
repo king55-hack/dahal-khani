@@ -47,6 +47,7 @@ import {
 import { escapeHtml } from './html';
 import { LANGS, STRINGS, type Lang, type Strings } from './i18n';
 import { infoHtml, languagePickerHtml, nameHtml, onlineHtml, settingsHtml, type Modal, type RoomInfo } from './modals';
+import { startPresence } from './presence';
 import { TOUR, tourHtml } from './tour';
 import { bubble, clearFx, dealCards } from './fx';
 import { createRoom, listRooms, OnlineClient, SERVER_URL, type ConnStatus, type FatalReason } from './online';
@@ -101,6 +102,8 @@ let handInUntil = 0;
 let lastTrickKey = '';
 /** reactions panel (online) */
 let sayOpen = false;
+/** people with the game open right now (null = unknown) */
+let liveCount: number | null = null;
 const REACTION_EMOJI: Record<(typeof REACTIONS)[number], string> = {
   like: '👍',
   laugh: '😂',
@@ -535,6 +538,11 @@ function render() {
       ${seatHtml(2)}${seatHtml(3)}${trickHtml()}${seatHtml(1)}
     </main>
     <div class="status-row">
+      ${
+        liveCount !== null
+          ? `<span class="live-pill" title="${t.liveTitle(liveCount)}" aria-label="${t.liveTitle(liveCount)}"><i class="live-dot"></i>${liveCount}</span>`
+          : ''
+      }
       <div class="status">${statusText()}</div>
       ${online ? `<button class="say-btn" data-action="say" aria-label="${t.sayTitle}" title="${t.sayTitle}">💬</button>` : ''}
     </div>
@@ -1095,4 +1103,10 @@ if (onlineForm.codeInput && SERVER_URL && !modal) {
 render();
 renderModal();
 if (!online && !modal) dealFx(null, state);
+if (SERVER_URL && !AUTOPLAY) {
+  startPresence(SERVER_URL, (n) => {
+    liveCount = n;
+    render();
+  });
+}
 schedule();

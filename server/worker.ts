@@ -2,10 +2,18 @@
 // - RoomDO: one per room number; holds the room and runs the rules engine, so every move is checked
 //   on the server. WebSockets use the hibernation API, so idle rooms cost nothing.
 // - LobbyDO: a single directory of joinable rooms for the public room list.
+// - PresenceDO: counts how many people have the game open ("🟢 N online").
 
 import { DurableObject } from 'cloudflare:workers';
 import { viewFor, type Seat } from '../src/engine';
 import { hashPassword, verifyPassword } from '../src/online/password';
+import {
+  countOnline,
+  isVisitorId,
+  networkHasRoom,
+  type PresenceConn,
+  type PresenceMsg,
+} from '../src/online/presence';
 import {
   isRoomCode,
   MAX_MESSAGE_LENGTH,
@@ -36,6 +44,7 @@ import {
 export interface Env {
   ROOMS: DurableObjectNamespace<RoomDO>;
   LOBBY: DurableObjectNamespace<LobbyDO>;
+  PRESENCE: DurableObjectNamespace<PresenceDO>;
   /** Comma-separated list of sites allowed to connect, e.g. "https://king55-hack.github.io". */
   ALLOWED_ORIGINS: string;
 }
@@ -118,6 +127,13 @@ export default {
       if (req.headers.get('Upgrade') !== 'websocket') return new Response('Expected WebSocket', { status: 426 });
       if (!originAllowed(origin, env)) return new Response('Forbidden', { status: 403 });
       return env.ROOMS.get(env.ROOMS.idFromName(m[1])).fetch(req);
+    }
+
+    // Live "N online" counter.
+    if (url.pathname === '/api/presence') {
+      if (req.headers.get('Upgrade') !== 'websocket') return new Response('Expected WebSocket', { status: 426 });
+      if (!originAllowed(origin, env)) return new Response('Forbidden', { status: 403 });
+      return env.PRESENCE.get(env.PRESENCE.idFromName('global')).fetch(req);
     }
 
     if (url.pathname === '/') return new Response('Dahal Khani room server');
@@ -350,5 +366,70 @@ export class LobbyDO extends DurableObject<Env> {
       return Response.json(list);
     }
     return new Response('Not found', { status: 404 });
+  }
+}
+
+/** Counts open pages. Connections sleep (hibernation) between updates, so this costs almost nothing. */
+export class PresenceDO extends DurableObject<Env> {
+  private salt = '';
+
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
+    ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(PING, PONG));
+    ctx.blockConcurrencyWhile(async () => {
+      this.salt = (await ctx.storage.get<string>('salt')) ?? crypto.randomUUID();
+      await ctx.storage.put('salt', this.salt);
+    });
+  }
+
+  async fetch(req: Request): Promise<Response> {
+    const visitor = new URL(req.url).searchParams.get('v');
+    if (!isVisitorId(visitor)) return new Response('Bad request', { status: 400 });
+    // the network address is only hashed (with a secret salt) to cap connections per network
+    const ip = req.headers.get('CF-Connecting-IP') ?? 'unknown';
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(this.salt + ip));
+    const net = btoa(String.fromCharCode(...new Uint8Array(digest).slice(0, 12)));
+    const conns = this.conns();
+    if (!networkHasRoom(conns, net)) return new Response('Too many connections', { status: 429 });
+
+    const pair = new WebSocketPair();
+    const [client, server] = [pair[0], pair[1]];
+    this.ctx.acceptWebSocket(server);
+    server.serializeAttachment({ visitor, net } satisfies PresenceConn);
+    // the newcomer hears the number right away; everyone else on the next (throttled) update
+    server.send(JSON.stringify({ t: 'presence', online: countOnline([...conns, { visitor, net }]) } satisfies PresenceMsg));
+    await this.soon();
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  async webSocketMessage() {
+    /* clients only send pings, answered automatically */
+  }
+
+  async webSocketClose() {
+    await this.soon();
+  }
+
+  async webSocketError() {
+    await this.soon();
+  }
+
+  /** Tell everyone the new number shortly (many joins/leaves together become one update). */
+  private async soon() {
+    if ((await this.ctx.storage.getAlarm()) === null) await this.ctx.storage.setAlarm(Date.now() + 1500);
+  }
+
+  async alarm() {
+    const sockets = this.ctx.getWebSockets().filter((ws) => ws.readyState === WebSocket.OPEN);
+    const msg = JSON.stringify({ t: 'presence', online: countOnline(this.conns()) } satisfies PresenceMsg);
+    for (const ws of sockets) ws.send(msg);
+  }
+
+  private conns(): PresenceConn[] {
+    return this.ctx
+      .getWebSockets()
+      .filter((ws) => ws.readyState === WebSocket.OPEN)
+      .map((ws) => ws.deserializeAttachment() as PresenceConn)
+      .filter((c): c is PresenceConn => !!c?.visitor);
   }
 }

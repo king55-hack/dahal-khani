@@ -18,6 +18,8 @@ export const TRICK_PAUSE_MS = 1100;
 
 /** Shown in the ⓘ "Banaune" (credits) section. */
 export const CREATOR_NAME = 'Rajan Rimal';
+/** Shown under the creator's name. */
+export const COPYRIGHT = `© 2026 ${CREATOR_NAME}. All rights reserved.`;
 
 /** Coins a player earns per round (see coins.ts). Spent to unlock card designs. */
 export const COIN_REWARDS = {

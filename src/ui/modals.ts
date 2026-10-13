@@ -75,6 +75,7 @@ export function infoHtml(t: Strings, lang: Lang, tab: InfoTab): string {
          <div class="credit-card">
            <div class="by">${t.creditsBy}</div>
            <div class="who"></div>
+           <div class="copyright"></div>
            <div class="sub">Dahal Khani · Dahal Mara · Dahal Jeet</div>
            <div class="suits-line">♠ ♥ ♣ ♦</div>
          </div>

@@ -32,7 +32,7 @@ import {
   type TrumpMode,
 } from '../engine';
 import { coinsFor } from '../coins';
-import { BOT_DELAY_MS, CREATOR_NAME, GAME_SETTINGS, TRICK_PAUSE_MS } from '../settings';
+import { BOT_DELAY_MS, COPYRIGHT, CREATOR_NAME, GAME_SETTINGS, TRICK_PAUSE_MS } from '../settings';
 import {
   cleanName,
   isRoomCode,
@@ -589,6 +589,8 @@ function renderModal() {
   } else modalRoot.innerHTML = settingsHtml(t, prefs, settingsMsg, installState(), online !== null);
   const who = modalRoot.querySelector('.who');
   if (who) who.textContent = CREATOR_NAME; // never parsed as HTML
+  const copyright = modalRoot.querySelector('.copyright');
+  if (copyright) copyright.textContent = COPYRIGHT;
   const overlay = modalRoot.querySelector('.overlay');
   if (overlay) overlay.scrollTop = prevScroll;
 }

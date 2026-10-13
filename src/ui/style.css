@@ -878,3 +878,4 @@ button.ghost {
   .tour-card p { font-size: 13px; line-height: 1.4; }
   .tour-dots { margin: 8px 0 6px; }
 }
+.credit-card .copyright { font-size: 12px; opacity: .9; margin: 0 0 6px; letter-spacing: .3px; }

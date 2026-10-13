@@ -1,6 +1,6 @@
 // Offline support: the game works without internet once it has been opened.
 // Bump CACHE when manifest/icons change; hashed JS/CSS files update by themselves.
-const CACHE = 'dahal-khani-v2';
+const CACHE = 'dahal-khani-v3';
 const SHELL = ['./', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (event) => {

@@ -62,3 +62,8 @@ Allowed sites are set in `wrangler.jsonc` (`ALLOWED_ORIGINS`).
 - Follow the led suit if you can; otherwise play anything. Highest trump wins, else highest of the led suit.
 - Capture 3 or 4 **Dahal** (10s) to win the round; at 2–2 the team with more **Haat** (tricks) wins.
 - **Kot** = all four 10s, **Baunne** = all 13 tricks.
+
+## Copyright
+
+© 2026 Rajan Rimal. All rights reserved.
+The source code is public so it can be read, but no licence is granted to copy, modify or redistribute it.

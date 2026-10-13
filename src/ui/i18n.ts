@@ -2,6 +2,7 @@
 import type { PointValues, TrumpMode } from '../engine';
 import type { QUICK_MESSAGES } from '../online/protocol';
 import type { FatalReason } from './online';
+import type { TourStepId } from './tour';
 import type { BackgroundId, ThemeId } from './themes';
 
 export type Lang = 'ne' | 'neRom' | 'en' | 'ja';
@@ -87,6 +88,17 @@ export interface Strings {
   installHint: string;
   installed: string;
   allRules: string;
+  nameTitle: string;
+  nameHint: string;
+  namePlaceholder: string;
+  nameRequired: string;
+  continueBtn: string;
+  tourSkip: string;
+  tourNext: string;
+  tourBack: string;
+  tourStart: string;
+  replayGuide: string;
+  tour: Record<TourStepId, { title: string; body: string }>;
   say: Record<(typeof QUICK_MESSAGES)[number], string>;
   sayTitle: string;
   animations: string;
@@ -224,6 +236,58 @@ const ne: Strings = {
   installHint: 'Android Chrome: ⋮ मेनु → "Add to Home screen"। iPhone Safari: Share ⬆ → "Add to Home Screen"।',
   installed: '✔ एप इन्स्टल भइसक्यो',
   allRules: 'सबै नियम',
+  nameTitle: 'तपाईंको नाम के हो?',
+  nameHint: 'अनलाइन खेल्दा साथीहरूले यही नाम देख्छन्। छोटो नाम (क, ख, a, b) पनि हुन्छ।',
+  namePlaceholder: 'नाम लेख्नुहोस्',
+  nameRequired: 'कृपया नाम लेख्नुहोस् — केही न केही लेख्नैपर्छ।',
+  continueBtn: 'अगाडि बढ्नुहोस् ▶',
+  tourSkip: 'छोड्नुहोस्',
+  tourNext: 'अर्को ▶',
+  tourBack: '◀ पछाडि',
+  tourStart: 'खेल सुरु गरौं! 🎉',
+  replayGuide: '🎓 गाइड फेरि हेर्नुहोस्',
+  tour: {
+    welcome: {
+      title: 'दहल खानीमा स्वागत छ! 🙏',
+      body: '४ जना, २ टिम। तपाईं तल, तपाईंको साथी माथि — एउटै टिम। लक्ष्य: <b>१० (दहल)</b> हरू जित्ने। ३ वा ४ दहल लिने टिमले राउन्ड जित्छ।',
+    },
+    hand: {
+      title: '🃏 तपाईंका पत्ती',
+      body: '<b>पहेँलो किनारा</b> भएका पत्ती मात्र खेल्न मिल्छ — थिच्नुहोस्। पत्तीमाथिको पहेँलो लेखले कसको पालो र के खेल्नुपर्छ भन्छ।',
+    },
+    score: {
+      title: '📊 स्कोर',
+      body: '<b>दहल ●●○○</b> ले कति वटा १० लियो, <b>हात</b> ले कति हात जित्यो देखाउँछ। बायाँ: हाम्रो टिम · दायाँ: उनीहरू।',
+    },
+    trump: {
+      title: '♠ तुरुप',
+      body: 'तुरुपको रङ सबैभन्दा बलियो। चालिएको रङ छैन भने तुरुपले काट्न सकिन्छ।',
+    },
+    coins: {
+      title: '🪙 सिक्का',
+      body: 'हरेक राउन्डपछि सिक्का पाइन्छ:<br>• हारे पनि २ दहल: <b>+५</b><br>• हात धेरैले जित: <b>+१०</b><br>• ३ दहलले जित: <b>+२०</b><br>• कोट: <b>+३०</b> · बाउन्ने (५२ पत्ती): <b>+४०</b><br>सिक्काले ⚙ सेटिङमा नयाँ पत्ती डिजाइन खोल्न मिल्छ।',
+    },
+    online: {
+      title: '🌐 अनलाइन',
+      body: 'साथीसँग खेल्न: <b>रुम बनाउनुहोस्</b> (पासवर्ड राख्न मिल्छ) वा <b>रुम नम्बर</b> हालेर जानुहोस्। खुला रुमको सूची पनि छ। खाली सिटमा बोट खेल्छ।',
+    },
+    chat: {
+      title: '💬 प्रतिक्रिया र सन्देश',
+      body: 'अनलाइन खेल्दा पत्तीको दायाँ 💬 थिचेर 👍 😂 😢 🙌 वा "कस्तो राम्रो चाल!" जस्ता सन्देश पठाउन मिल्छ। चिट नहोस् भनेर टाइप गर्न मिल्दैन। <b>बोटसँग खेल्दा यो हुँदैन।</b>',
+    },
+    info: {
+      title: 'ⓘ जानकारी',
+      body: 'कसरी खेल्ने, सबै नियम र खेल बनाउनेको नाम यहाँ छ। यो गाइड फेरि हेर्न पनि यहीँबाट मिल्छ।',
+    },
+    settings: {
+      title: '⚙ सेटिङ',
+      body: 'भाषा, आवाज, एनिमेसन, खेलको मोड (साधारण / बन्द हुकुम / कट हुकुम), पत्ती डिजाइन, टेबल पृष्ठभूमि, एप इन्स्टल र नयाँ खेल — सबै यहाँ।',
+    },
+    done: {
+      title: 'तयार! 🎉',
+      body: 'राम्रो खेल! पहिलो राउन्डमा तुरुप तपाईं आफैं छान्नुहुन्छ।',
+    },
+  },
   say: {
     fast: 'छिटो खेल्नुहोस्! ⏩',
     nicePlay: 'कस्तो राम्रो चाल! 👏',
@@ -421,6 +485,58 @@ const neRom: Strings = {
   installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
   installed: '✔ App install bhaisakyo',
   allRules: 'Sabai niyam',
+  nameTitle: 'Tapaaiko naam ke ho?',
+  nameHint: 'Online khelda saathi haru le yahi naam dekhchhan. Chhoto naam (a, b, c) pani hunchha.',
+  namePlaceholder: 'Naam lekhnus',
+  nameRequired: 'Kripaya naam lekhnus — kehi na kehi lekhnai parchha.',
+  continueBtn: 'Agaadi badhnus ▶',
+  tourSkip: 'Skip',
+  tourNext: 'Arko ▶',
+  tourBack: '◀ Pachhi',
+  tourStart: 'Khel suru garaun! 🎉',
+  replayGuide: '🎓 Guide pheri hernus',
+  tour: {
+    welcome: {
+      title: 'Dahal Khani ma swagat chha! 🙏',
+      body: '4 jana, 2 team. Tapaai tala, tapaaiko saathi maathi — eutai team. Lakshya: <b>10 (Dahal)</b> haru jitne. 3 ya 4 Dahal line team le round jitchha.',
+    },
+    hand: {
+      title: '🃏 Tapaaika patti',
+      body: '<b>Pahelo kinara</b> bhayeko patti matra khelna milchha — thichnus. Patti mathi ko pahelo lekh le kasko paalo ho ra ke khelnu parchha bhanchha.',
+    },
+    score: {
+      title: '📊 Score',
+      body: '<b>Dahal ●●○○</b> le kati ota 10 liyo, <b>Haat</b> le kati haat jityo dekhaauchha. Baayaa: hamro team · Daayaa: uniharu.',
+    },
+    trump: {
+      title: '♠ TURUP',
+      body: 'TURUP ko rang sabai bhanda baliyo. Chaaleko rang chhaina bhane TURUP le kaatna sakinchha.',
+    },
+    coins: {
+      title: '🪙 Coin',
+      body: 'Har round pachhi coin paainchha:<br>• Hare pani 2 Dahal: <b>+5</b><br>• Haat badhi le jit: <b>+10</b><br>• 3 Dahal le jit: <b>+20</b><br>• Kot: <b>+30</b> · Baunne (52 patti): <b>+40</b><br>Coin le ⚙ Setting ma naya patti design kholna milchha.',
+    },
+    online: {
+      title: '🌐 Online',
+      body: 'Saathi sanga khelna: <b>room banaunus</b> (password rakhna milchha) wa <b>room number</b> haalera jaanus. Khulla room ko list pani chha. Khaali seat ma bot khelchha.',
+    },
+    chat: {
+      title: '💬 Reaction ra sandesh',
+      body: 'Online khelda patti ko daayaa 💬 thichera 👍 😂 😢 🙌 wa "Kasto ramro chaal!" jasta sandesh pathauna milchha. Cheat nahos bhanera type garna mildaina. <b>Bot sanga khelda yo hudaina.</b>',
+    },
+    info: {
+      title: 'ⓘ Jaankari',
+      body: 'Kasari khelne, sabai niyam ra game banaune ko naam yaha chha. Yo guide pheri herna pani yahi bata milchha.',
+    },
+    settings: {
+      title: '⚙ Setting',
+      body: 'Bhasa, aawaj, animation, khel ko mode (Normal / Band hukum / Cut hukum), patti design, table background, app install ra naya khel — sabai yaha.',
+    },
+    done: {
+      title: 'Tayar! 🎉',
+      body: 'Ramro khel! Pahilo round ma TURUP tapaaile nai chunnuhunchha.',
+    },
+  },
   say: {
     fast: 'Chhito khelnus! ⏩',
     nicePlay: 'Kasto ramro chaal! 👏',
@@ -618,6 +734,58 @@ const en: Strings = {
   installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
   installed: '✔ App installed',
   allRules: 'All rules',
+  nameTitle: "What's your name?",
+  nameHint: 'Friends see this name when you play online. A short one (a, b, c) is fine.',
+  namePlaceholder: 'Your name',
+  nameRequired: 'Please enter a name — anything is fine, but it can’t be empty.',
+  continueBtn: 'Continue ▶',
+  tourSkip: 'Skip',
+  tourNext: 'Next ▶',
+  tourBack: '◀ Back',
+  tourStart: "Let's play! 🎉",
+  replayGuide: '🎓 Show the guide again',
+  tour: {
+    welcome: {
+      title: 'Welcome to Dahal Khani! 🙏',
+      body: '4 players, 2 teams. You sit at the bottom, your partner at the top. The goal: win the <b>10s (Dahal)</b>. The team that captures 3 or 4 tens wins the round.',
+    },
+    hand: {
+      title: '🃏 Your cards',
+      body: 'Only cards with a <b>yellow edge</b> can be played — tap one. The yellow line above your cards says whose turn it is and what you must play.',
+    },
+    score: {
+      title: '📊 Score',
+      body: '<b>Tens ●●○○</b> shows how many 10s each team has, <b>Tricks</b> how many tricks. Left: your team · Right: opponents.',
+    },
+    trump: {
+      title: '♠ TRUMP',
+      body: 'The trump suit beats every other suit. If you can’t follow the suit that was led, you may cut with a trump.',
+    },
+    coins: {
+      title: '🪙 Coins',
+      body: 'You earn coins after every round:<br>• Lost but took 2 tens: <b>+5</b><br>• Won on tricks: <b>+10</b><br>• Won with 3 tens: <b>+20</b><br>• Kot: <b>+30</b> · Baunne (all 52 cards): <b>+40</b><br>Spend them in ⚙ Settings to unlock card designs.',
+    },
+    online: {
+      title: '🌐 Online',
+      body: 'Play with friends: <b>create a room</b> (optionally with a password) or join with a <b>room number</b>. There is also a list of open rooms. Bots fill empty seats.',
+    },
+    chat: {
+      title: '💬 Reactions & messages',
+      body: 'In online games, tap 💬 next to your cards to send 👍 😂 😢 🙌 or messages like "Nice play!". There is no typing, so nobody can cheat. <b>Not available when playing with bots.</b>',
+    },
+    info: {
+      title: 'ⓘ Info',
+      body: 'How to play, all the rules, and who made the game. You can open this guide again from here too.',
+    },
+    settings: {
+      title: '⚙ Settings',
+      body: 'Language, sound, animations, game mode (Normal / Band hukum / Cut hukum), card designs, table background, install as an app, and new game.',
+    },
+    done: {
+      title: "You're ready! 🎉",
+      body: 'Have a good game! In the first round you choose the trump.',
+    },
+  },
   say: {
     fast: 'Play faster! ⏩',
     nicePlay: 'Nice play! 👏',
@@ -815,6 +983,58 @@ const ja: Strings = {
   installHint: 'Android Chrome：⋮ メニュー →「ホーム画面に追加」。iPhone Safari：共有 ⬆ →「ホーム画面に追加」。',
   installed: '✔ インストール済み',
   allRules: '全ルール',
+  nameTitle: 'お名前は？',
+  nameHint: 'オンライン対戦で友達に表示される名前です。短い名前（a、b など）でもOK。',
+  namePlaceholder: '名前を入力',
+  nameRequired: '名前を入力してください（何か1文字以上）。',
+  continueBtn: '次へ ▶',
+  tourSkip: 'スキップ',
+  tourNext: '次へ ▶',
+  tourBack: '◀ 戻る',
+  tourStart: 'さあ遊ぼう！ 🎉',
+  replayGuide: '🎓 ガイドをもう一度見る',
+  tour: {
+    welcome: {
+      title: 'ダハル・カニへようこそ！ 🙏',
+      body: '4人・2チーム。あなたは下、パートナーは上で同じチームです。目標は<b>10（ダハル）</b>を取ること。3枚か4枚取ったチームがラウンドに勝ちます。',
+    },
+    hand: {
+      title: '🃏 あなたの手札',
+      body: '<b>黄色い枠</b>のカードだけ出せます。タップしてください。手札の上の黄色い文字が、誰の番か・何を出すべきかを教えてくれます。',
+    },
+    score: {
+      title: '📊 スコア',
+      body: '<b>ダハル ●●○○</b> は取った10の数、<b>トリック</b> は取ったトリック数です。左：味方チーム · 右：相手チーム。',
+    },
+    trump: {
+      title: '♠ 切り札',
+      body: '切り札のスートは他のどのスートより強いです。リードされたスートがなければ切り札で切れます。',
+    },
+    coins: {
+      title: '🪙 コイン',
+      body: '毎ラウンド後にコインがもらえます：<br>• 負けてもダハル2枚：<b>+5</b><br>• トリック数で勝ち：<b>+10</b><br>• ダハル3枚で勝ち：<b>+20</b><br>• コット：<b>+30</b> · バウンネ（52枚すべて）：<b>+40</b><br>⚙ 設定でカードデザインの解放に使えます。',
+    },
+    online: {
+      title: '🌐 オンライン',
+      body: '友達と遊ぶには<b>ルームを作成</b>（パスワードも設定可）するか、<b>ルーム番号</b>で参加します。公開ルームの一覧もあります。空席はボットが担当します。',
+    },
+    chat: {
+      title: '💬 リアクションとメッセージ',
+      body: 'オンライン対戦中は手札の右の 💬 から 👍 😂 😢 🙌 や「ナイスプレイ！」などを送れます。不正防止のため文字入力はできません。<b>ボットとの対戦では使えません。</b>',
+    },
+    info: {
+      title: 'ⓘ 情報',
+      body: '遊び方、全ルール、作者の名前はここにあります。このガイドもここからもう一度見られます。',
+    },
+    settings: {
+      title: '⚙ 設定',
+      body: '言語、サウンド、アニメーション、ゲームモード（ノーマル／バンド・フクム／カット・フクム）、カードデザイン、テーブル背景、アプリのインストール、新しいゲーム。',
+    },
+    done: {
+      title: '準備完了！ 🎉',
+      body: 'いいゲームを！最初のラウンドではあなたが切り札を選びます。',
+    },
+  },
   say: {
     fast: '早く出して！ ⏩',
     nicePlay: 'ナイスプレイ！ 👏',

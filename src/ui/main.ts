@@ -46,7 +46,8 @@ import {
 } from '../online/protocol';
 import { escapeHtml } from './html';
 import { LANGS, STRINGS, type Lang, type Strings } from './i18n';
-import { infoHtml, languagePickerHtml, onlineHtml, settingsHtml, type Modal, type RoomInfo } from './modals';
+import { infoHtml, languagePickerHtml, nameHtml, onlineHtml, settingsHtml, type Modal, type RoomInfo } from './modals';
+import { TOUR, tourHtml } from './tour';
 import { bubble, clearFx, dealCards } from './fx';
 import { createRoom, listRooms, OnlineClient, SERVER_URL, type ConnStatus, type FatalReason } from './online';
 import { loadPrefs, savePrefs } from './prefs';
@@ -70,7 +71,21 @@ const modalRoot = document.createElement('div');
 document.body.appendChild(modalRoot);
 
 /** Open dialog; bots pause while one is open. First launch asks for the language. */
-let modal: Modal | null = prefs.lang ? null : { kind: 'lang' };
+if (AUTOPLAY) {
+  prefs.playerName ||= 'Bot';
+  prefs.tourDone = true;
+}
+/** First run: language → name → guide. */
+function onboardingStep(): Modal | null {
+  if (!prefs.lang) return { kind: 'lang' };
+  if (!cleanName(prefs.playerName, '')) return { kind: 'name' };
+  if (!prefs.tourDone) return { kind: 'tour', step: 0 };
+  return null;
+}
+let modal: Modal | null = onboardingStep();
+let nameError = '';
+/** what is typed in the name box (kept if we have to re-render it) */
+let nameDraft = '';
 let settingsMsg = '';
 let state: GameState = newGame({ ...GAME_SETTINGS, trumpMode: prefs.mode });
 let timer: number | null = null;
@@ -553,6 +568,8 @@ function renderModal() {
   const prevScroll = modalRoot.querySelector('.overlay')?.scrollTop ?? 0;
   if (!modal) modalRoot.innerHTML = '';
   else if (modal.kind === 'lang') modalRoot.innerHTML = languagePickerHtml();
+  else if (modal.kind === 'name') modalRoot.innerHTML = nameHtml(t, nameDraft || prefs.playerName, nameError);
+  else if (modal.kind === 'tour') modalRoot.innerHTML = tourHtml(t, modal.step);
   else if (modal.kind === 'info') modalRoot.innerHTML = infoHtml(t, prefs.lang ?? 'neRom', modal.tab);
   else if (modal.kind === 'online') {
     modalRoot.innerHTML = onlineHtml(t, {
@@ -592,13 +609,41 @@ function applyLookAndLanguage() {
   document.documentElement.lang = t.htmlLang;
 }
 
+/** Next screen once a first-run step is done. */
+function afterOnboarding(): Modal | null {
+  return onboardingStep() ?? (onlineForm.codeInput && SERVER_URL && !online ? { kind: 'online' } : null);
+}
+
+function submitName() {
+  const input = modalRoot.querySelector<HTMLInputElement>('#name-input');
+  const n = cleanName(input?.value ?? '', '');
+  if (!n) {
+    nameError = t.nameRequired;
+    renderModal();
+    modalRoot.querySelector<HTMLInputElement>('#name-input')?.focus();
+    return;
+  }
+  nameError = '';
+  prefs.playerName = n;
+  onlineForm.name = n;
+  savePrefs(prefs);
+  openModal(afterOnboarding());
+}
+
+function endTour() {
+  prefs.tourDone = true;
+  savePrefs(prefs);
+  openModal(afterOnboarding());
+  if (!online && !modal && state.completedTricks.length === 0 && state.currentTrick.length === 0) dealFx(null, state);
+}
+
 function setLanguage(lang: Lang) {
   prefs.lang = lang;
   t = STRINGS[lang];
   savePrefs(prefs);
   applyLookAndLanguage();
   render();
-  if (modal?.kind === 'lang') openModal(onlineForm.codeInput && SERVER_URL ? { kind: 'online' } : null);
+  if (modal?.kind === 'lang') openModal(afterOnboarding());
   else renderModal();
 }
 
@@ -647,12 +692,23 @@ function pickTheme(id: string) {
 
 modalRoot.addEventListener('click', (e) => {
   const target = e.target as HTMLElement;
+  const tourBtn = target.closest<HTMLElement>('[data-tour]');
+  if (tourBtn && modal?.kind === 'tour') {
+    const a = tourBtn.dataset.tour;
+    if (a === 'skip' || a === 'finish') return endTour();
+    const step = Math.max(0, Math.min(TOUR.length - 1, modal.step + (a === 'next' ? 1 : -1)));
+    modal = { kind: 'tour', step };
+    return renderModal();
+  }
   const el = target.closest<HTMLElement>(
     '[data-m],[data-tab],[data-lang],[data-sound],[data-anim],[data-mode],[data-theme],[data-bg],[data-sit],[data-online-mode],[data-pick]',
   );
   if (!el) return;
   const d = el.dataset;
-  if (d.m === 'close' || (d.m === 'backdrop' && el === target && modal?.kind !== 'lang')) return openModal(null);
+  const mustAnswer = modal?.kind === 'lang' || modal?.kind === 'name';
+  if (d.m === 'close' || (d.m === 'backdrop' && el === target && !mustAnswer)) return openModal(null);
+  if (d.m === 'name-ok') return submitName();
+  if (d.m === 'tour') return openModal({ kind: 'tour', step: 0 });
   if (d.m === 'newgame') {
     if (confirm(t.confirmReset)) {
       openModal(null);
@@ -704,6 +760,7 @@ modalRoot.addEventListener('click', (e) => {
 modalRoot.addEventListener('input', (e) => {
   const el = e.target as HTMLInputElement;
   if (el.id === 'online-name') onlineForm.name = el.value;
+  if (el.id === 'name-input') nameDraft = el.value;
   if (el.id === 'online-join-pw') onlineForm.joinPassword = el.value;
   if (el.id === 'online-room-name') onlineForm.roomName = el.value;
   if (el.id === 'online-create-pw') onlineForm.createPassword = el.value;
@@ -716,17 +773,23 @@ modalRoot.addEventListener('input', (e) => {
 modalRoot.addEventListener('keydown', (e) => {
   const id = (e.target as HTMLElement).id;
   if (e.key === 'Enter' && (id === 'online-code' || id === 'online-join-pw')) onlineJoin();
+  if (e.key === 'Enter' && id === 'name-input') submitName();
 });
 
 // ---------- online play ----------
 
-function onlineName(): string {
+/** The name for online play — required, so friends can tell who is who. */
+function onlineName(): string | null {
   const n = cleanName(onlineForm.name, '');
-  if (n) {
-    prefs.playerName = n;
-    savePrefs(prefs);
+  if (!n) {
+    onlineForm.error = t.nameRequired;
+    renderModal();
+    modalRoot.querySelector<HTMLInputElement>('#online-name')?.focus();
+    return null;
   }
-  return n || t.names[HUMAN];
+  prefs.playerName = n;
+  savePrefs(prefs);
+  return n;
 }
 
 function setRoomInUrl(code: string | null) {
@@ -737,11 +800,15 @@ function setRoomInUrl(code: string | null) {
 }
 
 async function onlineCreate() {
-  if (!SERVER_URL || onlineForm.busy) return;
+  if (!SERVER_URL || onlineForm.busy || !cleanName(onlineForm.name, '')) {
+    if (!cleanName(onlineForm.name, '')) onlineName();
+    return;
+  }
   onlineForm.busy = true;
   onlineForm.error = '';
   renderModal();
   const name = onlineName();
+  if (!name) return;
   const roomName = cleanName(onlineForm.roomName, t.roomNamePlaceholder(name), ROOM_NAME_MAX);
   const password = onlineForm.createPassword;
   try {
@@ -797,7 +864,9 @@ function connectTo(code: string, password = '') {
   stopTimer();
   onlineForm.error = '';
   onlineForm.notice = '';
-  const client = new OnlineClient(SERVER_URL, code, onlineName(), password, {
+  const playerName = onlineName();
+  if (!playerName) return;
+  const client = new OnlineClient(SERVER_URL, code, playerName, password, {
     onMessage: onServerMessage,
     onStatus: (st) => {
       if (online?.client !== client) return;
@@ -914,6 +983,11 @@ function onlineLeave() {
   openModal(null);
 }
 
+// keep the guide's spotlight on its target when the phone rotates
+window.addEventListener('resize', () => {
+  if (modal?.kind === 'tour') renderModal();
+});
+
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') online?.client.wake();
 });
@@ -987,7 +1061,10 @@ app.addEventListener('click', (e) => {
 
 document.addEventListener('pointerdown', unlockAudio, { once: true });
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && modal && modal.kind !== 'lang') openModal(null);
+  if (e.key === 'Escape' && modal && modal.kind !== 'lang' && modal.kind !== 'name') {
+    if (modal.kind === 'tour') endTour();
+    else openModal(null);
+  }
 });
 
 applyLookAndLanguage();
@@ -1003,7 +1080,7 @@ if (previewResult) {
   state = { ...state, phase: 'roundOver', lastResult: r, tensWon: tens, tricksWon: tricks };
 }
 // Opened from an invite link: rejoin straight away if we were already in that room, else ask for a name.
-if (onlineForm.codeInput && SERVER_URL && prefs.lang) {
+if (onlineForm.codeInput && SERVER_URL && !modal) {
   let rejoin = false;
   try {
     rejoin = !!localStorage.getItem(`dahal-khani:token:${onlineForm.codeInput}`) && !!prefs.playerName;

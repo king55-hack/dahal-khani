@@ -833,3 +833,48 @@ body.no-anim .fx-card { display: none; }
   .ten-fan .fan-card { --cw: 38px; --ch: 54px; margin-left: -19px; }
   .result-title.kot.win { font-size: 28px; }
 }
+
+/* ---------- first run: name step ---------- */
+.name-step { text-align: center; padding: 4px 0; }
+.name-step h2 { margin: 4px 0; font-size: 22px; }
+.name-step input {
+  width: 100%; font: inherit; font-size: 20px; font-weight: 700; text-align: center;
+  padding: 12px; margin: 10px 0 12px; border-radius: 12px; border: 2px solid #0f5a33; color: #111; background: #fff;
+}
+.name-step input::placeholder { color: #94a3b8; font-weight: 400; }
+
+/* ---------- first run: spotlight guide ---------- */
+.tour { position: fixed; inset: 0; z-index: 45; }
+.tour.no-target { background: rgba(0, 0, 0, .62); }
+.tour-spot {
+  position: fixed; border-radius: 14px; pointer-events: none;
+  box-shadow: 0 0 0 3px var(--gold), 0 0 22px 4px rgba(255, 213, 74, .7), 0 0 0 9999px rgba(0, 0, 0, .62);
+  transition: left .25s, top .25s, width .25s, height .25s;
+  animation: spot-pulse 1.6s ease-in-out infinite;
+}
+@keyframes spot-pulse { 50% { box-shadow: 0 0 0 5px var(--gold), 0 0 30px 8px rgba(255, 213, 74, .8), 0 0 0 9999px rgba(0, 0, 0, .62); } }
+.tour-card {
+  position: fixed; background: #fffdf7; color: #1f2937; border-radius: 16px; padding: 14px 16px 12px;
+  box-shadow: 0 12px 34px rgba(0, 0, 0, .5); animation: tour-in .2s ease-out both;
+  max-height: calc(100dvh - 24px); overflow-y: auto;
+}
+@keyframes tour-in { from { opacity: 0; scale: .95; } }
+.tour-card h3 { margin: 0 0 6px; font-size: 17px; color: #0f5a33; }
+.tour-card p { margin: 0; font-size: 14px; line-height: 1.5; color: #333; }
+.tour-art { font-size: 30px; text-align: center; letter-spacing: 6px; margin-bottom: 6px; }
+.tour-dots { display: flex; justify-content: center; gap: 5px; margin: 12px 0 8px; }
+.tour-dots i { width: 7px; height: 7px; border-radius: 50%; background: #cbd5e1; }
+.tour-dots i.on { background: #0f5a33; width: 18px; border-radius: 4px; }
+.tour-actions { display: flex; align-items: center; gap: 8px; }
+.tour-actions .spacer { flex: 1; }
+.tour-actions button.primary { width: auto; padding: 9px 16px; font-size: 15px; }
+button.ghost {
+  background: #fff; border: 1.5px solid #cbd5e1; color: #1f2937; border-radius: 10px;
+  padding: 8px 12px; font-weight: 700; font-size: 14px;
+}
+.guide-btn { width: 100%; margin: 0 0 10px; color: #0f5a33; border-color: #0f5a33; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .tour-card { padding: 10px 12px 8px; }
+  .tour-card p { font-size: 13px; line-height: 1.4; }
+  .tour-dots { margin: 8px 0 6px; }
+}

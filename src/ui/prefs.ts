@@ -17,6 +17,8 @@ export interface Prefs {
   unlocked: ThemeId[];
   /** name used in online rooms */
   playerName: string;
+  /** the first-run guide was finished or skipped */
+  tourDone: boolean;
 }
 
 const KEY = 'dahal-khani:prefs:v1';
@@ -32,6 +34,7 @@ export const DEFAULT_PREFS: Prefs = {
   coins: 0,
   unlocked: ['classic', 'blue'],
   playerName: '',
+  tourDone: false,
 };
 
 export function loadPrefs(): Prefs {
@@ -57,6 +60,7 @@ export function loadPrefs(): Prefs {
       typeof r.coins === 'number' && Number.isFinite(r.coins) && r.coins >= 0 ? Math.floor(r.coins) : 0,
     unlocked: [...new Set<ThemeId>([...DEFAULT_PREFS.unlocked, ...unlocked])],
     playerName: typeof r.playerName === 'string' ? r.playerName.slice(0, 16) : '',
+    tourDone: r.tourDone === true,
   };
   if (!prefs.unlocked.includes(prefs.theme)) prefs.theme = DEFAULT_PREFS.theme;
   return prefs;

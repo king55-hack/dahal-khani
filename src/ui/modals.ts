@@ -11,7 +11,13 @@ import { FULL_RULES } from './rules';
 import { BACKGROUNDS, THEMES } from './themes';
 
 export type InfoTab = 'rules' | 'allRules' | 'credits';
-export type Modal = { kind: 'lang' } | { kind: 'info'; tab: InfoTab } | { kind: 'settings' } | { kind: 'online' };
+export type Modal =
+  | { kind: 'lang' }
+  | { kind: 'name' }
+  | { kind: 'tour'; step: number }
+  | { kind: 'info'; tab: InfoTab }
+  | { kind: 'settings' }
+  | { kind: 'online' };
 
 const MODES: readonly TrumpMode[] = ['open', 'bandHukum', 'cutHukum'];
 
@@ -43,6 +49,22 @@ export function languagePickerHtml(): string {
   );
 }
 
+/** First run, after the language: everyone needs a name (online players must recognise each other). */
+export function nameHtml(t: Strings, value: string, error: string): string {
+  return shell(
+    `<div class="name-step">
+      <div class="suits-line big">♠ ♥ ♣ ♦</div>
+      <h2>${t.nameTitle}</h2>
+      <p class="muted">${t.nameHint}</p>
+      ${error ? `<div class="online-error" role="alert">${error}</div>` : ''}
+      <input id="name-input" maxlength="16" autocomplete="nickname" placeholder="${t.namePlaceholder}"
+        value="${escapeHtml(value)}" />
+      <button class="primary" data-m="name-ok">${t.continueBtn}</button>
+    </div>`,
+    { closable: false, cls: 'name-modal', label: t.nameTitle },
+  );
+}
+
 export function infoHtml(t: Strings, lang: Lang, tab: InfoTab): string {
   const body =
     tab === 'rules'
@@ -63,6 +85,7 @@ export function infoHtml(t: Strings, lang: Lang, tab: InfoTab): string {
       <button data-tab="allRules" class="${tab === 'allRules' ? 'on' : ''}">${t.allRules}</button>
       <button data-tab="credits" class="${tab === 'credits' ? 'on' : ''}">${t.credits}</button>
     </div>
+    <button class="ghost guide-btn" data-m="tour">${t.replayGuide}</button>
     ${body}`,
     { closable: true, cls: 'info-modal', label: t.info },
   );

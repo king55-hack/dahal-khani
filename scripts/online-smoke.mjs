@@ -82,6 +82,23 @@ await until(host, () => host.room?.seats[2]?.name === 'Sita');
 if (!host.room.locked || host.room.name !== 'Rajan ko room') fail('room message should show name + lock');
 console.log('password: wrong refused, right accepted');
 
+// ---- reactions: fixed ids are relayed to everyone, free text is refused ----
+host.said = [];
+host.ws.addEventListener('message', (e) => {
+  if (e.data !== 'pong' && JSON.parse(e.data).t === 'say') {
+    host.said.push(JSON.parse(e.data));
+    host.waiters.forEach((w) => w());
+  }
+});
+send(friend, { t: 'say', id: 'nicePlay' });
+await until(host, () => host.said.length === 1);
+if (host.said[0].seat !== 2 || host.said[0].id !== 'nicePlay') fail(`bad relay ${JSON.stringify(host.said)}`);
+await new Promise((r) => setTimeout(r, 1600)); // cooldown
+send(friend, { t: 'say', id: 'I have no hearts' });
+await until(friend, () => friend.errors.includes('bad_request'));
+friend.errors.length = 0;
+console.log('reactions: relayed, free text refused');
+
 // ---- room list ----
 const pub = await create('Public table', '');
 const lonely = await player(pub, 'Hari');

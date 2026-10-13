@@ -66,6 +66,13 @@ describe('protocol', () => {
     expect(parseClientMsg('x'.repeat(5000))).toBeNull();
   });
 
+  it('only allows the fixed reactions/quick messages — no free text', () => {
+    expect(parseClientMsg('{"t":"say","id":"like"}')).toEqual({ t: 'say', id: 'like' });
+    expect(parseClientMsg('{"t":"say","id":"nicePlay"}')).toEqual({ t: 'say', id: 'nicePlay' });
+    expect(parseClientMsg('{"t":"say","id":"I have no hearts"}')).toBeNull();
+    expect(parseClientMsg('{"t":"say","text":"play the 10"}')).toBeNull();
+  });
+
   it('cleans player names', () => {
     expect(cleanName('  Rajan   Rimal ')).toBe('Rajan Rimal');
     expect(cleanName('<b>x</b>')).toBe('bx/b');

@@ -129,6 +129,8 @@ export function handle(
   const g = room.game;
   try {
     switch (msg.t) {
+      case 'say':
+        return null; // chat is relayed by the server glue; it never changes the room
       case 'sit': {
         if (g) return 'started';
         if (room.seats[msg.seat] !== null) return 'illegal';

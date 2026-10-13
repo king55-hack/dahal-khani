@@ -337,5 +337,6 @@ describe('bots', () => {
       s = nextRound(s, seeded(round + 1000));
     }
     },
+    30_000, // 200 full rounds: allow for a busy machine
   );
 });

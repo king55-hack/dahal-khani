@@ -31,10 +31,21 @@ import {
   type TrumpMode,
 } from '../engine';
 import { BOT_DELAY_MS, COIN_REWARDS, CREATOR_NAME, GAME_SETTINGS, TRICK_PAUSE_MS } from '../settings';
-import { cleanName, isRoomCode, normalizeRoomCode, ROOM_NAME_MAX, type RoomListing, type ServerMsg } from '../online/protocol';
+import {
+  cleanName,
+  isRoomCode,
+  normalizeRoomCode,
+  QUICK_MESSAGES,
+  REACTIONS,
+  ROOM_NAME_MAX,
+  type RoomListing,
+  type SayId,
+  type ServerMsg,
+} from '../online/protocol';
 import { escapeHtml } from './html';
 import { LANGS, STRINGS, type Lang, type Strings } from './i18n';
 import { infoHtml, languagePickerHtml, onlineHtml, settingsHtml, type Modal, type RoomInfo } from './modals';
+import { bubble, clearFx, dealCards } from './fx';
 import { createRoom, listRooms, OnlineClient, SERVER_URL, type ConnStatus, type FatalReason } from './online';
 import { loadPrefs, savePrefs } from './prefs';
 import { setSoundEnabled, sfx, unlockAudio } from './sound';
@@ -65,6 +76,22 @@ let toast: string | null = null;
 let toastTimer: number | null = null;
 /** Coins earned in the round that just ended (shown in the summary). */
 let roundCoins = 0;
+/** While cards are flying out to the players, my hand stays hidden and bots wait. */
+let dealingUntil = 0;
+/** briefly after a deal, my cards slide in */
+let handInUntil = 0;
+/** last trick position rendered — only a newly played card gets the throw animation */
+let lastTrickKey = '';
+/** reactions panel (online) */
+let sayOpen = false;
+const REACTION_EMOJI: Record<(typeof REACTIONS)[number], string> = {
+  like: '👍',
+  laugh: '😂',
+  sad: '😢',
+  yess: '🙌',
+  fire: '🔥',
+  wow: '😮',
+};
 
 /** Online session (null = playing offline against bots). */
 interface OnlineSession {
@@ -114,7 +141,26 @@ function apply(next: GameState) {
   state = next;
   react(prev, next);
   render();
+  dealFx(prev, next);
   schedule();
+}
+
+/** Fly cards out from the dealer when a round is dealt (5 each, then 8 more once trump is set). */
+function dealFx(prev: GameState | null, next: GameState) {
+  if (!prefs.animations) return;
+  const fresh = next.completedTricks.length === 0 && next.currentTrick.length === 0;
+  let perPlayer = 0;
+  if ((!prev || prev.roundNumber !== next.roundNumber) && fresh) {
+    perPlayer = next.phase === 'choosingTrump' ? 5 : next.phase === 'playing' ? 13 : 0;
+  } else if (prev?.phase === 'choosingTrump' && next.phase === 'playing') perPlayer = 8;
+  if (!perPlayer) return;
+  const ms = dealCards(next.dealer, perPlayer);
+  dealingUntil = Date.now() + ms;
+  handInUntil = dealingUntil + 450;
+  for (let i = 0; i * 140 < ms; i++) window.setTimeout(() => sfx.card(), i * 140);
+  render(); // hide my hand while it is being dealt
+  window.setTimeout(render, ms + 10);
+  window.setTimeout(render, ms + 470);
 }
 
 /** Sounds, toasts and coins, derived from what changed between two states. */
@@ -179,6 +225,15 @@ function stopTimer() {
 function schedule() {
   if (online || timer !== null || modal !== null) return;
   const s = state;
+  const dealing = Date.now() < dealingUntil;
+  if (dealing && s.phase !== 'trickComplete') {
+    // let the cards land before anyone moves
+    timer = window.setTimeout(() => {
+      timer = null;
+      schedule();
+    }, dealingUntil - Date.now() + 50);
+    return;
+  }
   if (s.phase === 'trickComplete') {
     timer = window.setTimeout(() => {
       timer = null;
@@ -214,6 +269,7 @@ function startNextRound() {
 
 function resetGame() {
   stopTimer();
+  clearFx();
   roundCoins = 0;
   apply(newGame({ ...GAME_SETTINGS, trumpMode: prefs.mode }));
 }
@@ -256,9 +312,18 @@ function seatHtml(seat: Seat): string {
 function trickHtml(): string {
   const s = state;
   const winner = s.phase === 'trickComplete' ? trickWinner(s.currentTrick, currentTrump(s)) : null;
+  const key = `${s.roundNumber}:${s.completedTricks.length}:${s.currentTrick.length}`;
+  const isNew = key !== lastTrickKey;
+  lastTrickKey = key;
+  const last = s.currentTrick.length - 1;
   const slots = s.currentTrick
-    .map((p) => cardHtml(p.card, { cls: `slot slot-${POS[p.seat]} ${p.seat === winner ? 'winner' : ''}` }))
+    .map((p, i) =>
+      cardHtml(p.card, {
+        cls: `slot slot-${POS[p.seat]} ${p.seat === winner ? 'winner' : ''} ${isNew && i === last ? 'enter' : ''}`,
+      }),
+    )
     .join('');
+  const sweep = winner !== null ? `sweep sweep-${POS[winner]}` : '';
   let center = '';
   if (s.phase === 'choosingTrump' && s.trumpChooser === HUMAN) {
     const hidden = s.settings.trumpMode === 'bandHukum';
@@ -275,7 +340,7 @@ function trickHtml(): string {
   } else if (s.phase === 'choosingTrump') {
     center = `<div class="waiting">${t.waitingTrump(name(s.trumpChooser))}</div>`;
   }
-  return `<div class="trick">${slots}${center}</div>`;
+  return `<div class="trick"><div class="trick-cards ${sweep}">${slots}</div>${center}</div>`;
 }
 
 function statusText(): string {
@@ -304,11 +369,13 @@ function handHtml(): string {
       const ok = legal.some((l) => sameCard(l, card));
       return cardHtml(card, {
         cls: ok ? 'playable' : s.phase === 'playing' && s.turn === HUMAN ? 'disabled' : '',
-        data: `data-card="${i}"`,
+        data: `data-card="${i}" style="--i:${i}"`,
       });
     })
     .join('');
-  return `<div class="hand" style="--n:${Math.max(hand.length, 1)}">${cards}</div>`;
+  const now = Date.now();
+  const phase = now < dealingUntil ? 'hand-wait' : now < handInUntil ? 'hand-in' : '';
+  return `<div class="hand ${phase}" style="--n:${Math.max(hand.length, 1)}">${cards}</div>`;
 }
 
 function teamPanel(team: 0 | 1): string {
@@ -400,11 +467,32 @@ function render() {
     <main class="table">
       ${seatHtml(2)}${seatHtml(3)}${trickHtml()}${seatHtml(1)}
     </main>
-    <div class="status">${statusText()}</div>
+    <div class="status-row">
+      <div class="status">${statusText()}</div>
+      ${online ? `<button class="say-btn" data-action="say" aria-label="${t.sayTitle}" title="${t.sayTitle}">💬</button>` : ''}
+    </div>
     ${handHtml()}
+    ${online && sayOpen ? sayPanelHtml() : ''}
     ${toast ? `<div class="toast">${toast}</div>` : ''}
     ${summaryHtml()}
   `;
+}
+
+function sayPanelHtml(): string {
+  const emojis = REACTIONS.map(
+    (id) => `<button class="say-emoji" data-say="${id}" aria-label="${id}">${REACTION_EMOJI[id]}</button>`,
+  ).join('');
+  const msgs = QUICK_MESSAGES.map((id) => `<button class="say-msg" data-say="${id}">${t.say[id]}</button>`).join('');
+  return `<div class="say-panel" role="dialog" aria-label="${t.sayTitle}">
+    <div class="say-emojis">${emojis}</div>
+    <div class="say-msgs">${msgs}</div>
+  </div>`;
+}
+
+function sayText(id: SayId): { text: string; emoji: boolean } {
+  return (REACTIONS as readonly string[]).includes(id)
+    ? { text: REACTION_EMOJI[id as (typeof REACTIONS)[number]], emoji: true }
+    : { text: t.say[id as (typeof QUICK_MESSAGES)[number]], emoji: false };
 }
 
 // ---------- dialogs ----------
@@ -448,7 +536,7 @@ function openModal(m: Modal | null) {
 }
 
 function applyLookAndLanguage() {
-  document.body.className = `theme-${prefs.theme} bg-${prefs.background}`;
+  document.body.className = `theme-${prefs.theme} bg-${prefs.background}${prefs.animations ? '' : ' no-anim'}`;
   document.documentElement.lang = t.htmlLang;
 }
 
@@ -508,7 +596,7 @@ function pickTheme(id: string) {
 modalRoot.addEventListener('click', (e) => {
   const target = e.target as HTMLElement;
   const el = target.closest<HTMLElement>(
-    '[data-m],[data-tab],[data-lang],[data-sound],[data-mode],[data-theme],[data-bg],[data-sit],[data-online-mode],[data-pick]',
+    '[data-m],[data-tab],[data-lang],[data-sound],[data-anim],[data-mode],[data-theme],[data-bg],[data-sit],[data-online-mode],[data-pick]',
   );
   if (!el) return;
   const d = el.dataset;
@@ -532,6 +620,12 @@ modalRoot.addEventListener('click', (e) => {
   const om = d.onlineMode;
   if (om === 'open' || om === 'bandHukum' || om === 'cutHukum') return online?.client.send({ t: 'mode', mode: om });
   if (d.lang && LANGS.includes(d.lang as Lang)) return setLanguage(d.lang as Lang);
+  if (d.anim) {
+    prefs.animations = d.anim === 'on';
+    savePrefs(prefs);
+    applyLookAndLanguage();
+    return renderModal();
+  }
   if (d.sound) {
     prefs.sound = d.sound === 'on';
     setSoundEnabled(prefs.sound);
@@ -688,12 +782,19 @@ function onServerMessage(m: ServerMsg) {
       state = next;
       if (modal?.kind === 'online') openModal(null);
       render();
+      dealFx(null, next);
       return;
     }
     const prev = state;
     state = next;
     react(prev, next);
     render();
+    dealFx(prev, next);
+  } else if (m.t === 'say') {
+    const local = ((m.seat - online.seat + 4) % 4) as Seat;
+    const { text, emoji } = sayText(m.id);
+    bubble(local, text, emoji);
+    sfx.click();
   } else if (m.t === 'error') {
     online.waiting = false;
     const msg = t.onlineErrors[m.code];
@@ -704,10 +805,22 @@ function onServerMessage(m: ServerMsg) {
   }
 }
 
+let waitingTimer: number | undefined;
+
 function sendMove(msg: Parameters<OnlineClient['send']>[0]) {
   if (!online || online.waiting) return;
+  if (!online.client.send(msg)) {
+    online.client.wake(); // not connected: reconnect; the player can tap again
+    return;
+  }
   online.waiting = true;
-  online.client.send(msg);
+  // if the answer got lost with a dying connection, don't block taps forever
+  clearTimeout(waitingTimer);
+  waitingTimer = window.setTimeout(() => {
+    if (!online?.waiting) return;
+    online.waiting = false;
+    online.client.wake();
+  }, 4000);
 }
 
 async function onlineShare() {
@@ -735,6 +848,8 @@ function leaveOnline(reason?: FatalReason) {
   if (online && (reason === 'wrong_password' || reason === 'too_many_attempts')) onlineForm.codeInput = online.code;
   online?.client.stop();
   online = null;
+  sayOpen = false;
+  clearFx();
   setRoomInUrl(null);
   onlineForm.error = reason ? t.onlineErrors[reason] : '';
   onlineForm.notice = '';
@@ -750,6 +865,7 @@ function onlineLeave() {
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') online?.client.wake();
 });
+window.addEventListener('online', () => online?.client.wake());
 
 // ---------- install as an app (PWA) ----------
 
@@ -783,7 +899,20 @@ if ('serviceWorker' in navigator && import.meta.env.PROD) {
 // ---------- input ----------
 
 app.addEventListener('click', (e) => {
-  const el = (e.target as HTMLElement).closest<HTMLElement>('[data-card],[data-suit],[data-action]');
+  const el = (e.target as HTMLElement).closest<HTMLElement>('[data-card],[data-suit],[data-action],[data-say]');
+  if (el?.dataset.action === 'say') {
+    sayOpen = !sayOpen;
+    return render();
+  }
+  if (el?.dataset.say) {
+    online?.client.send({ t: 'say', id: el.dataset.say as SayId });
+    sayOpen = false;
+    return render();
+  }
+  if (sayOpen && !(e.target as HTMLElement).closest('.say-panel')) {
+    sayOpen = false;
+    render();
+  }
   if (!el) return;
   if (el.dataset.action === 'next' && state.phase === 'roundOver') return startNextRound();
   if (el.dataset.action === 'info') return openModal({ kind: 'info', tab: 'rules' });
@@ -823,4 +952,5 @@ if (onlineForm.codeInput && SERVER_URL && prefs.lang) {
 }
 render();
 renderModal();
+if (!online && !modal) dealFx(null, state);
 schedule();

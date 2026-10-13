@@ -1,5 +1,6 @@
 // All on-screen text in 4 languages. Add a language by adding one more entry to STRINGS.
 import type { PointValues, TrumpMode } from '../engine';
+import type { QUICK_MESSAGES } from '../online/protocol';
 import type { FatalReason } from './online';
 import type { BackgroundId, ThemeId } from './themes';
 
@@ -79,6 +80,10 @@ export interface Strings {
   installHint: string;
   installed: string;
   allRules: string;
+  say: Record<(typeof QUICK_MESSAGES)[number], string>;
+  sayTitle: string;
+  animations: string;
+  animationsHint: string;
   online: string;
   playOnline: string;
   onlineIntro: string;
@@ -207,6 +212,21 @@ const ne: Strings = {
   installHint: 'Android Chrome: ⋮ मेनु → "Add to Home screen"। iPhone Safari: Share ⬆ → "Add to Home Screen"।',
   installed: '✔ एप इन्स्टल भइसक्यो',
   allRules: 'सबै नियम',
+  say: {
+    fast: 'छिटो खेल्नुहोस्! ⏩',
+    nicePlay: 'कस्तो राम्रो चाल! 👏',
+    good: 'राम्रो!',
+    interesting: 'रोचक! 🤔',
+    wellDone: 'स्याबास साथी!',
+    lucky: 'भाग्यले साथ दियो! 🍀',
+    thanks: 'धन्यवाद! 🙏',
+    sorry: 'माफ गर्नुहोस्!',
+    gg: 'राम्रो खेल भयो! 🤝',
+    again: 'अर्को राउन्ड! 🔁',
+  },
+  sayTitle: 'प्रतिक्रिया र सन्देश',
+  animations: 'एनिमेसन',
+  animationsHint: 'पत्ती बाँडेको, फालेको र हात उठाएको एनिमेसन',
   online: 'अनलाइन',
   playOnline: '🌐 साथीसँग अनलाइन खेल्नुहोस्',
   onlineIntro: 'खुला रुममा जानुहोस्, वा आफ्नै रुम (पासवर्ड सहित वा बिना) बनाएर नम्बर साथीलाई पठाउनुहोस्। खाली सिटमा बोट खेल्छ।',
@@ -384,6 +404,21 @@ const neRom: Strings = {
   installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
   installed: '✔ App install bhaisakyo',
   allRules: 'Sabai niyam',
+  say: {
+    fast: 'Chhito khelnus! ⏩',
+    nicePlay: 'Kasto ramro chaal! 👏',
+    good: 'Ramro!',
+    interesting: 'Rochak! 🤔',
+    wellDone: 'Syaabaas saathi!',
+    lucky: 'Bhagya le saath diyo! 🍀',
+    thanks: 'Dhanyabad! 🙏',
+    sorry: 'Maaf garnus!',
+    gg: 'Ramro khel bhayo! 🤝',
+    again: 'Arko round! 🔁',
+  },
+  sayTitle: 'Reaction ra message',
+  animations: 'Animation',
+  animationsHint: 'Patti baadeko, phaaleko ra haat uthaaeko animation',
   online: 'Online',
   playOnline: '🌐 Saathi sanga online khelnus',
   onlineIntro: 'Khulla room ma jaanus, wa aafnai room (password sahit wa bina) banayera number saathi lai pathaunus. Khaali seat ma bot khelchha.',
@@ -561,6 +596,21 @@ const en: Strings = {
   installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
   installed: '✔ App installed',
   allRules: 'All rules',
+  say: {
+    fast: 'Play faster! ⏩',
+    nicePlay: 'Nice play! 👏',
+    good: 'Good!',
+    interesting: 'Interesting! 🤔',
+    wellDone: 'Well done, partner!',
+    lucky: 'Lucky! 🍀',
+    thanks: 'Thanks! 🙏',
+    sorry: 'Sorry!',
+    gg: 'Good game! 🤝',
+    again: 'One more round! 🔁',
+  },
+  sayTitle: 'Reactions & messages',
+  animations: 'Animations',
+  animationsHint: 'Dealing, card throws and trick pick-up',
   online: 'Online',
   playOnline: '🌐 Play online with friends',
   onlineIntro: 'Join an open room, or create your own (with or without a password) and send the number to friends. Bots fill empty seats.',
@@ -738,6 +788,21 @@ const ja: Strings = {
   installHint: 'Android Chrome：⋮ メニュー →「ホーム画面に追加」。iPhone Safari：共有 ⬆ →「ホーム画面に追加」。',
   installed: '✔ インストール済み',
   allRules: '全ルール',
+  say: {
+    fast: '早く出して！ ⏩',
+    nicePlay: 'ナイスプレイ！ 👏',
+    good: 'いいね！',
+    interesting: '面白い！ 🤔',
+    wellDone: 'さすがパートナー！',
+    lucky: 'ラッキー！ 🍀',
+    thanks: 'ありがとう！ 🙏',
+    sorry: 'ごめん！',
+    gg: 'いい試合だった！ 🤝',
+    again: 'もう1ラウンド！ 🔁',
+  },
+  sayTitle: 'リアクションとメッセージ',
+  animations: 'アニメーション',
+  animationsHint: '配札・カードを出す・トリックを取る動き',
   online: 'オンライン',
   playOnline: '🌐 友達とオンライン対戦',
   onlineIntro: '公開中のルームに参加するか、自分のルーム（パスワードあり・なし）を作って番号を友達に送ってください。空いた席はボットが担当します。',

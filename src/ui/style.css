@@ -30,7 +30,8 @@ html, body {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  padding: 8px 10px calc(10px + env(safe-area-inset-bottom));
+  padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+    max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   gap: 6px;
 }
 
@@ -153,13 +154,14 @@ button.small {
   background: rgba(0,0,0,.12);
   min-height: calc(var(--ch) * 2.3);
 }
-.trick .slot { position: absolute; left: 50%; top: 50%; animation: drop .25s ease-out; }
+.trick-cards { position: absolute; inset: 0; }
+.trick .slot { position: absolute; left: 50%; top: 50%; }
 .slot-bottom { transform: translate(-50%, 8%); }
 .slot-top { transform: translate(-50%, -108%); }
 .slot-left { transform: translate(-165%, -50%) rotate(-6deg); }
 .slot-right { transform: translate(65%, -50%) rotate(6deg); }
 .trick .slot.winner { box-shadow: 0 0 0 3px var(--gold), 0 0 18px var(--gold); z-index: 2; }
-@keyframes drop { from { opacity: 0; scale: 1.25; } to { opacity: 1; scale: 1; } }
+
 
 .waiting, .trump-pick {
   position: absolute;
@@ -254,7 +256,7 @@ button.small {
 /* ---------- toast ---------- */
 .toast {
   position: fixed;
-  left: 50%; top: 22%;
+  left: 50%; top: calc(22% + env(safe-area-inset-top));
   transform: translateX(-50%);
   background: rgba(0,0,0,.8);
   color: #fff;
@@ -278,7 +280,8 @@ button.small {
   justify-content: center;
   z-index: 30;
   overflow: hidden auto;
-  padding: 16px;
+  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
+    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
 }
 .modal {
   background: #fffdf7;
@@ -370,8 +373,8 @@ button.primary:active { transform: translateY(2px); box-shadow: none; }
   #app {
     max-width: none;
     gap: 3px;
-    padding: 4px max(10px, env(safe-area-inset-right)) calc(4px + env(safe-area-inset-bottom))
-      max(10px, env(safe-area-inset-left));
+    padding: max(4px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
+      max(4px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
   }
   header { font-size: 12px; }
   header .score { font-size: 14px; }
@@ -662,4 +665,101 @@ button.link { background: none; border: none; color: #2563eb; font-weight: 700; 
 @media (max-width: 380px) {
   .join-grid { grid-template-columns: 1fr 1fr; }
   .join-grid button.primary { grid-column: 1 / -1; }
+}
+
+/* ---------- animations ---------- */
+/* a played card flies in from the player's side */
+.trick .slot.enter { animation: .3s cubic-bezier(.2,.8,.3,1) both; }
+.trick .slot-bottom.enter { animation-name: in-bottom; }
+.trick .slot-top.enter { animation-name: in-top; }
+.trick .slot-left.enter { animation-name: in-left; }
+.trick .slot-right.enter { animation-name: in-right; }
+@keyframes in-bottom { from { transform: translate(-50%, 190%) rotate(8deg) scale(1.1); opacity: .3; } }
+@keyframes in-top { from { transform: translate(-50%, -260%) rotate(-8deg) scale(.8); opacity: .3; } }
+@keyframes in-left { from { transform: translate(-330%, -50%) rotate(-30deg) scale(.8); opacity: .3; } }
+@keyframes in-right { from { transform: translate(230%, -50%) rotate(30deg) scale(.8); opacity: .3; } }
+/* when the trick is won, the pile slides to the winner */
+.trick-cards.sweep { animation: .35s ease-in .7s forwards; }
+.trick-cards.sweep-bottom { animation-name: sweep-bottom; }
+.trick-cards.sweep-top { animation-name: sweep-top; }
+.trick-cards.sweep-left { animation-name: sweep-left; }
+.trick-cards.sweep-right { animation-name: sweep-right; }
+@keyframes sweep-bottom { to { transform: translateY(45%) scale(.4); opacity: 0; } }
+@keyframes sweep-top { to { transform: translateY(-45%) scale(.4); opacity: 0; } }
+@keyframes sweep-left { to { transform: translateX(-45%) scale(.4); opacity: 0; } }
+@keyframes sweep-right { to { transform: translateX(45%) scale(.4); opacity: 0; } }
+/* my hand: hidden while being dealt, then the cards slide in one by one */
+.hand.hand-wait .card { opacity: 0; }
+.hand.hand-in .card { animation: card-in .32s cubic-bezier(.2,.8,.3,1) both; animation-delay: calc(var(--i) * 22ms); }
+@keyframes card-in { from { transform: translateY(-40px) scale(.8); opacity: 0; } }
+
+.fx-layer { position: fixed; inset: 0; pointer-events: none; z-index: 25; overflow: hidden; }
+.fx-card {
+  position: absolute; width: 22px; height: 32px; margin: -16px 0 0 -11px; border-radius: 3px;
+  background: var(--card-back); border: 1.5px solid var(--back-edge); box-shadow: 0 2px 4px rgba(0,0,0,.4);
+  opacity: 0; animation-name: deal-fly; animation-timing-function: cubic-bezier(.3,.7,.4,1); animation-fill-mode: both;
+}
+@keyframes deal-fly {
+  0% { transform: translate(0, 0) rotate(0); opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translate(var(--dx), var(--dy)) rotate(var(--rot)); opacity: 0; }
+}
+
+/* animations off: everything moves instantly */
+body.no-anim *, body.no-anim *::before, body.no-anim *::after {
+  animation: none !important;
+  transition: none !important;
+}
+body.no-anim .hand.hand-wait .card { opacity: 1; }
+body.no-anim .fx-card { display: none; }
+
+/* ---------- reactions & quick messages ---------- */
+.status-row { position: relative; display: flex; align-items: center; justify-content: center; }
+.say-btn {
+  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+  width: 38px; height: 38px; border-radius: 50%; border: none; font-size: 19px;
+  background: rgba(0,0,0,.35); box-shadow: 0 0 0 1.5px rgba(255,213,74,.6);
+}
+.say-panel {
+  position: fixed; left: 50%; bottom: calc(var(--ch) + 40px + env(safe-area-inset-bottom));
+  transform: translateX(-50%); z-index: 28; width: min(380px, calc(100vw - 20px));
+  background: #fffdf7; color: #1f2937; border-radius: 16px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.45);
+  animation: pop .18s ease-out;
+}
+.say-emojis { display: flex; justify-content: space-between; margin-bottom: 8px; }
+.say-emoji { font-size: 26px; background: none; border: none; padding: 4px 6px; border-radius: 10px; }
+.say-emoji:active, .say-msg:active { background: #ecfdf5; }
+.say-msgs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.say-msg {
+  border: 1.5px solid #cbd5e1; background: #fff; color: #1f2937; border-radius: 10px;
+  padding: 7px 6px; font-size: 13px; font-weight: 600; text-align: center;
+}
+.fx-bubble {
+  position: absolute; transform: translate(-50%, -110%); max-width: 46vw;
+  background: #fff; color: #111; font-weight: 700; font-size: 14px; line-height: 1.25;
+  padding: 7px 11px; border-radius: 14px; box-shadow: 0 6px 16px rgba(0,0,0,.4); text-align: center;
+  animation: bubble 3.2s ease-out forwards;
+}
+.fx-bubble::after {
+  content: ''; position: absolute; left: 50%; bottom: -6px; margin-left: -6px;
+  border: 6px solid transparent; border-bottom: 0; border-top-color: #fff;
+}
+.fx-bubble.big { font-size: 34px; padding: 2px 8px; background: rgba(255,255,255,.92); }
+.fx-bubble.seat-0 { transform: translate(-50%, -150%); }
+.fx-bubble.seat-1 { transform: translate(-90%, -80%); }
+.fx-bubble.seat-3 { transform: translate(-10%, -80%); }
+@keyframes bubble {
+  0% { opacity: 0; scale: .6; }
+  8% { opacity: 1; scale: 1.08; }
+  14% { scale: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; }
+}
+.say-panel { max-height: calc(100dvh - var(--ch) - 56px - env(safe-area-inset-top)); overflow-y: auto; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .say-panel { width: min(600px, calc(100vw - 20px)); padding: 8px; }
+  .say-emojis { margin-bottom: 4px; }
+  .say-emoji { font-size: 22px; padding: 2px 6px; }
+  .say-msgs { grid-template-columns: repeat(3, 1fr); gap: 4px; }
+  .say-msg { padding: 5px 4px; font-size: 12px; }
 }

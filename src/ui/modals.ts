@@ -126,6 +126,14 @@ export function settingsHtml(
       </div>
     </section>
     <section>
+      <h3>${t.animations}</h3>
+      <div class="seg">
+        <button data-anim="on" class="${prefs.animations ? 'on' : ''}">✨ ${t.on}</button>
+        <button data-anim="off" class="${prefs.animations ? '' : 'on'}">⏹ ${t.off}</button>
+      </div>
+      <p class="muted">${t.animationsHint}</p>
+    </section>
+    <section>
       <h3>${t.gameMode}</h3>
       <div class="modes">${modes}</div>
     </section>

@@ -12,7 +12,29 @@ export interface Hello {
   password: string;
 }
 
+/**
+ * Reactions and quick messages. Only these fixed ids can be sent — there is no free typing,
+ * so nobody can tell their partner what cards they hold. Each player sees them in their own language.
+ */
+export const REACTIONS = ['like', 'laugh', 'sad', 'yess', 'fire', 'wow'] as const;
+export const QUICK_MESSAGES = [
+  'fast',
+  'nicePlay',
+  'good',
+  'interesting',
+  'wellDone',
+  'lucky',
+  'thanks',
+  'sorry',
+  'gg',
+  'again',
+] as const;
+export type SayId = (typeof REACTIONS)[number] | (typeof QUICK_MESSAGES)[number];
+const SAY_IDS: readonly string[] = [...REACTIONS, ...QUICK_MESSAGES];
+export const isSayId = (v: unknown): v is SayId => typeof v === 'string' && SAY_IDS.includes(v);
+
 export type ClientMsg =
+  | { t: 'say'; id: SayId }
   | { t: 'sit'; seat: Seat }
   | { t: 'mode'; mode: TrumpMode }
   | { t: 'start' }
@@ -51,6 +73,7 @@ export type ServerMsg =
       seats: (SeatPublic | null)[];
     }
   | { t: 'state'; view: PlayerView }
+  | { t: 'say'; seat: Seat; id: SayId }
   | { t: 'error'; code: ErrorCode };
 
 /** One row of the public room list. */
@@ -156,6 +179,8 @@ export function parseClientMsg(raw: unknown): ClientMsg | null {
   const m = parseObject(raw);
   if (!m) return null;
   switch (m.t) {
+    case 'say':
+      return isSayId(m.id) ? { t: 'say', id: m.id } : null;
     case 'sit':
       return isSeat(m.seat) ? { t: 'sit', seat: m.seat } : null;
     case 'mode':

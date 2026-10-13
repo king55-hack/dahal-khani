@@ -10,6 +10,8 @@ export interface Prefs {
   theme: ThemeId;
   background: BackgroundId;
   sound: boolean;
+  /** dealing / throwing / pick-up animations */
+  animations: boolean;
   mode: TrumpMode;
   coins: number;
   unlocked: ThemeId[];
@@ -25,6 +27,7 @@ export const DEFAULT_PREFS: Prefs = {
   theme: 'classic',
   background: 'normal',
   sound: true,
+  animations: true,
   mode: 'open',
   coins: 0,
   unlocked: ['classic', 'blue'],
@@ -45,6 +48,10 @@ export function loadPrefs(): Prefs {
     theme: isThemeId(r.theme) ? r.theme : DEFAULT_PREFS.theme,
     background: isBackgroundId(r.background) ? r.background : DEFAULT_PREFS.background,
     sound: typeof r.sound === 'boolean' ? r.sound : DEFAULT_PREFS.sound,
+    animations:
+      typeof r.animations === 'boolean'
+        ? r.animations
+        : !(typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches),
     mode: MODES.includes(r.mode as TrumpMode) ? (r.mode as TrumpMode) : DEFAULT_PREFS.mode,
     coins:
       typeof r.coins === 'number' && Number.isFinite(r.coins) && r.coins >= 0 ? Math.floor(r.coins) : 0,

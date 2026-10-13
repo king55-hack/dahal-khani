@@ -46,10 +46,13 @@ interface Attachment {
   /** simple rate limit: messages in the current 10 s window */
   count: number;
   windowStart: number;
+  /** last reaction/quick message, for a per-player cooldown */
+  lastSay?: number;
 }
 
 const RATE_WINDOW_MS = 10_000;
 const RATE_MAX = 40;
+const SAY_COOLDOWN_MS = 1500;
 const LIST_LIMIT = 30;
 const LIST_MAX_AGE = 2 * 60 * 60_000;
 
@@ -179,6 +182,15 @@ export class RoomDO extends DurableObject<Env> {
 
     const msg = parseClientMsg(data);
     if (!msg) return this.sendError(ws, 'bad_request');
+    if (msg.t === 'say') {
+      // reactions are only relayed (never stored), with a short cooldown against spam
+      if (now - (att.lastSay ?? 0) < SAY_COOLDOWN_MS) return;
+      att.lastSay = now;
+      ws.serializeAttachment(att);
+      const out = JSON.stringify({ t: 'say', seat: att.seat, id: msg.id } satisfies ServerMsg);
+      for (const p of this.seated()) p.ws.send(out);
+      return;
+    }
     const error = handle(this.room, att.seat, msg, this.connected(), now);
     if (error) return this.sendError(ws, error);
     await this.changed();

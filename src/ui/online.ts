@@ -29,6 +29,8 @@ export interface OnlineHandlers {
 
 const FATAL_ERRORS: ErrorCode[] = ['not_found', 'room_full', 'wrong_password', 'too_many_attempts'];
 const tokenKey = (code: string) => `dahal-khani:token:${code}`;
+const PING_MS = 10_000;
+const STALE_MS = 20_000;
 
 function loadToken(code: string): string | null {
   try {
@@ -71,6 +73,8 @@ export class OnlineClient {
   private retries = 0;
   private pingTimer: number | undefined;
   private seated = false;
+  /** last time anything (including a pong) arrived — a silent socket is a dead socket */
+  private lastHeard = 0;
 
   constructor(
     private readonly server: string,
@@ -90,13 +94,21 @@ export class OnlineClient {
 
     ws.onopen = () => {
       this.retries = 0;
+      this.lastHeard = Date.now();
       // name + password go in the first message, never in the URL
       ws.send(JSON.stringify({ t: 'hello', name: this.name, token, password: this.password } satisfies Hello));
       this.h.onStatus('open');
       clearInterval(this.pingTimer);
-      this.pingTimer = window.setInterval(() => ws.readyState === WebSocket.OPEN && ws.send(PING), 25_000);
+      // Heartbeat: phones switching Wi-Fi/4G can leave a socket "open" that delivers nothing.
+      // Ping every 10 s; if nothing at all came back for 20 s, drop it and reconnect at once.
+      this.pingTimer = window.setInterval(() => {
+        if (ws !== this.ws || ws.readyState !== WebSocket.OPEN) return;
+        if (Date.now() - this.lastHeard > STALE_MS) return this.dropAndReconnect();
+        ws.send(PING);
+      }, PING_MS);
     };
     ws.onmessage = (e) => {
+      this.lastHeard = Date.now();
       if (e.data === PONG || typeof e.data !== 'string') return;
       let m: ServerMsg;
       try {
@@ -132,20 +144,43 @@ export class OnlineClient {
         return;
       }
       this.h.onStatus('reconnecting');
-      window.setTimeout(() => this.connect(), Math.min(1000 * 2 ** (this.retries - 1), 10_000));
+      // first retry is immediate, then back off
+      window.setTimeout(() => this.connect(), this.retries === 1 ? 0 : Math.min(1000 * 2 ** (this.retries - 2), 8_000));
     };
   }
 
-  /** Phones drop sockets in the background; reconnect right away when the game is visible again. */
+  /** Forget the current socket (without waiting for the browser to notice it is dead) and connect again. */
+  private dropAndReconnect() {
+    if (this.stopped) return;
+    const old = this.ws;
+    this.ws = null; // its onclose is ignored from now on
+    clearInterval(this.pingTimer);
+    try {
+      old?.close();
+    } catch {
+      /* already closed */
+    }
+    this.retries = 0;
+    this.connect();
+  }
+
+  /**
+   * Called when the game becomes visible again or the phone is back online:
+   * reconnect right away if the socket is closed or has gone quiet.
+   */
   wake() {
-    if (!this.stopped && this.ws && this.ws.readyState > WebSocket.OPEN) {
-      this.retries = 0;
-      this.connect();
+    if (this.stopped || !this.ws) return;
+    const quiet = Date.now() - this.lastHeard > PING_MS + 2000;
+    if (this.ws.readyState > WebSocket.OPEN || (this.ws.readyState === WebSocket.OPEN && quiet)) {
+      this.dropAndReconnect();
     }
   }
 
-  send(msg: ClientMsg) {
-    if (this.ws?.readyState === WebSocket.OPEN) this.ws.send(JSON.stringify(msg));
+  /** Returns false if the message could not be sent (not connected). */
+  send(msg: ClientMsg): boolean {
+    if (this.ws?.readyState !== WebSocket.OPEN) return false;
+    this.ws.send(JSON.stringify(msg));
+    return true;
   }
 
   stop() {

@@ -1,7 +1,8 @@
 # Dahal Khani (Dahal Mara / Dahal Jeet)
 
 Traditional Nepali 4-player card game (2 teams, like Mendikot / Dehla Pakad), as a browser prototype.
-You play against 3 computer bots (partner Sita; opponents Gajendra and Ranjana).
+Play **offline** against 3 bots (partner Sita; opponents Gajendra and Ranjana) or **online** with friends
+(rooms with optional password; bots fill empty seats).
 Works on phones (portrait and landscape).
 
 Features: 4 languages (नेपाली, Nepali Roman, English, 日本語), 3 trump modes (Normal, Band hukum,

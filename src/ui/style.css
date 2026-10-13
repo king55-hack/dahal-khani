@@ -804,3 +804,32 @@ body.no-anim .fx-card { display: none; }
   .result-title.baunne.win { font-size: 28px; }
   .result-title.kot.lose, .result-title.baunne.lose { font-size: 26px; }
 }
+
+/* ---------- Kot win: four 10s fan out, gold rays behind ---------- */
+.overlay.kot-win { background: radial-gradient(circle, rgba(255, 196, 40, .55), rgba(150, 90, 0, .75) 50%, rgba(0, 0, 0, .88)); }
+.rays {
+  position: absolute; left: 50%; top: 50%; width: 220vmax; height: 220vmax; margin: -110vmax 0 0 -110vmax;
+  background: repeating-conic-gradient(rgba(255, 230, 140, .22) 0 8deg, transparent 8deg 20deg);
+  animation: spin 18s linear infinite; pointer-events: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+.ten-fan { position: relative; height: 92px; margin: -6px auto 4px; width: 200px; }
+.ten-fan .fan-card {
+  --cw: 48px; --ch: 68px;
+  position: absolute; left: 50%; bottom: 0; margin-left: -24px;
+  transform-origin: 50% 170%;
+  transform: rotate(calc((var(--k) - 1.5) * 21deg));
+  animation: fan-in .55s cubic-bezier(.2, 1.5, .4, 1) both;
+  animation-delay: calc(var(--k) * 120ms);
+  box-shadow: 0 0 0 2px #ffd54a inset, 0 4px 10px rgba(0, 0, 0, .35);
+}
+.ten-fan .fan-card .corner { font-size: 13px; }
+@keyframes fan-in {
+  from { transform: translateY(-160px) rotate(calc((var(--k) - 1.5) * 90deg)) scale(.4); opacity: 0; }
+}
+.result-title.kot.win { font-size: 40px; animation: shine 2s linear infinite, superb .8s cubic-bezier(.2, 1.8, .4, 1) .45s both; }
+@media (orientation: landscape) and (max-height: 560px) {
+  .ten-fan { height: 70px; }
+  .ten-fan .fan-card { --cw: 38px; --ch: 54px; margin-left: -19px; }
+  .result-title.kot.win { font-size: 28px; }
+}

@@ -410,6 +410,14 @@ function trumpBadge(): string {
   return `<span class="trump-badge none">${t.trump} ?</span>`;
 }
 
+/** The four 10s flying in and fanning out — shown when we make Kot. */
+function tenFan(): string {
+  const tens: Card[] = (['S', 'H', 'C', 'D'] as const).map((suit) => ({ suit, rank: 10 }));
+  return `<div class="ten-fan">${tens
+    .map((c, k) => cardHtml(c, { cls: 'fan-card', data: `style="--k:${k}"` }))
+    .join('')}</div>`;
+}
+
 function summaryHtml(): string {
   const s = state;
   const r = s.lastResult;
@@ -464,7 +472,7 @@ function summaryHtml(): string {
   const fx: Record<string, string> = {
     'normal-win': roundCoins > 0 ? coins(12) : '',
     'normal-lose': '',
-    'kot-win': confetti(60) + coins(25),
+    'kot-win': '<i class="rays"></i>' + bursts(4) + confetti(60) + coins(25),
     'kot-lose': tears(14),
     'baunne-win': bursts(10) + confetti(110) + coins(45),
     'baunne-lose': tears(24),
@@ -472,6 +480,7 @@ function summaryHtml(): string {
   return `<div class="overlay result ${r.kind} ${mood}">
     ${fx[mood]}
     <div class="modal">
+      ${mood === 'kot-win' ? tenFan() : ''}
       <div class="result-title ${r.kind} ${weWon ? 'win' : 'lose'}">${titles[mood]}</div>
       ${mood === 'baunne-win' ? `<div class="result-sub">${t.baunne}</div>` : ''}
       <div class="result-team">${t.roundWonBy(teamName(r.winningTeam), r.points)}</div>

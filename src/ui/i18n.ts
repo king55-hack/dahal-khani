@@ -182,11 +182,11 @@ const ne: Strings = {
   toastDahal: (n, k) => `${n}ले ${k} दहल जिते!`,
   win: 'जित्यो!',
   lose: 'हार्यो',
-  kot: 'कोट!',
+  kot: 'कोट लगाइयो! 🎉',
   baunne: 'बाउन्ने! (५२)',
   roundWonBy: (t, p) => `${t}ले राउन्ड जित्यो (+${p})`,
   whyBaunne: 'सबै १३ हात जित्यो!',
-  whyKot: 'चारै दहल (१०) जित्यो!',
+  whyKot: 'चारै दहल हाम्रो कब्जामा! 💪',
   kotAgainst: 'कोट लाग्यो! 😱',
   baunneAgainst: 'बाउन्ने लाग्यो! 😵',
   whyKotAgainst: 'उनीहरूले चारै दहल लगे…',
@@ -304,7 +304,7 @@ const ne: Strings = {
   info: 'जानकारी',
   creditsBy: 'यो खेल बनाउने',
   creditsText:
-    'दहल खानी (दहल मारा, दहल जित) नेपालको परम्परागत तास खेल हो, भारतको मेन्डीकोट / देहला पकड जस्तै। यो ब्राउजर प्रोटोटाइप हो — तपाईं ३ वटा कम्प्युटर बोटसँग खेल्नुहुन्छ।',
+    'दहल खानी (दहल मारा, दहल जित) नेपालको परम्परागत तास खेल हो, भारतको मेन्डीकोट / देहला पकड जस्तै। अफलाइनमा ३ वटा बोटसँग, वा अनलाइनमा साथीहरूसँग खेल्नुहोस् — खाली सिटमा बोट बस्छ।',
   chooseLanguage: 'भाषा छान्नुहोस्',
   rulesHtml: (p, c) => `
     <h2>कसरी खेल्ने?</h2>
@@ -379,11 +379,11 @@ const neRom: Strings = {
   toastDahal: (n, k) => `${n} le ${k} Dahal jityo!`,
   win: 'Jityo!',
   lose: 'Haryo',
-  kot: 'KOT!',
+  kot: 'KOT LAGAAYO! 🎉',
   baunne: 'BAUNNE! (52)',
   roundWonBy: (t, p) => `${t} le round jityo (+${p})`,
   whyBaunne: 'Sabai 13 haat jityo!',
-  whyKot: 'Chaarai Dahal (10) jityo!',
+  whyKot: 'Chaarai Dahal hamro kabja ma! 💪',
   kotAgainst: 'KOT LAGYO! 😱',
   baunneAgainst: 'BAUNNE LAGYO! 😵',
   whyKotAgainst: 'Uniharu le chaarai Dahal lage…',
@@ -501,7 +501,7 @@ const neRom: Strings = {
   info: 'Jaankari',
   creditsBy: 'Yo game banaune',
   creditsText:
-    'Dahal Khani (Dahal Mara, Dahal Jeet) Nepal ko paramparaagat taas khel ho, Bharat ko Mendikot / Dehla Pakad jastai. Yo browser prototype ho — tapaai 3 ota computer bot sanga khelnuhunchha.',
+    'Dahal Khani (Dahal Mara, Dahal Jeet) Nepal ko paramparaagat taas khel ho, Bharat ko Mendikot / Dehla Pakad jastai. Offline ma 3 ota bot sanga, wa online ma saathi haru sanga khelnus — khaali seat ma bot baschha.',
   chooseLanguage: 'Bhasa chunnus',
   rulesHtml: (p, c) => `
     <h2>Kasari khelne?</h2>
@@ -576,11 +576,11 @@ const en: Strings = {
   toastDahal: (n, k) => `${n} captured ${k} ten${k > 1 ? 's' : ''} (Dahal)!`,
   win: 'You win!',
   lose: 'You lose',
-  kot: 'KOT!',
+  kot: 'KOT! 🎉',
   baunne: 'BAUNNE! (52)',
   roundWonBy: (t, p) => `${t} won the round (+${p})`,
   whyBaunne: 'Won all 13 tricks!',
-  whyKot: 'Captured all four 10s!',
+  whyKot: 'All four 10s are ours! 💪',
   kotAgainst: 'KOT AGAINST YOU! 😱',
   baunneAgainst: 'BAUNNE AGAINST YOU! 😵',
   whyKotAgainst: 'They took all four 10s…',
@@ -698,7 +698,7 @@ const en: Strings = {
   info: 'Info',
   creditsBy: 'Game created by',
   creditsText:
-    'Dahal Khani (also Dahal Mara or Dahal Jeet) is a traditional Nepali card game, similar to Mendikot / Dehla Pakad in India. This is a browser prototype — you play against 3 computer bots.',
+    'Dahal Khani (also Dahal Mara or Dahal Jeet) is a traditional Nepali card game, similar to Mendikot / Dehla Pakad in India. Play offline against 3 bots, or online with friends — bots fill any empty seats.',
   chooseLanguage: 'Choose language',
   rulesHtml: (p, c) => `
     <h2>How to play</h2>
@@ -773,11 +773,11 @@ const ja: Strings = {
   toastDahal: (n, k) => `${n}がダハル(10)を${k}枚獲得！`,
   win: '勝利！',
   lose: '敗北',
-  kot: 'コット！',
+  kot: 'コット達成！ 🎉',
   baunne: 'バウンネ！ (52)',
   roundWonBy: (t, p) => `${t}がラウンドに勝利 (+${p})`,
   whyBaunne: '13トリックすべて獲得！',
-  whyKot: '4枚のダハル(10)をすべて獲得！',
+  whyKot: '10を4枚すべて手に入れた！ 💪',
   kotAgainst: 'コットされた！ 😱',
   baunneAgainst: 'バウンネされた！ 😵',
   whyKotAgainst: '10を4枚すべて取られた…',
@@ -895,7 +895,7 @@ const ja: Strings = {
   info: '情報',
   creditsBy: 'このゲームの作者',
   creditsText:
-    'ダハル・カニ（ダハル・マラ、ダハル・ジート）はネパールの伝統的なトランプゲームで、インドのメンディコート／デーラ・パカドに似ています。これはブラウザ版のプロトタイプで、3体のコンピューターと対戦します。',
+    'ダハル・カニ（ダハル・マラ、ダハル・ジート）はネパールの伝統的なトランプゲームで、インドのメンディコート／デーラ・パカドに似ています。オフラインではボット3体と、オンラインでは友達と遊べます（空席はボットが担当）。',
   chooseLanguage: '言語を選択',
   rulesHtml: (p, c) => `
     <h2>遊び方</h2>

@@ -422,10 +422,10 @@ function trumpBadge(): string {
   if (s.settings.trumpMode === 'bandHukum' && s.phase !== 'choosingTrump' && s.phase !== 'roundOver') {
     return mine
       ? `<span class="trump-badge secret ${isRed(mine) ? 'red' : 'black'}">🔒 <b>${SUIT_SYMBOL[mine]}</b></span>`
-      : `<span class="trump-badge none">🔒 ${t.trump} ?</span>`;
+      : `<span class="trump-badge none">🔒 ${label} ?</span>`;
   }
-  if (s.settings.trumpMode === 'cutHukum') return `<span class="trump-badge none">✂ ${t.trump} ?</span>`;
-  return `<span class="trump-badge none">${t.trump} ?</span>`;
+  if (s.settings.trumpMode === 'cutHukum') return `<span class="trump-badge none">✂ ${label} ?</span>`;
+  return `<span class="trump-badge none">${label} ?</span>`;
 }
 
 /** The four 10s flying in and fanning out — shown when we make Kot. */
@@ -525,9 +525,9 @@ function render() {
       <span class="coin-chip" title="${t.coins}">🪙 ${prefs.coins}</span>
       ${
         online
-          ? `<button class="small room-chip" data-action="online" title="${t.online}">${online.status === 'open' ? '🌐' : '⏳'} ${online.code}</button>`
+          ? `<button class="small room-chip" data-action="online" title="${t.online}">${online.status === 'open' ? '🌐' : '⏳'} ${online.code}${liveBadge()}</button>`
           : SERVER_URL
-            ? `<button class="small" data-action="online" title="${t.playOnline}" aria-label="${t.online}">🌐</button>`
+            ? `<button class="small globe-btn" data-action="online" title="${t.playOnline}" aria-label="${t.online}">🌐${liveBadge()}</button>`
             : ''
       }
       <button class="small" data-action="info" title="${t.info}" aria-label="${t.info}">ⓘ</button>
@@ -538,11 +538,6 @@ function render() {
       ${seatHtml(2)}${seatHtml(3)}${trickHtml()}${seatHtml(1)}
     </main>
     <div class="status-row">
-      ${
-        liveCount !== null
-          ? `<span class="live-pill" title="${t.liveTitle(liveCount)}" aria-label="${t.liveTitle(liveCount)}"><i class="live-dot"></i>${liveCount}</span>`
-          : ''
-      }
       <div class="status">${statusText()}</div>
       ${online ? `<button class="say-btn" data-action="say" aria-label="${t.sayTitle}" title="${t.sayTitle}">💬</button>` : ''}
     </div>
@@ -551,6 +546,12 @@ function render() {
     ${toast ? `<div class="toast">${toast}</div>` : ''}
     ${summaryHtml()}
   `;
+}
+
+/** "● 3" next to the 🌐 button: how many people have the game open (whatever they are playing). */
+function liveBadge(): string {
+  if (liveCount === null) return '';
+  return `<span class="live-badge" title="${t.liveTitle(liveCount)}" aria-label="${t.liveTitle(liveCount)}"><i class="live-dot"></i>${liveCount}</span>`;
 }
 
 function sayPanelHtml(): string {

@@ -271,7 +271,7 @@ const ne: Strings = {
     },
     online: {
       title: '🌐 अनलाइन',
-      body: 'साथीसँग खेल्न: <b>रुम बनाउनुहोस्</b> (पासवर्ड राख्न मिल्छ) वा <b>रुम नम्बर</b> हालेर जानुहोस्। खुला रुमको सूची पनि छ। खाली सिटमा बोट खेल्छ।',
+      body: 'साथीसँग खेल्न: <b>रुम बनाउनुहोस्</b> (पासवर्ड राख्न मिल्छ) वा <b>रुम नम्बर</b> हालेर जानुहोस्। खुला रुमको सूची पनि छ। खाली सिटमा बोट खेल्छ।<br>🌐 छेउको हरियो <b>●</b> र नम्बरले अहिले कति जना खेल खोलेर बसेका छन् भन्छ।',
     },
     chat: {
       title: '💬 प्रतिक्रिया र सन्देश',
@@ -521,7 +521,7 @@ const neRom: Strings = {
     },
     online: {
       title: '🌐 Online',
-      body: 'Saathi sanga khelna: <b>room banaunus</b> (password rakhna milchha) wa <b>room number</b> haalera jaanus. Khulla room ko list pani chha. Khaali seat ma bot khelchha.',
+      body: 'Saathi sanga khelna: <b>room banaunus</b> (password rakhna milchha) wa <b>room number</b> haalera jaanus. Khulla room ko list pani chha. Khaali seat ma bot khelchha.<br>🌐 chheu ko hariyo <b>●</b> ra number le ahile kati jana game kholera baseka chhan bhanchha.',
     },
     chat: {
       title: '💬 Reaction ra sandesh',
@@ -771,7 +771,7 @@ const en: Strings = {
     },
     online: {
       title: '🌐 Online',
-      body: 'Play with friends: <b>create a room</b> (optionally with a password) or join with a <b>room number</b>. There is also a list of open rooms. Bots fill empty seats.',
+      body: 'Play with friends: <b>create a room</b> (optionally with a password) or join with a <b>room number</b>. There is also a list of open rooms. Bots fill empty seats.<br>The green <b>●</b> and number next to 🌐 show how many people have the game open right now.',
     },
     chat: {
       title: '💬 Reactions & messages',
@@ -1021,7 +1021,7 @@ const ja: Strings = {
     },
     online: {
       title: '🌐 オンライン',
-      body: '友達と遊ぶには<b>ルームを作成</b>（パスワードも設定可）するか、<b>ルーム番号</b>で参加します。公開ルームの一覧もあります。空席はボットが担当します。',
+      body: '友達と遊ぶには<b>ルームを作成</b>（パスワードも設定可）するか、<b>ルーム番号</b>で参加します。公開ルームの一覧もあります。空席はボットが担当します。<br>🌐 の横の緑の <b>●</b> と数字は、今ゲームを開いている人数です。',
     },
     chat: {
       title: '💬 リアクションとメッセージ',

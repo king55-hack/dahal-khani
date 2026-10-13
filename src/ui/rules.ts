@@ -56,7 +56,9 @@ const ne: RulesFn = (p, c) => `
   </ul>
   <h3>९. सिक्का (यो एपमा)</h3>
   <ul>
-    <li>तपाईंको टिम जित्दा: साधारण +${c.normal}, कोट +${c.kot}, बाउन्ने +${c.baunne} सिक्का।</li>
+    <li>हारे पनि २ दहल लिएको भए (हात थोरै भएर हारेको): +${c.lostWithTwoTens}। अरू हारमा ०।</li>
+    <li>हात धेरै लिएर जित: +${c.winOnTricks} · ३ दहल लिएर जित: +${c.winThreeTens}</li>
+    <li>कोट लगाएर जित: +${c.kot} · बाउन्ने (सबै ५२ पत्ती): +${c.baunne} — सबैभन्दा धेरै, "खतरा सुपर्ब" एनिमेसनसहित!</li>
     <li>सिक्काले नयाँ पत्ती डिजाइन खोल्न सकिन्छ। सिक्का यही ब्राउजरमा सेभ हुन्छ।</li>
   </ul>
   <h3>१०. अनलाइन खेल</h3>
@@ -118,7 +120,9 @@ const neRom: RulesFn = (p, c) => `
   </ul>
   <h3>9. Coin (yo app ma)</h3>
   <ul>
-    <li>Tapaaiko team jitda: normal +${c.normal}, Kot +${c.kot}, Baunne +${c.baunne} coin.</li>
+    <li>Hare pani 2 Dahal khaayeko bhaye (haat thorai bhayera hareko): +${c.lostWithTwoTens}. Aru haar ma 0.</li>
+    <li>Haat badhi khaayera jit: +${c.winOnTricks} · 3 Dahal khaayera jit: +${c.winThreeTens}</li>
+    <li>Kot laayera jit: +${c.kot} · Baunne (sabai 52 patti): +${c.baunne} — sabai bhanda badhi, "Khatra Superb" animation sahit!</li>
     <li>Coin le naya patti design kholna sakinchha. Coin yahi browser ma save hunchha.</li>
   </ul>
   <h3>10. Online khel</h3>
@@ -180,7 +184,9 @@ const en: RulesFn = (p, c) => `
   </ul>
   <h3>9. Coins (in this app)</h3>
   <ul>
-    <li>When your team wins: normal +${c.normal}, Kot +${c.kot}, Baunne +${c.baunne} coins.</li>
+    <li>Lost but took 2 tens (lost only on tricks): +${c.lostWithTwoTens}. Other losses: 0.</li>
+    <li>Won on more tricks: +${c.winOnTricks} · won with 3 tens: +${c.winThreeTens}</li>
+    <li>Won with Kot: +${c.kot} · Baunne (all 52 cards): +${c.baunne} — the maximum, with a "Superb" celebration!</li>
     <li>Spend coins to unlock card designs. Coins are saved in this browser.</li>
   </ul>
   <h3>10. Online games</h3>
@@ -242,7 +248,9 @@ const ja: RulesFn = (p, c) => `
   </ul>
   <h3>9. コイン（このアプリ）</h3>
   <ul>
-    <li>味方チームが勝つと：通常 +${c.normal}、コット +${c.kot}、バウンネ +${c.baunne} コイン。</li>
+    <li>負けてもダハル2枚（トリック数で負け）：+${c.lostWithTwoTens}。その他の負けは0。</li>
+    <li>トリック数で勝ち：+${c.winOnTricks} · ダハル3枚で勝ち：+${c.winThreeTens}</li>
+    <li>コットで勝ち：+${c.kot} · バウンネ（52枚すべて）：+${c.baunne} — 最高額、「スーパー」演出つき！</li>
     <li>コインでカードデザインを解放できます。コインはこのブラウザに保存されます。</li>
   </ul>
   <h3>10. オンライン対戦</h3>

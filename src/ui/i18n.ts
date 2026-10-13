@@ -8,7 +8,9 @@ export type Lang = 'ne' | 'neRom' | 'en' | 'ja';
 export const LANGS: readonly Lang[] = ['ne', 'neRom', 'en', 'ja'];
 
 export interface CoinValues {
-  normal: number;
+  lostWithTwoTens: number;
+  winOnTricks: number;
+  winThreeTens: number;
   kot: number;
   baunne: number;
 }
@@ -52,6 +54,11 @@ export interface Strings {
   roundWonBy: (team: string, points: number) => string;
   whyBaunne: string;
   whyKot: string;
+  kotAgainst: string;
+  baunneAgainst: string;
+  whyKotAgainst: string;
+  whyBaunneAgainst: string;
+  khatra: string;
   whyTens: (n: number) => string;
   whyTricks: (n: number) => string;
   totalScore: string;
@@ -180,6 +187,11 @@ const ne: Strings = {
   roundWonBy: (t, p) => `${t}ले राउन्ड जित्यो (+${p})`,
   whyBaunne: 'सबै १३ हात जित्यो!',
   whyKot: 'चारै दहल (१०) जित्यो!',
+  kotAgainst: 'कोट लाग्यो! 😱',
+  baunneAgainst: 'बाउन्ने लाग्यो! 😵',
+  whyKotAgainst: 'उनीहरूले चारै दहल लगे…',
+  whyBaunneAgainst: 'उनीहरूले सबै ५२ पत्ती लगे…',
+  khatra: 'खतरा! सुपर्ब! 🔥',
   whyTens: (n) => `${n} वटा दहल जित्यो`,
   whyTricks: (n) => `२–२ दहल, धेरै हात (${n}) जित्यो`,
   totalScore: 'जम्मा स्कोर',
@@ -318,7 +330,7 @@ const ne: Strings = {
     <h3>४. स्कोर र सिक्का</h3>
     <ul>
       <li>साधारण जित: <b>${p.normal}</b> अंक · <b>कोट</b> (चारै दहल): <b>${p.kot}</b> · <b>बाउन्ने</b> (सबै १३ हात): <b>${p.baunne}</b></li>
-      <li>तपाईंको टिम जित्दा सिक्का 🪙: साधारण +${c.normal}, कोट +${c.kot}, बाउन्ने +${c.baunne}। सिक्काले नयाँ पत्ती डिजाइन खोल्न सकिन्छ।</li>
+      <li>सिक्का 🪙: हात धेरै लिएर जित +${c.winOnTricks}, ३ दहल लिएर जित +${c.winThreeTens}, कोट +${c.kot}, बाउन्ने (५२ पत्ती) +${c.baunne}। २ दहल लिएर हारे पनि +${c.lostWithTwoTens}; अरू हारमा ०। सिक्काले नयाँ पत्ती डिजाइन खोल्न सकिन्छ।</li>
     </ul>
     <h3>५. तीन मोड (सेटिङ ⚙ मा)</h3>
     <ul>
@@ -372,6 +384,11 @@ const neRom: Strings = {
   roundWonBy: (t, p) => `${t} le round jityo (+${p})`,
   whyBaunne: 'Sabai 13 haat jityo!',
   whyKot: 'Chaarai Dahal (10) jityo!',
+  kotAgainst: 'KOT LAGYO! 😱',
+  baunneAgainst: 'BAUNNE LAGYO! 😵',
+  whyKotAgainst: 'Uniharu le chaarai Dahal lage…',
+  whyBaunneAgainst: 'Uniharu le sabai 52 patti lage…',
+  khatra: 'KHATRA! SUPERB! 🔥',
   whyTens: (n) => `${n} ota Dahal jityo`,
   whyTricks: (n) => `2–2 Dahal, dherai haat (${n}) jityo`,
   totalScore: 'Jamma score',
@@ -510,7 +527,7 @@ const neRom: Strings = {
     <h3>4. Score ra coin</h3>
     <ul>
       <li>Saadharan jit: <b>${p.normal}</b> point · <b>Kot</b> (chaarai Dahal): <b>${p.kot}</b> · <b>Baunne</b> (sabai 13 haat): <b>${p.baunne}</b></li>
-      <li>Tapaaiko team jitda coin 🪙: normal +${c.normal}, Kot +${c.kot}, Baunne +${c.baunne}. Coin le naya patti design kholna sakinchha.</li>
+      <li>Coin 🪙: haat badhi khaayera jit +${c.winOnTricks}, 3 Dahal khaayera jit +${c.winThreeTens}, Kot +${c.kot}, Baunne (52 patti) +${c.baunne}. 2 Dahal khaayera hare pani +${c.lostWithTwoTens}; aru haar ma 0. Coin le naya patti design kholna sakinchha.</li>
     </ul>
     <h3>5. Tin ota mode (Setting ⚙ ma)</h3>
     <ul>
@@ -564,6 +581,11 @@ const en: Strings = {
   roundWonBy: (t, p) => `${t} won the round (+${p})`,
   whyBaunne: 'Won all 13 tricks!',
   whyKot: 'Captured all four 10s!',
+  kotAgainst: 'KOT AGAINST YOU! 😱',
+  baunneAgainst: 'BAUNNE AGAINST YOU! 😵',
+  whyKotAgainst: 'They took all four 10s…',
+  whyBaunneAgainst: 'They took all 52 cards…',
+  khatra: 'INCREDIBLE! SUPERB! 🔥',
   whyTens: (n) => `Captured ${n} tens`,
   whyTricks: (n) => `Tens 2–2, more tricks (${n})`,
   totalScore: 'Total score',
@@ -702,7 +724,7 @@ const en: Strings = {
     <h3>4. Score and coins</h3>
     <ul>
       <li>Normal win: <b>${p.normal}</b> point · <b>Kot</b> (all four 10s): <b>${p.kot}</b> · <b>Baunne</b> (all 13 tricks): <b>${p.baunne}</b></li>
-      <li>When your team wins you earn coins 🪙: normal +${c.normal}, Kot +${c.kot}, Baunne +${c.baunne}. Spend coins to unlock card designs.</li>
+      <li>Coins 🪙: win on tricks +${c.winOnTricks}, win with 3 tens +${c.winThreeTens}, Kot +${c.kot}, Baunne (all 52 cards) +${c.baunne}. Losing with 2 tens still gives +${c.lostWithTwoTens}; other losses 0. Spend coins to unlock card designs.</li>
     </ul>
     <h3>5. Three modes (in Settings ⚙)</h3>
     <ul>
@@ -756,6 +778,11 @@ const ja: Strings = {
   roundWonBy: (t, p) => `${t}がラウンドに勝利 (+${p})`,
   whyBaunne: '13トリックすべて獲得！',
   whyKot: '4枚のダハル(10)をすべて獲得！',
+  kotAgainst: 'コットされた！ 😱',
+  baunneAgainst: 'バウンネされた！ 😵',
+  whyKotAgainst: '10を4枚すべて取られた…',
+  whyBaunneAgainst: '52枚すべて取られた…',
+  khatra: '最高！スーパー！ 🔥',
   whyTens: (n) => `ダハルを${n}枚獲得`,
   whyTricks: (n) => `ダハル2対2、トリック数(${n})で勝利`,
   totalScore: '合計スコア',
@@ -894,7 +921,7 @@ const ja: Strings = {
     <h3>4. スコアとコイン</h3>
     <ul>
       <li>通常の勝ち：<b>${p.normal}</b>点 · <b>コット</b>（10を4枚全部）：<b>${p.kot}</b>点 · <b>バウンネ</b>（13トリック全部）：<b>${p.baunne}</b>点</li>
-      <li>味方チームが勝つとコイン 🪙 獲得：通常 +${c.normal}、コット +${c.kot}、バウンネ +${c.baunne}。コインで新しいカードデザインを解放できます。</li>
+      <li>コイン 🪙：トリック数で勝ち +${c.winOnTricks}、ダハル3枚で勝ち +${c.winThreeTens}、コット +${c.kot}、バウンネ（52枚すべて）+${c.baunne}。ダハル2枚で負けても +${c.lostWithTwoTens}、その他の負けは0。コインでカードデザインを解放できます。</li>
     </ul>
     <h3>5. 3つのモード（設定 ⚙）</h3>
     <ul>

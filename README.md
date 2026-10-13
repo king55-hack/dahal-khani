@@ -53,7 +53,7 @@ Allowed sites are set in `wrangler.jsonc` (`ALLOWED_ORIGINS`).
 - `src/ui/` — browser UI only: `i18n.ts` (all text, 4 languages), `modals.ts` (settings / info /
   language dialogs), `themes.ts` (card designs and prices), `sound.ts`, `prefs.ts` (saved in the browser).
 - `src/settings.ts` — point values, coin rewards, default trump mode, bot speed, creator name.
-- Debug: add `?autoplay` to the URL to watch bots play every seat.
+- Debug: add `?autoplay` to the URL to watch bots play every seat; in `npm run dev`, `?result=kot-lose` (or `baunne-win`, `normal-win`, …) previews a result screen.
 
 ## Rules (short)
 

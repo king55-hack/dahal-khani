@@ -5,6 +5,7 @@ import {
   botChooseTrump,
   chooseTrump,
   collectTrick,
+  computeRoundResult,
   currentTrump,
   dealRound,
   isRed,
@@ -30,7 +31,8 @@ import {
   type Suit,
   type TrumpMode,
 } from '../engine';
-import { BOT_DELAY_MS, COIN_REWARDS, CREATOR_NAME, GAME_SETTINGS, TRICK_PAUSE_MS } from '../settings';
+import { coinsFor } from '../coins';
+import { BOT_DELAY_MS, CREATOR_NAME, GAME_SETTINGS, TRICK_PAUSE_MS } from '../settings';
 import {
   cleanName,
   isRoomCode,
@@ -195,15 +197,19 @@ function react(prev: GameState, next: GameState) {
 
   if (prev.phase !== 'roundOver' && next.phase === 'roundOver' && next.lastResult) {
     const r = next.lastResult;
-    roundCoins = r.winningTeam === 0 ? COIN_REWARDS[r.kind] : 0;
+    // team 0 is always "us" (online views are rotated so)
+    roundCoins = coinsFor(r, 0);
     if (roundCoins > 0) {
       prefs.coins += roundCoins;
       savePrefs(prefs);
       window.setTimeout(() => sfx.coin(), 900);
     }
-    if (r.kind === 'baunne') sfx.baunne();
-    else if (r.kind === 'kot') sfx.kot();
-    else if (r.winningTeam === 0) sfx.win();
+    const weWon = r.winningTeam === 0;
+    if (weWon) {
+      if (r.kind === 'baunne') sfx.baunne();
+      else if (r.kind === 'kot') sfx.kot();
+      else sfx.win();
+    } else if (r.kind !== 'normal') sfx.ouch();
     else sfx.lose();
   }
 }
@@ -410,27 +416,64 @@ function summaryHtml(): string {
   if (s.phase !== 'roundOver' || !r) return '';
   const weWon = r.winningTeam === 0;
   const teamName = (team: 0 | 1) => (team === 0 ? t.teamUs : t.teamThem);
-  const kindTitle = r.kind === 'baunne' ? t.baunne : r.kind === 'kot' ? t.kot : weWon ? t.win : t.lose;
+  // six different screens: normal / Kot / Baunne, each for winning or losing
+  const mood = `${r.kind}-${weWon ? 'win' : 'lose'}`;
+  const titles: Record<string, string> = {
+    'normal-win': t.win,
+    'normal-lose': t.lose,
+    'kot-win': t.kot,
+    'kot-lose': t.kotAgainst,
+    'baunne-win': t.khatra,
+    'baunne-lose': t.baunneAgainst,
+  };
   const why =
-    r.kind === 'baunne'
-      ? t.whyBaunne
-      : r.kind === 'kot'
-        ? t.whyKot
-        : r.tens[r.winningTeam] >= 3
-          ? t.whyTens(r.tens[r.winningTeam])
-          : t.whyTricks(r.tricks[r.winningTeam]);
-  const confettiCount = r.kind === 'baunne' ? 120 : r.kind === 'kot' ? 60 : 0;
-  const confetti = Array.from({ length: confettiCount }, (_, i) => {
-    const colors = ['#ffd54a', '#ff5a5f', '#4ade80', '#60a5fa', '#f472b6', '#fff'];
-    const left = (i * 37) % 100;
-    const delay = ((i * 13) % 30) / 10;
-    const dur = 2.5 + ((i * 7) % 20) / 10;
-    return `<i class="confetti" style="left:${left}%;background:${colors[i % colors.length]};animation-delay:${delay}s;animation-duration:${dur}s"></i>`;
-  }).join('');
-  return `<div class="overlay ${r.kind}">
-    ${confetti}
+    mood === 'kot-lose'
+      ? t.whyKotAgainst
+      : mood === 'baunne-lose'
+        ? t.whyBaunneAgainst
+        : r.kind === 'baunne'
+          ? t.whyBaunne
+          : r.kind === 'kot'
+            ? t.whyKot
+            : r.tens[r.winningTeam] >= 3
+              ? t.whyTens(r.tens[r.winningTeam])
+              : t.whyTricks(r.tricks[r.winningTeam]);
+  const spread = (n: number, f: (i: number, left: number, delay: number, dur: number) => string) =>
+    Array.from({ length: n }, (_, i) => f(i, (i * 37) % 100, ((i * 13) % 30) / 10, 2.5 + ((i * 7) % 20) / 10)).join('');
+  const colors = ['#ffd54a', '#ff5a5f', '#4ade80', '#60a5fa', '#f472b6', '#fff'];
+  const confetti = (n: number) =>
+    spread(
+      n,
+      (i, left, delay, dur) =>
+        `<i class="confetti" style="left:${left}%;background:${colors[i % colors.length]};animation-delay:${delay}s;animation-duration:${dur}s"></i>`,
+    );
+  const coins = (n: number) =>
+    spread(
+      n,
+      (_i, left, delay, dur) =>
+        `<i class="coin-fall" style="left:${left}%;animation-delay:${delay / 2}s;animation-duration:${dur * 0.8}s">🪙</i>`,
+    );
+  const bursts = (n: number) =>
+    spread(
+      n,
+      (i, left, delay) =>
+        `<i class="burst" style="left:${10 + (left * 0.8)}%;top:${12 + ((i * 29) % 45)}%;animation-delay:${delay / 2}s;--c:${colors[i % colors.length]}"></i>`,
+    );
+  const tears = (n: number) =>
+    spread(n, (_i, left, delay, dur) => `<i class="tear" style="left:${left}%;animation-delay:${delay}s;animation-duration:${dur}s">💧</i>`);
+  const fx: Record<string, string> = {
+    'normal-win': roundCoins > 0 ? coins(12) : '',
+    'normal-lose': '',
+    'kot-win': confetti(60) + coins(25),
+    'kot-lose': tears(14),
+    'baunne-win': bursts(10) + confetti(110) + coins(45),
+    'baunne-lose': tears(24),
+  };
+  return `<div class="overlay result ${r.kind} ${mood}">
+    ${fx[mood]}
     <div class="modal">
-      <div class="result-title ${r.kind} ${weWon ? 'win' : 'lose'}">${kindTitle}</div>
+      <div class="result-title ${r.kind} ${weWon ? 'win' : 'lose'}">${titles[mood]}</div>
+      ${mood === 'baunne-win' ? `<div class="result-sub">${t.baunne}</div>` : ''}
       <div class="result-team">${t.roundWonBy(teamName(r.winningTeam), r.points)}</div>
       <div class="why">${why}</div>
       ${roundCoins > 0 ? `<div class="coins-earned">${t.coinsEarned(roundCoins)}</div>` : ''}
@@ -939,6 +982,17 @@ document.addEventListener('keydown', (e) => {
 });
 
 applyLookAndLanguage();
+// Dev only (stripped from the live build): preview a result screen, e.g. ?result=kot-lose
+const previewResult = import.meta.env.DEV ? new URLSearchParams(location.search).get('result') : null;
+if (previewResult) {
+  const [kind, side] = previewResult.split('-');
+  const ours = side === 'win';
+  const tens: [number, number] = kind === 'normal' ? (ours ? [3, 1] : [2, 2]) : ours ? [4, 0] : [0, 4];
+  const tricks: [number, number] = kind === 'baunne' ? (ours ? [13, 0] : [0, 13]) : ours ? [8, 5] : [6, 7];
+  const r = computeRoundResult(tens, tricks, GAME_SETTINGS.points);
+  roundCoins = coinsFor(r, 0);
+  state = { ...state, phase: 'roundOver', lastResult: r, tensWon: tens, tricksWon: tricks };
+}
 // Opened from an invite link: rejoin straight away if we were already in that room, else ask for a name.
 if (onlineForm.codeInput && SERVER_URL && prefs.lang) {
   let rejoin = false;

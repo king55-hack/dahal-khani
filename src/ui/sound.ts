@@ -68,6 +68,11 @@ export const sfx = {
   coin: () => arp([988, 1319], 0.08, 0.25, 'square', 0.05),
   win: () => arp([523, 659, 784, 1047], 0.11, 0.3),
   lose: () => arp([392, 330, 262], 0.2, 0.4, 'sine', 0.1),
+  /** Kot or Baunne against us: a sad "wah-wah-wah-waaah" */
+  ouch: () => {
+    arp([392, 370, 349], 0.32, 0.3, 'triangle', 0.12);
+    note(330, 0.96, 0.9, 'triangle', 0.12);
+  },
   kot: () => {
     arp([523, 659, 784, 1047, 1319], 0.1, 0.35);
     arp([262, 330, 392], 0.15, 0.6, 'sine', 0.08);

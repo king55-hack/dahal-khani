@@ -19,9 +19,11 @@ export const TRICK_PAUSE_MS = 1100;
 /** Shown in the ⓘ "Banaune" (credits) section. */
 export const CREATOR_NAME = 'Rajan Rimal';
 
-/** Coins the player earns when their team wins a round. Spent to unlock card designs. */
+/** Coins a player earns per round (see coins.ts). Spent to unlock card designs. */
 export const COIN_REWARDS = {
-  normal: 10,
-  kot: 25,
-  baunne: 50,
+  lostWithTwoTens: 5, // lost, but took 2 Dahal (lost only on tricks) — any other loss: 0
+  winOnTricks: 10, // won 2–2 Dahal with more tricks
+  winThreeTens: 20, // won with 3 Dahal
+  kot: 30, // won with all four Dahal
+  baunne: 40, // won all 13 tricks (all 52 cards) — the maximum
 };

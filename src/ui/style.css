@@ -763,3 +763,44 @@ body.no-anim .fx-card { display: none; }
   .say-msgs { grid-template-columns: repeat(3, 1fr); gap: 4px; }
   .say-msg { padding: 5px 4px; font-size: 12px; }
 }
+
+/* ---------- result screens: winning and losing look different ---------- */
+.overlay.normal-lose { background: rgba(20, 20, 28, .72); }
+.overlay.kot-lose { background: radial-gradient(circle, rgba(90, 10, 10, .78), rgba(0, 0, 0, .9)); animation: shake .45s ease-in-out 2; }
+.overlay.baunne-lose { background: radial-gradient(circle, rgba(40, 40, 50, .82), rgba(0, 0, 0, .94)); animation: shake .5s ease-in-out 3; }
+.overlay.baunne-win { background: radial-gradient(circle, rgba(250, 190, 40, .55), rgba(120, 40, 160, .8) 55%, rgba(0, 0, 0, .9)); }
+.overlay.normal-lose .modal, .overlay.kot-lose .modal, .overlay.baunne-lose .modal { filter: saturate(.75); }
+
+/* losing a Kot / Baunne: heavy red title that thuds down, no rainbow */
+.result-title.kot.lose, .result-title.baunne.lose {
+  background: none; -webkit-background-clip: border-box; background-clip: border-box;
+  color: #b91c1c; font-size: 36px; animation: thud .6s cubic-bezier(.3, 1.6, .5, 1) both;
+}
+@keyframes thud { 0% { transform: translateY(-60px) scale(1.4); opacity: 0; } 100% { transform: none; opacity: 1; } }
+
+/* Baunne win: "KHATRA! SUPERB!" zooms in big */
+.result-title.baunne.win {
+  font-size: 40px; line-height: 1.1;
+  animation: shine 1.5s linear infinite, superb .9s cubic-bezier(.2, 1.8, .4, 1) both;
+}
+@keyframes superb { 0% { transform: scale(.2) rotate(-12deg); opacity: 0; } 60% { transform: scale(1.25) rotate(4deg); } 100% { transform: scale(1); opacity: 1; } }
+.result-sub { font-weight: 900; color: #7c3aed; letter-spacing: 2px; margin-top: 2px; }
+
+.coin-fall, .tear {
+  position: absolute; top: -40px; font-size: 26px; pointer-events: none;
+  animation-name: fall; animation-timing-function: linear; animation-iteration-count: infinite;
+}
+.tear { font-size: 18px; opacity: .8; }
+.burst {
+  position: absolute; width: 6px; height: 6px; border-radius: 50%; pointer-events: none;
+  background: var(--c); animation: burst 1.6s ease-out infinite;
+  box-shadow:
+    0 -60px 0 var(--c), 42px -42px 0 var(--c), 60px 0 0 var(--c), 42px 42px 0 var(--c),
+    0 60px 0 var(--c), -42px 42px 0 var(--c), -60px 0 0 var(--c), -42px -42px 0 var(--c),
+    0 -30px 0 #fff, 30px 0 0 #fff, 0 30px 0 #fff, -30px 0 0 #fff;
+}
+@keyframes burst { 0% { transform: scale(.1); opacity: 1; } 70% { opacity: 1; } 100% { transform: scale(1.6); opacity: 0; } }
+@media (orientation: landscape) and (max-height: 560px) {
+  .result-title.baunne.win { font-size: 28px; }
+  .result-title.kot.lose, .result-title.baunne.lose { font-size: 26px; }
+}

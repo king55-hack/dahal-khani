@@ -999,3 +999,13 @@ body.bg-gundri, .bg-preview.bg-gundri {
     url('./textures/gundri.jpg') 0 0 / 340px auto repeat,
     #5a4430;
 }
+
+/* Galaicha from a real Nepali carpet photo (straightened from an angled shot). Shown whole with
+   `cover`, so the centre medallion sits behind the cards; the photo has its own border. */
+body.bg-galaicha, .bg-preview.bg-galaicha {
+  background:
+    radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 40%, rgba(20, 0, 0, .55) 100%),
+    url('./textures/galaicha.jpg') center / cover no-repeat,
+    #2a0d0d;
+}
+body.bg-galaicha::before { content: none; } /* the old drawn border is no longer needed */

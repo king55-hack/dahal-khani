@@ -1,5 +1,11 @@
 # Dahal Khani (Dahal Mara / Dahal Jeet)
 
+<p align="center">
+  <a href="https://king55-hack.github.io/dahal-khani/"><img src="public/og-image.png" alt="Dahal Khani — four tens in a hand. Online + Offline Nepali card game" width="720"></a>
+</p>
+
+<p align="center"><b><a href="https://king55-hack.github.io/dahal-khani/">▶ Play now / Khelnus</a></b></p>
+
 Traditional Nepali 4-player card game (2 teams, like Mendikot / Dehla Pakad), as a browser prototype.
 Play **offline** against 3 bots (partner Sita; opponents Gajendra and Ranjana) or **online** with friends
 (rooms with optional password; bots fill empty seats).

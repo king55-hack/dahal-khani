@@ -1,4 +1,9 @@
 :root {
+  /* iPhone notch / home bar insets (overridable in dev with ?safe=top,right,bottom,left) */
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
   --ink: #f5f3e8;
   --muted: #b9d4c2;
   --gold: #ffd54a;
@@ -30,8 +35,8 @@ html, body {
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  padding: max(8px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
-    max(10px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+  padding: max(8px, var(--sat)) max(10px, var(--sar))
+    max(10px, var(--sab)) max(10px, var(--sal));
   gap: 6px;
 }
 
@@ -256,7 +261,7 @@ button.small {
 /* ---------- toast ---------- */
 .toast {
   position: fixed;
-  left: 50%; top: calc(22% + env(safe-area-inset-top));
+  left: 50%; top: calc(22% + var(--sat));
   transform: translateX(-50%);
   background: rgba(0,0,0,.8);
   color: #fff;
@@ -280,8 +285,8 @@ button.small {
   justify-content: center;
   z-index: 30;
   overflow: hidden auto;
-  padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right))
-    max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  padding: max(16px, var(--sat)) max(16px, var(--sar))
+    max(16px, var(--sab)) max(16px, var(--sal));
 }
 .modal {
   background: #fffdf7;
@@ -373,8 +378,8 @@ button.primary:active { transform: translateY(2px); box-shadow: none; }
   #app {
     max-width: none;
     gap: 3px;
-    padding: max(4px, env(safe-area-inset-top)) max(10px, env(safe-area-inset-right))
-      max(4px, env(safe-area-inset-bottom)) max(10px, env(safe-area-inset-left));
+    padding: max(4px, var(--sat)) max(10px, var(--sar))
+      max(4px, var(--sab)) max(10px, var(--sal));
   }
   header { font-size: 12px; }
   header .score { font-size: 14px; }
@@ -721,7 +726,7 @@ body.no-anim .fx-card { display: none; }
   background: rgba(0,0,0,.35); box-shadow: 0 0 0 1.5px rgba(255,213,74,.6);
 }
 .say-panel {
-  position: fixed; left: 50%; bottom: calc(var(--ch) + 40px + env(safe-area-inset-bottom));
+  position: fixed; left: 50%; bottom: calc(var(--ch) + 40px + var(--sab));
   transform: translateX(-50%); z-index: 28; width: min(380px, calc(100vw - 20px));
   background: #fffdf7; color: #1f2937; border-radius: 16px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,.45);
   animation: pop .18s ease-out;
@@ -755,7 +760,7 @@ body.no-anim .fx-card { display: none; }
   85% { opacity: 1; }
   100% { opacity: 0; }
 }
-.say-panel { max-height: calc(100dvh - var(--ch) - 56px - env(safe-area-inset-top)); overflow-y: auto; }
+.say-panel { max-height: calc(100dvh - var(--ch) - 56px - var(--sat)); overflow-y: auto; }
 @media (orientation: landscape) and (max-height: 560px) {
   .say-panel { width: min(600px, calc(100vw - 20px)); padding: 8px; }
   .say-emojis { margin-bottom: 4px; }
@@ -902,3 +907,43 @@ header .score { white-space: nowrap; }
   .trump-badge .tlabel { display: none; }
   .trump-badge { padding: 1px 8px; }
 }
+
+/* dev only: fake notch + home bar to check the layout (see ?safe= in main.ts) */
+.dev-safe-top, .dev-safe-bottom { position: fixed; left: 0; right: 0; z-index: 99; pointer-events: none; background: rgba(0, 0, 0, .85); }
+.dev-safe-top { top: 0; height: var(--sat); }
+.dev-safe-bottom { bottom: 0; height: var(--sab); }
+.dev-safe-top::after {
+  content: ''; position: absolute; left: 50%; top: 11px; width: 120px; height: 34px; margin-left: -60px;
+  border-radius: 20px; background: #000; box-shadow: 0 0 0 1px #333;
+}
+.dev-safe-bottom::after {
+  content: ''; position: absolute; left: 50%; bottom: 8px; width: 134px; height: 5px; margin-left: -67px;
+  border-radius: 3px; background: #ddd;
+}
+.dev-safe-left, .dev-safe-right { position: fixed; top: 0; bottom: 0; z-index: 99; pointer-events: none; background: rgba(0, 0, 0, .85); }
+.dev-safe-left { left: 0; width: var(--sal); }
+.dev-safe-right { right: 0; width: var(--sar); }
+@media (orientation: landscape) {
+  .dev-safe-top::after { display: none; } /* in landscape the Dynamic Island sits at the side */
+  .dev-safe-left::after {
+    content: ''; position: absolute; top: 50%; left: 7px; width: 34px; height: 120px; margin-top: -60px;
+    border-radius: 20px; background: #000; box-shadow: 0 0 0 1px #333;
+  }
+}
+
+/* ---------- result screen on short landscape screens (phones turned sideways) ----------
+   two columns so the "Next round" button never ends up under the home bar */
+@media (orientation: landscape) and (max-height: 560px) {
+  .overlay.result .modal {
+    width: min(640px, 100%); display: flex; align-items: center; gap: 18px; padding: 12px 16px;
+  }
+  .overlay.result .result-main { flex: 1 1 52%; min-width: 0; }
+  .overlay.result .result-side { flex: 1 1 48%; min-width: 0; }
+  .overlay.result .modal table { margin-bottom: 10px; }
+  .overlay.result .ten-fan { height: 58px; margin-bottom: 2px; }
+  .overlay.result .ten-fan .fan-card { --cw: 32px; --ch: 45px; margin-left: -16px; }
+  .overlay.result .ten-fan .fan-card .corner { font-size: 10px; }
+  .overlay.result .why { margin: 2px 0 6px; }
+}
+.hero-art { display: block; margin: 0 auto 4px; width: 112px; height: 112px; border-radius: 24px; box-shadow: 0 6px 18px rgba(0, 0, 0, .3); }
+@media (orientation: landscape) and (max-height: 560px) { .hero-art { width: 72px; height: 72px; border-radius: 16px; } }

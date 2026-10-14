@@ -498,12 +498,15 @@ function summaryHtml(): string {
   return `<div class="overlay result ${r.kind} ${mood}">
     ${fx[mood]}
     <div class="modal">
+      <div class="result-main">
       ${mood === 'kot-win' ? tenFan() : ''}
       <div class="result-title ${r.kind} ${weWon ? 'win' : 'lose'}">${titles[mood]}</div>
       ${mood === 'baunne-win' ? `<div class="result-sub">${t.baunne}</div>` : ''}
       <div class="result-team">${t.roundWonBy(teamName(r.winningTeam), r.points)}</div>
       <div class="why">${why}</div>
       ${roundCoins > 0 ? `<div class="coins-earned">${t.coinsEarned(roundCoins)}</div>` : ''}
+      </div>
+      <div class="result-side">
       <table>
         <tr><th></th><th>${t.teamUs}</th><th>${t.teamThem}</th></tr>
         <tr><td>${t.dahal}</td><td>${r.tens[0]}</td><td>${r.tens[1]}</td></tr>
@@ -511,6 +514,7 @@ function summaryHtml(): string {
         <tr class="total"><td>${t.totalScore}</td><td>${s.score[0]}</td><td>${s.score[1]}</td></tr>
       </table>
       <button class="primary" data-action="next">${t.nextRound}</button>
+      </div>
     </div>
   </div>`;
 }
@@ -1079,6 +1083,21 @@ document.addEventListener('keydown', (e) => {
 });
 
 applyLookAndLanguage();
+// Dev only (stripped from the live build): pretend to be a phone with a notch, e.g. ?safe=47,0,34,0
+const fakeSafe = import.meta.env.DEV ? new URLSearchParams(location.search).get('safe') : null;
+if (fakeSafe) {
+  const [top, right, bottom, left] = fakeSafe.split(',').map((n) => `${Number(n) || 0}px`);
+  const root = document.documentElement.style;
+  root.setProperty('--sat', top);
+  root.setProperty('--sar', right ?? '0px');
+  root.setProperty('--sab', bottom ?? '0px');
+  root.setProperty('--sal', left ?? '0px');
+  for (const cls of ['dev-safe-top', 'dev-safe-bottom', 'dev-safe-left', 'dev-safe-right']) {
+    const bar = document.createElement('div');
+    bar.className = cls;
+    document.body.appendChild(bar);
+  }
+}
 // Dev only (stripped from the live build): preview a result screen, e.g. ?result=kot-lose
 const previewResult = import.meta.env.DEV ? new URLSearchParams(location.search).get('result') : null;
 if (previewResult) {

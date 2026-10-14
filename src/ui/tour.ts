@@ -42,20 +42,32 @@ export function tourHtml(t: Strings, index: number): string {
   const el = step.target ? document.querySelector(step.target) : null;
   const r = el?.getBoundingClientRect();
   const visible = r && r.width > 0 && r.height > 0;
-  const vw = innerWidth;
-  const vh = innerHeight;
-  const cardW = Math.min(330, vw - 24);
+  // keep the card inside the safe area (iPhone notch / Dynamic Island / home bar), with a small margin
+  const cs = getComputedStyle(document.documentElement);
+  const inset = (v: string) => parseFloat(cs.getPropertyValue(v)) || 0;
+  const m = 10;
+  const safe = {
+    top: inset('--sat') + m,
+    right: innerWidth - inset('--sar') - m,
+    bottom: innerHeight - inset('--sab') - m,
+    left: inset('--sal') + m,
+  };
+  const cardW = Math.min(330, safe.right - safe.left);
+  const maxH = safe.bottom - safe.top;
 
   let spot = '';
-  let cardStyle = `left:${(vw - cardW) / 2}px;top:50%;transform:translateY(-50%);width:${cardW}px`;
+  let cardStyle = `left:${safe.left + (safe.right - safe.left - cardW) / 2}px;top:${safe.top + maxH / 2}px;transform:translateY(-50%);width:${cardW}px;max-height:${maxH}px`;
   if (visible) {
     const pad = 6;
     spot = `<div class="tour-spot" style="left:${r.left - pad}px;top:${r.top - pad}px;width:${r.width + pad * 2}px;height:${r.height + pad * 2}px"></div>`;
-    const left = Math.min(Math.max(12, r.left + r.width / 2 - cardW / 2), vw - cardW - 12);
-    const below = r.top + r.height / 2 < vh / 2;
-    cardStyle = below
-      ? `left:${left}px;top:${Math.min(r.bottom + 14, vh - 120)}px;width:${cardW}px`
-      : `left:${left}px;bottom:${Math.min(vh - r.top + 14, vh - 120)}px;width:${cardW}px`;
+    const left = Math.min(Math.max(safe.left, r.left + r.width / 2 - cardW / 2), safe.right - cardW);
+    // put the card on the side of the target with more room, and never past the safe edges
+    const roomBelow = safe.bottom - (r.bottom + 14);
+    const roomAbove = r.top - 14 - safe.top;
+    cardStyle =
+      roomBelow >= roomAbove
+        ? `left:${left}px;top:${Math.max(safe.top, r.bottom + 14)}px;width:${cardW}px;max-height:${Math.max(120, roomBelow)}px`
+        : `left:${left}px;bottom:${innerHeight - Math.min(safe.bottom, r.top - 14)}px;width:${cardW}px;max-height:${Math.max(120, roomAbove)}px`;
   }
   const dots = TOUR.map((_, i) => `<i class="${i === index ? 'on' : ''}"></i>`).join('');
   const last = index === TOUR.length - 1;

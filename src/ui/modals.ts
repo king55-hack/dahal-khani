@@ -40,7 +40,8 @@ export function languagePickerHtml(): string {
   const title = LANGS.map((l) => STRINGS[l].chooseLanguage).join(' · ');
   return shell(
     `<div class="lang-pick">
-      <div class="suits-line big">♠ ♥ ♣ ♦</div>
+      <img class="hero-art" src="icons/icon-512.png" width="112" height="112"
+        alt="Dahal Khani — four tens (Dahal) in a hand" />
       <h2>Dahal Khani</h2>
       <p class="muted">${title}</p>
       <div class="lang-grid">${languageButtons(null)}</div>

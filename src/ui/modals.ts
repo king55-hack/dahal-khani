@@ -7,10 +7,11 @@ import type { RoomListing, ServerMsg } from '../online/protocol';
 import { escapeHtml } from './html';
 import { LANGS, STRINGS, type Lang, type Strings } from './i18n';
 import type { Prefs } from './prefs';
+import { ONLINE_GUIDE } from './online-guide';
 import { FULL_RULES } from './rules';
 import { BACKGROUNDS, THEMES } from './themes';
 
-export type InfoTab = 'rules' | 'allRules' | 'credits';
+export type InfoTab = 'rules' | 'allRules' | 'online' | 'credits';
 export type Modal =
   | { kind: 'lang' }
   | { kind: 'name' }
@@ -72,7 +73,9 @@ export function infoHtml(t: Strings, lang: Lang, tab: InfoTab): string {
       ? t.rulesHtml(GAME_SETTINGS.points, COIN_REWARDS)
       : tab === 'allRules'
         ? FULL_RULES[lang](GAME_SETTINGS.points, COIN_REWARDS)
-        : `<h2>${t.credits}</h2>
+        : tab === 'online'
+          ? ONLINE_GUIDE[lang]
+          : `<h2>${t.credits}</h2>
          <div class="credit-card">
            <div class="by">${t.creditsBy}</div>
            <div class="who"></div>
@@ -85,6 +88,7 @@ export function infoHtml(t: Strings, lang: Lang, tab: InfoTab): string {
     `<div class="tabs">
       <button data-tab="rules" class="${tab === 'rules' ? 'on' : ''}">${t.howToPlay}</button>
       <button data-tab="allRules" class="${tab === 'allRules' ? 'on' : ''}">${t.allRules}</button>
+      <button data-tab="online" class="${tab === 'online' ? 'on' : ''}">🌐 ${t.onlineTab}</button>
       <button data-tab="credits" class="${tab === 'credits' ? 'on' : ''}">${t.credits}</button>
     </div>
     <button class="ghost guide-btn" data-m="tour">${t.replayGuide}</button>
@@ -204,7 +208,7 @@ export interface OnlineView {
   notice: string;
 }
 
-function seatCard(t: Strings, room: RoomInfo, seat: number): string {
+function seatCard(t: Strings, room: RoomInfo, seat: number, isHost: boolean): string {
   const s = room.seats[seat];
   if (!s) {
     return `<button class="seat-card empty" data-sit="${seat}">
@@ -217,8 +221,13 @@ function seatCard(t: Strings, room: RoomInfo, seat: number): string {
     s.bot ? `<b class="tag">🤖 ${t.botTag}</b>` : '',
     !s.bot && !s.connected ? `<b class="tag away">${t.awayTag}</b>` : '',
   ].join('');
+  // the host can remove other human players
+  const kick =
+    isHost && seat !== room.you && !s.bot
+      ? `<button class="kick-btn" data-kick="${seat}" data-name="${escapeHtml(s.name)}">✕ ${t.kick}</button>`
+      : '';
   return `<div class="seat-card ${seat === room.you ? 'me' : ''}">
-    <span class="seat-name">${escapeHtml(s.name)}</span><span class="tags">${tags}</span>
+    <span class="seat-name">${escapeHtml(s.name)}</span><span class="tags">${tags}</span>${kick}
   </div>`;
 }
 
@@ -305,8 +314,8 @@ export function onlineHtml(t: Strings, v: OnlineView): string {
     ${banner}
     <button class="primary share" data-m="share">${t.shareInvite}</button>
     <div class="teams">
-      <div class="team-col team0"><h3>${t.teamA}</h3>${seatCard(t, r, 0)}${seatCard(t, r, 2)}</div>
-      <div class="team-col team1"><h3>${t.teamB}</h3>${seatCard(t, r, 1)}${seatCard(t, r, 3)}</div>
+      <div class="team-col team0"><h3>${t.teamA}</h3>${seatCard(t, r, 0, isHost)}${seatCard(t, r, 2, isHost)}</div>
+      <div class="team-col team1"><h3>${t.teamB}</h3>${seatCard(t, r, 1, isHost)}${seatCard(t, r, 3, isHost)}</div>
     </div>
     ${
       r.started
@@ -322,6 +331,7 @@ export function onlineHtml(t: Strings, v: OnlineView): string {
         : `<p class="waiting-host">${t.waitingHost}</p>`
     }`
     }
+    ${isHost ? `<button class="danger" data-m="close-room">🗑 ${t.closeRoom}</button>` : ''}
     <button class="danger" data-m="leave">${t.leaveRoom}</button>`,
     { closable: true, cls: 'online-modal', label: t.online },
   );

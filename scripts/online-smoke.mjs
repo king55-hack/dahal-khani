@@ -140,5 +140,29 @@ if (v.tricksWon[0] + v.tricksWon[1] !== 13) fail('tricks do not add up to 13');
 if (host.errors.length || friend.errors.length) fail(`unexpected errors: ${host.errors} / ${friend.errors}`);
 
 for (const p of [host, friend]) p.ws.close();
+
+// ---- leave / kick / close ----
+const room2 = await create('Leave test', '');
+const h2 = await player(room2, 'Host2');
+const f2 = await player(room2, 'Friend2');
+f2.ws.send(JSON.stringify({ t: 'leave' }));
+await until(h2, () => h2.room?.seats[2] === null);
+console.log('leave in lobby: seat freed');
+const g2 = await player(room2, 'Guest2');
+if (g2.seat !== 2) fail('freed seat should be reused');
+const kicked = new Promise((resolve) => g2.ws.addEventListener('close', (e) => resolve(e.code)));
+send(h2, { t: 'kick', seat: 2 });
+if ((await kicked) !== 4004 || !g2.errors.includes('kicked')) fail('kicked player should be told and disconnected');
+await until(h2, () => h2.room?.seats[2] === null);
+console.log('kick: player removed');
+const x2 = await player(room2, 'Other2');
+const closed = new Promise((resolve) => x2.ws.addEventListener('close', (e) => resolve(e.code)));
+send(x2, { t: 'close' });
+await until(x2, () => x2.errors.includes('not_host'));
+send(h2, { t: 'close' });
+if ((await closed) !== 4005 || !x2.errors.includes('room_closed')) fail('close should tell everyone');
+const gone = await player(room2, 'Late2');
+if (gone.error !== 'not_found') fail('closed room should be gone');
+console.log('close: only host, everyone told, room deleted');
 console.log('PASS');
 process.exit(0);

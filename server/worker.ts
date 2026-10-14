@@ -207,9 +207,35 @@ export class RoomDO extends DurableObject<Env> {
       for (const p of this.seated()) p.ws.send(out);
       return;
     }
+    // which sockets belong to a player about to be removed (looked up before the seat changes)
+    const kickedSockets = msg.t === 'kick' ? this.seated().filter((p) => p.seat === msg.seat).map((p) => p.ws) : [];
     const error = handle(this.room, att.seat, msg, this.connected(), now);
     if (error) return this.sendError(ws, error);
-    await this.changed();
+
+    if (msg.t === 'close') return this.closeRoom();
+    if (msg.t === 'leave') {
+      ws.serializeAttachment({ ...att, seat: null }); // no longer seated
+      ws.close(1000, 'left');
+      return this.changed(ws);
+    }
+    for (const k of kickedSockets) {
+      this.sendError(k, 'kicked');
+      k.serializeAttachment({ ...(k.deserializeAttachment() as Attachment), seat: null });
+      k.close(4004, 'kicked');
+    }
+    await this.changed(...kickedSockets);
+  }
+
+  /** Host closed the room: tell everyone, then delete it. */
+  private async closeRoom() {
+    for (const ws of this.ctx.getWebSockets()) {
+      if (ws.readyState !== WebSocket.OPEN) continue;
+      this.sendError(ws, 'room_closed');
+      ws.close(4005, 'room_closed');
+    }
+    await this.updateLobby(null);
+    this.room = null;
+    await this.ctx.storage.deleteAll();
   }
 
   private async hello(ws: WebSocket, att: Attachment, data: string, now: number) {
@@ -232,7 +258,7 @@ export class RoomDO extends DurableObject<Env> {
       }
     }
 
-    const result = join(room, hello.name, hello.token, () => crypto.randomUUID(), now);
+    const result = join(room, hello.name, hello.token, () => crypto.randomUUID(), now, this.connected(ws));
     if ('error' in result) return fail(result.error);
 
     // A reconnecting player replaces their old connection.
@@ -276,19 +302,19 @@ export class RoomDO extends DurableObject<Env> {
   }
 
   /** Open sockets of seated players. */
-  private seated(except?: WebSocket): { ws: WebSocket; seat: Seat }[] {
+  private seated(...except: WebSocket[]): { ws: WebSocket; seat: Seat }[] {
     const out: { ws: WebSocket; seat: Seat }[] = [];
     for (const ws of this.ctx.getWebSockets()) {
-      if (ws === except || ws.readyState !== WebSocket.OPEN) continue;
+      if (except.includes(ws) || ws.readyState !== WebSocket.OPEN) continue;
       const seat = (ws.deserializeAttachment() as Attachment | null)?.seat;
       if (seat !== null && seat !== undefined) out.push({ ws, seat });
     }
     return out;
   }
 
-  private connected(except?: WebSocket): boolean[] {
+  private connected(...except: WebSocket[]): boolean[] {
     const c = [false, false, false, false];
-    for (const { seat } of this.seated(except)) c[seat] = true;
+    for (const { seat } of this.seated(...except)) c[seat] = true;
     return c;
   }
 
@@ -297,18 +323,18 @@ export class RoomDO extends DurableObject<Env> {
   }
 
   /** Save, tell everyone, update the public list, and set the alarm for the next automatic step. */
-  private async changed(closing?: WebSocket) {
+  private async changed(...closing: WebSocket[]) {
     if (!this.room) return;
     await this.save();
-    const connected = this.connected(closing);
-    for (const { ws, seat } of this.seated(closing)) {
+    const connected = this.connected(...closing);
+    for (const { ws, seat } of this.seated(...closing)) {
       ws.send(JSON.stringify(roomMessage(this.room, seat, connected)));
       if (this.room.game) {
         ws.send(JSON.stringify({ t: 'state', view: viewFor(this.room.game, seat) } satisfies ServerMsg));
       }
     }
     await this.updateLobby(listingFor(this.room, connected, Date.now()));
-    await this.schedule(closing);
+    await this.schedule(...closing);
   }
 
   private async updateLobby(listing: RoomListing | null) {
@@ -323,9 +349,9 @@ export class RoomDO extends DurableObject<Env> {
     });
   }
 
-  private async schedule(closing?: WebSocket) {
+  private async schedule(...closing: WebSocket[]) {
     if (!this.room) return;
-    const auto = nextAutoAt(this.room, this.connected(closing));
+    const auto = nextAutoAt(this.room, this.connected(...closing));
     const expiry = this.room.lastActivity + TIMING.idleExpiry + 1000;
     await this.ctx.storage.setAlarm(Math.min(auto ?? expiry, expiry));
   }

@@ -27,7 +27,7 @@ export interface OnlineHandlers {
   onFatal(reason: FatalReason): void;
 }
 
-const FATAL_ERRORS: ErrorCode[] = ['not_found', 'room_full', 'wrong_password', 'too_many_attempts'];
+const FATAL_ERRORS: ErrorCode[] = ['not_found', 'room_full', 'wrong_password', 'too_many_attempts', 'room_closed', 'kicked'];
 const tokenKey = (code: string) => `dahal-khani:token:${code}`;
 const PING_MS = 10_000;
 const STALE_MS = 20_000;
@@ -181,6 +181,12 @@ export class OnlineClient {
     if (this.ws?.readyState !== WebSocket.OPEN) return false;
     this.ws.send(JSON.stringify(msg));
     return true;
+  }
+
+  /** Leave on purpose: tell the server so the seat is freed (not kept for a reconnect), then close. */
+  leave() {
+    this.send({ t: 'leave' });
+    this.stop();
   }
 
   stop() {

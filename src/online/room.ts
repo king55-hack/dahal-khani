@@ -86,6 +86,7 @@ export function join(
   token: string | null,
   newToken: () => string,
   now: number,
+  connected: readonly boolean[] = [true, true, true, true],
 ): JoinResult {
   room.lastActivity = now;
   // Reconnect: same token gets the same seat back.
@@ -104,15 +105,32 @@ export function join(
   };
   if (!room.game) {
     const free = JOIN_ORDER.find((s) => room.seats[s] === null);
-    return free === undefined ? { error: 'room_full' } : take(free);
+    if (free !== undefined) return take(free);
+    // Lobby full: a newcomer may take the seat of someone who has gone offline.
+    const away = JOIN_ORDER.find((s) => room.seats[s] && !room.seats[s]!.bot && !connected[s]);
+    if (away === undefined) return { error: 'room_full' };
+    if (room.host === away) room.host = null;
+    return take(away);
   }
   // Game already running: a newcomer may take over a bot's seat.
   const botSeat = JOIN_ORDER.find((s) => room.seats[s]?.bot);
   return botSeat === undefined ? { error: 'room_full' } : take(botSeat);
 }
 
+/**
+ * Someone left on purpose or was removed. In the lobby the seat becomes free; during a game a bot
+ * takes it over (so the round can go on and a newcomer can later take that seat).
+ */
+export function vacate(room: RoomData, seat: Seat) {
+  room.seats[seat] = room.game ? { name: BOT_NAMES[seat], token: null, bot: true } : null;
+  if (room.host === seat) {
+    const next = JOIN_ORDER.find((s) => room.seats[s] && !room.seats[s]!.bot);
+    room.host = next ?? null;
+  }
+}
+
 /** The host may act; if the host is gone, any connected human may. */
-function canHost(room: RoomData, seat: Seat, connected: readonly boolean[]): boolean {
+export function canHost(room: RoomData, seat: Seat, connected: readonly boolean[]): boolean {
   return room.host === seat || room.host === null || !connected[room.host];
 }
 
@@ -131,6 +149,19 @@ export function handle(
     switch (msg.t) {
       case 'say':
         return null; // chat is relayed by the server glue; it never changes the room
+      case 'leave':
+        vacate(room, seat);
+        return null;
+      case 'kick': {
+        if (!canHost(room, seat, connected)) return 'not_host';
+        const target = room.seats[msg.seat];
+        if (msg.seat === seat || !target || target.bot) return 'illegal';
+        vacate(room, msg.seat);
+        return null;
+      }
+      case 'close':
+        // the server glue does the actual closing once this says the player may
+        return canHost(room, seat, connected) ? null : 'not_host';
       case 'sit': {
         if (g) return 'started';
         if (room.seats[msg.seat] !== null) return 'illegal';

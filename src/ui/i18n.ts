@@ -88,6 +88,11 @@ export interface Strings {
   installHint: string;
   installed: string;
   allRules: string;
+  onlineTab: string;
+  kick: string;
+  kickConfirm: (name: string) => string;
+  closeRoom: string;
+  closeRoomConfirm: string;
   liveTitle: (n: number) => string;
   nameTitle: string;
   nameHint: string;
@@ -237,6 +242,11 @@ const ne: Strings = {
   installHint: 'Android Chrome: ⋮ मेनु → "Add to Home screen"। iPhone Safari: Share ⬆ → "Add to Home Screen"।',
   installed: '✔ एप इन्स्टल भइसक्यो',
   allRules: 'सबै नियम',
+  onlineTab: 'अनलाइन',
+  kick: 'निकाल्नुहोस्',
+  kickConfirm: (n) => `${n}लाई रुमबाट निकाल्ने?`,
+  closeRoom: 'रुम बन्द गर्नुहोस्',
+  closeRoomConfirm: 'रुम बन्द गर्ने? सबै जना बाहिर जान्छन् र रुम मेटिन्छ।',
   liveTitle: (n) => `${n} जना अहिले अनलाइन`,
   nameTitle: 'तपाईंको नाम के हो?',
   nameHint: 'अनलाइन खेल्दा साथीहरूले यही नाम देख्छन्। छोटो नाम (क, ख, a, b) पनि हुन्छ।',
@@ -354,6 +364,8 @@ const ne: Strings = {
   onlineErrors: {
     not_found: 'रुम भेटिएन। कोड जाँच्नुहोस्।',
     room_full: 'रुम भरिसक्यो।',
+    room_closed: 'होस्टले रुम बन्द गर्नुभयो।',
+    kicked: 'होस्टले तपाईंलाई रुमबाट निकाल्नुभयो।',
     wrong_password: 'पासवर्ड मिलेन।',
     too_many_attempts: 'धेरै पटक गलत पासवर्ड। १० मिनेटपछि फेरि प्रयास गर्नुहोस्।',
     network: 'सर्भरसँग जोड्न सकिएन। इन्टरनेट जाँच्नुहोस्।',
@@ -487,6 +499,11 @@ const neRom: Strings = {
   installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
   installed: '✔ App install bhaisakyo',
   allRules: 'Sabai niyam',
+  onlineTab: 'Online',
+  kick: 'Nikaalnus',
+  kickConfirm: (n) => `${n} lai room bata nikaalne?`,
+  closeRoom: 'Room band garnus',
+  closeRoomConfirm: 'Room band garne? Sabai jana baahira jaanchhan ra room metinchha.',
   liveTitle: (n) => `${n} jana ahile online`,
   nameTitle: 'Tapaaiko naam ke ho?',
   nameHint: 'Online khelda saathi haru le yahi naam dekhchhan. Chhoto naam (a, b, c) pani hunchha.',
@@ -604,6 +621,8 @@ const neRom: Strings = {
   onlineErrors: {
     not_found: 'Room bhetiyena. Code check garnus.',
     room_full: 'Room bharisakyo.',
+    room_closed: 'Host le room band garnubhayo.',
+    kicked: 'Host le tapaailai room bata nikaalnubhayo.',
     wrong_password: 'Password milena.',
     too_many_attempts: 'Dherai patak galat password. 10 minute pachhi pheri garnus.',
     network: 'Server sanga jodna sakiyena. Internet check garnus.',
@@ -737,6 +756,11 @@ const en: Strings = {
   installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
   installed: '✔ App installed',
   allRules: 'All rules',
+  onlineTab: 'Online',
+  kick: 'Remove',
+  kickConfirm: (n) => `Remove ${n} from the room?`,
+  closeRoom: 'Close room',
+  closeRoomConfirm: 'Close the room? Everyone will be sent out and the room deleted.',
   liveTitle: (n) => `${n} online now`,
   nameTitle: "What's your name?",
   nameHint: 'Friends see this name when you play online. A short one (a, b, c) is fine.',
@@ -854,6 +878,8 @@ const en: Strings = {
   onlineErrors: {
     not_found: 'Room not found. Check the code.',
     room_full: 'The room is full.',
+    room_closed: 'The host closed the room.',
+    kicked: 'The host removed you from the room.',
     wrong_password: 'Wrong password.',
     too_many_attempts: 'Too many wrong passwords. Try again in 10 minutes.',
     network: 'Could not reach the server. Check your internet.',
@@ -987,6 +1013,11 @@ const ja: Strings = {
   installHint: 'Android Chrome：⋮ メニュー →「ホーム画面に追加」。iPhone Safari：共有 ⬆ →「ホーム画面に追加」。',
   installed: '✔ インストール済み',
   allRules: '全ルール',
+  onlineTab: 'オンライン',
+  kick: '退出させる',
+  kickConfirm: (n) => `${n}をルームから退出させますか？`,
+  closeRoom: 'ルームを閉じる',
+  closeRoomConfirm: 'ルームを閉じますか？全員が退出し、ルームは削除されます。',
   liveTitle: (n) => `現在${n}人がオンライン`,
   nameTitle: 'お名前は？',
   nameHint: 'オンライン対戦で友達に表示される名前です。短い名前（a、b など）でもOK。',
@@ -1104,6 +1135,8 @@ const ja: Strings = {
   onlineErrors: {
     not_found: 'ルームが見つかりません。コードを確認してください。',
     room_full: 'ルームは満員です。',
+    room_closed: 'ホストがルームを閉じました。',
+    kicked: 'ホストによってルームから退出させられました。',
     wrong_password: 'パスワードが違います。',
     too_many_attempts: 'パスワードの間違いが多すぎます。10分後にもう一度お試しください。',
     network: 'サーバーに接続できません。インターネットを確認してください。',

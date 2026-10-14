@@ -35,6 +35,12 @@ export const isSayId = (v: unknown): v is SayId => typeof v === 'string' && SAY_
 
 export type ClientMsg =
   | { t: 'say'; id: SayId }
+  /** leaving on purpose (not a dropped connection): frees the seat */
+  | { t: 'leave' }
+  /** host only: remove a player */
+  | { t: 'kick'; seat: Seat }
+  /** host only: close the room for everyone */
+  | { t: 'close' }
   | { t: 'sit'; seat: Seat }
   | { t: 'mode'; mode: TrumpMode }
   | { t: 'start' }
@@ -53,6 +59,8 @@ export type ErrorCode =
   | 'room_full'
   | 'wrong_password'
   | 'too_many_attempts'
+  | 'room_closed'
+  | 'kicked'
   | 'bad_request'
   | 'not_host'
   | 'illegal'
@@ -181,6 +189,12 @@ export function parseClientMsg(raw: unknown): ClientMsg | null {
   switch (m.t) {
     case 'say':
       return isSayId(m.id) ? { t: 'say', id: m.id } : null;
+    case 'leave':
+      return { t: 'leave' };
+    case 'close':
+      return { t: 'close' };
+    case 'kick':
+      return isSeat(m.seat) ? { t: 'kick', seat: m.seat } : null;
     case 'sit':
       return isSeat(m.seat) ? { t: 'sit', seat: m.seat } : null;
     case 'mode':

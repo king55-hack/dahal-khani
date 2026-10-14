@@ -947,3 +947,12 @@ header .score { white-space: nowrap; }
 }
 .hero-art { display: block; margin: 0 auto 4px; width: 112px; height: 112px; border-radius: 24px; box-shadow: 0 6px 18px rgba(0, 0, 0, .3); }
 @media (orientation: landscape) and (max-height: 560px) { .hero-art { width: 72px; height: 72px; border-radius: 16px; } }
+.kick-btn {
+  align-self: flex-start; margin-top: 2px; padding: 3px 8px; border-radius: 8px; font-size: 11px; font-weight: 700;
+  border: 1px solid #fca5a5; background: #fff; color: #b91c1c;
+}
+.online-modal button.danger + button.danger { margin-top: 8px; }
+/* four info tabs: let them wrap on narrow phones */
+.sheet .tabs { flex-wrap: wrap; }
+.sheet .tabs button { flex: 1 1 auto; white-space: nowrap; padding: 6px 8px; }
+.sheet ol { margin: 4px 0; padding-left: 22px; }

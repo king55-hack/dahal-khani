@@ -716,7 +716,7 @@ modalRoot.addEventListener('click', (e) => {
     return renderModal();
   }
   const el = target.closest<HTMLElement>(
-    '[data-m],[data-tab],[data-lang],[data-sound],[data-anim],[data-mode],[data-theme],[data-bg],[data-sit],[data-online-mode],[data-pick]',
+    '[data-m],[data-tab],[data-lang],[data-sound],[data-anim],[data-kick],[data-mode],[data-theme],[data-bg],[data-sit],[data-online-mode],[data-pick]',
   );
   if (!el) return;
   const d = el.dataset;
@@ -731,7 +731,9 @@ modalRoot.addEventListener('click', (e) => {
     }
     return;
   }
-  if (d.tab === 'rules' || d.tab === 'allRules' || d.tab === 'credits') return openModal({ kind: 'info', tab: d.tab });
+  if (d.tab === 'rules' || d.tab === 'allRules' || d.tab === 'online' || d.tab === 'credits') {
+    return openModal({ kind: 'info', tab: d.tab });
+  }
   if (d.m === 'create') return void onlineCreate();
   if (d.m === 'refresh') return void refreshRooms();
   if (d.pick) return pickRoom(d.pick);
@@ -739,6 +741,17 @@ modalRoot.addEventListener('click', (e) => {
   if (d.m === 'share') return void onlineShare();
   if (d.m === 'leave') return onlineLeave();
   if (d.m === 'start') return online?.client.send({ t: 'start' });
+  if (d.kick !== undefined) {
+    if (confirm(t.kickConfirm(d.name ?? ''))) online?.client.send({ t: 'kick', seat: Number(d.kick) as Seat });
+    return;
+  }
+  if (d.m === 'close-room') {
+    if (confirm(t.closeRoomConfirm) && online) {
+      closingMyRoom = true;
+      online.client.send({ t: 'close' });
+    }
+    return;
+  }
   if (d.sit !== undefined) return online?.client.send({ t: 'sit', seat: Number(d.sit) as Seat });
   const om = d.onlineMode;
   if (om === 'open' || om === 'bandHukum' || om === 'cutHukum') return online?.client.send({ t: 'mode', mode: om });
@@ -978,8 +991,24 @@ async function onlineShare() {
   renderModal();
 }
 
+/** set when this player (the host) closes the room, so they aren't told "the host closed the room" */
+let closingMyRoom = false;
+
 /** Back to the offline game (after leaving, or when the room is gone). */
 function leaveOnline(reason?: FatalReason) {
+  if (reason === 'room_closed' && closingMyRoom) {
+    closingMyRoom = false;
+    reason = undefined;
+    online?.client.stop();
+    online = null;
+    sayOpen = false;
+    clearFx();
+    setRoomInUrl(null);
+    onlineForm.error = '';
+    resetGame();
+    openModal(null);
+    return;
+  }
   // keep the number typed in, so a wrong password can simply be retried
   if (online && (reason === 'wrong_password' || reason === 'too_many_attempts')) onlineForm.codeInput = online.code;
   online?.client.stop();
@@ -994,6 +1023,7 @@ function leaveOnline(reason?: FatalReason) {
 }
 
 function onlineLeave() {
+  online?.client.leave();
   leaveOnline();
   openModal(null);
 }

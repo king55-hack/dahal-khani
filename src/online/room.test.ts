@@ -300,3 +300,53 @@ describe('player views', () => {
     expect(v.turn).toBe(3);
   });
 });
+
+describe('leaving, kicking and closing', () => {
+  it('leaving the lobby frees the seat; the host role passes on', () => {
+    const { room } = lobbyWith('host', 'friend');
+    expect(handle(room, 0, { t: 'leave' }, ALL, 0)).toBeNull();
+    expect(room.seats[0]).toBeNull();
+    expect(room.host).toBe(2);
+    // the freed seat can be taken by someone new
+    expect(join(room, 'new', null, token, 0)).toMatchObject({ seat: 0 });
+  });
+
+  it('leaving during a game hands the seat to a bot that a newcomer can take', () => {
+    const { room } = lobbyWith('a', 'b');
+    handle(room, 0, { t: 'start' }, ALL, 0, seeded(6));
+    expect(handle(room, 2, { t: 'leave' }, ALL, 0)).toBeNull();
+    expect(room.seats[2]).toMatchObject({ bot: true });
+    expect(join(room, 'late', null, token, 0)).toMatchObject({ seat: 2 });
+  });
+
+  it('a full lobby lets a newcomer take the seat of someone who went offline', () => {
+    const { room } = lobbyWith('a', 'b', 'c', 'd');
+    expect(join(room, 'e', null, token, 0, ALL)).toEqual({ error: 'room_full' });
+    const r = join(room, 'e', null, token, 0, [true, true, true, false]);
+    expect(r).toMatchObject({ seat: 3 });
+    expect(room.seats[3]!.name).toBe('e');
+  });
+
+  it('only the host may kick, never themselves, never a bot', () => {
+    const { room } = lobbyWith('host', 'friend');
+    expect(handle(room, 2, { t: 'kick', seat: 0 }, ALL, 0)).toBe('not_host');
+    expect(handle(room, 0, { t: 'kick', seat: 0 }, ALL, 0)).toBe('illegal');
+    expect(handle(room, 0, { t: 'kick', seat: 1 }, ALL, 0)).toBe('illegal'); // empty seat
+    expect(handle(room, 0, { t: 'kick', seat: 2 }, ALL, 0)).toBeNull();
+    expect(room.seats[2]).toBeNull();
+  });
+
+  it('a kicked player cannot come back with their old seat token', () => {
+    const { room, tokens } = lobbyWith('host', 'friend');
+    handle(room, 0, { t: 'kick', seat: 2 }, ALL, 0);
+    const again = join(room, 'friend', tokens[1], token, 0);
+    expect('token' in again && again.token).not.toBe(tokens[1]);
+  });
+
+  it('only the host may close the room', () => {
+    const { room } = lobbyWith('host', 'friend');
+    expect(handle(room, 2, { t: 'close' }, ALL, 0)).toBe('not_host');
+    expect(handle(room, 0, { t: 'close' }, ALL, 0)).toBeNull();
+    expect(parseClientMsg('{"t":"kick","seat":9}')).toBeNull();
+  });
+});

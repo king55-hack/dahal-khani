@@ -990,3 +990,12 @@ header .score { white-space: nowrap; }
 .fb-meta { font-size: 11px; color: #64748b; margin-top: 4px; overflow-wrap: anywhere; }
 .fb-actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 6px; }
 .danger-text { color: #b91c1c; }
+
+/* Gundri from a real photo of a woven straw mat (seamless tile). The url() is kept out of
+   the --table-bg custom property so the bundler's rewritten path always resolves correctly. */
+body.bg-gundri, .bg-preview.bg-gundri {
+  background:
+    radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 30%, rgba(28, 14, 0, .55) 100%),
+    url('./textures/gundri.jpg') 0 0 / 340px auto repeat,
+    #5a4430;
+}

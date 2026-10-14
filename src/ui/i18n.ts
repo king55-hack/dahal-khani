@@ -3,6 +3,7 @@ import type { PointValues, TrumpMode } from '../engine';
 import type { QUICK_MESSAGES } from '../online/protocol';
 import type { FatalReason } from './online';
 import type { TourStepId } from './tour';
+import type { FeedbackKind } from '../online/feedback';
 import type { BackgroundId, ThemeId } from './themes';
 
 export type Lang = 'ne' | 'neRom' | 'en' | 'ja';
@@ -88,6 +89,19 @@ export interface Strings {
   installHint: string;
   installed: string;
   allRules: string;
+  feedbackSection: string;
+  feedbackOpen: string;
+  feedbackTitle: string;
+  feedbackKinds: Record<FeedbackKind, string>;
+  feedbackPlaceholder: Record<FeedbackKind, string>;
+  feedbackContact: string;
+  feedbackIncludeInfo: string;
+  feedbackPrivacy: (creator: string) => string;
+  feedbackSend: string;
+  feedbackSent: string;
+  feedbackEmpty: string;
+  feedbackTooMany: string;
+  feedbackFailed: string;
   onlineTab: string;
   kick: string;
   kickConfirm: (name: string) => string;
@@ -242,6 +256,23 @@ const ne: Strings = {
   installHint: 'Android Chrome: ⋮ मेनु → "Add to Home screen"। iPhone Safari: Share ⬆ → "Add to Home Screen"।',
   installed: '✔ एप इन्स्टल भइसक्यो',
   allRules: 'सबै नियम',
+  feedbackSection: '💌 समस्या, सुझाव वा धन्यवाद',
+  feedbackOpen: '📝 खेल बनाउनेलाई लेख्नुहोस्',
+  feedbackTitle: '💌 हामीलाई लेख्नुहोस्',
+  feedbackKinds: { problem: '🐞 समस्या', idea: '💡 सुझाव', thanks: '🙏 धन्यवाद' },
+  feedbackPlaceholder: {
+    problem: 'के भयो? कहिले भयो? (जस्तै: "कोटपछि पत्ती अड्कियो")',
+    idea: 'के थप्दा राम्रो हुन्छ? आफ्नो सुझाव लेख्नुहोस्…',
+    thanks: 'राम्रो लागेको कुरा लेख्नुहोस्… 😊',
+  },
+  feedbackContact: 'इमेल वा फोन (जवाफ चाहिए मात्र)',
+  feedbackIncludeInfo: 'फोन र खेलको जानकारी पनि पठाउने (समस्या बुझ्न सजिलो हुन्छ)',
+  feedbackPrivacy: (c) => `यो सन्देश खेल बनाउने ${c}ले मात्र पढ्नुहुन्छ। अरू खेलाडीले देख्दैनन्।`,
+  feedbackSend: '📨 पठाउनुहोस्',
+  feedbackSent: 'धन्यवाद! 🙏 तपाईंको सन्देश पुग्यो।',
+  feedbackEmpty: 'कृपया केही लेख्नुहोस्।',
+  feedbackTooMany: 'धेरै सन्देश पठाइसक्नुभयो। अलि पछि फेरि गर्नुहोस्।',
+  feedbackFailed: 'पठाउन सकिएन। इन्टरनेट जाँचेर फेरि गर्नुहोस्।',
   onlineTab: 'अनलाइन',
   kick: 'निकाल्नुहोस्',
   kickConfirm: (n) => `${n}लाई रुमबाट निकाल्ने?`,
@@ -499,6 +530,23 @@ const neRom: Strings = {
   installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
   installed: '✔ App install bhaisakyo',
   allRules: 'Sabai niyam',
+  feedbackSection: '💌 Problem, sujhaab wa dhanyabad',
+  feedbackOpen: '📝 Game banaune lai lekhnus',
+  feedbackTitle: '💌 Hamilai lekhnus',
+  feedbackKinds: { problem: '🐞 Problem', idea: '💡 Sujhaab', thanks: '🙏 Dhanyabad' },
+  feedbackPlaceholder: {
+    problem: 'Ke bhayo? Kahile bhayo? (jastai: "Kot pachhi patti atkiyo")',
+    idea: 'Ke thapda ramro hunchha? Aafno sujhaab lekhnus…',
+    thanks: 'Ramro laageko kura lekhnus… 😊',
+  },
+  feedbackContact: 'Email wa phone (jawaf chahiye bhane matra)',
+  feedbackIncludeInfo: 'Phone ra game ko jaankari pani pathaaune (problem bujhna sajilo hunchha)',
+  feedbackPrivacy: (c) => `Yo sandesh game banaune ${c} le matra padhnuhunchha. Aru player le dekhdainan.`,
+  feedbackSend: '📨 Pathaunus',
+  feedbackSent: 'Dhanyabad! 🙏 Tapaaiko sandesh pugyo.',
+  feedbackEmpty: 'Kripaya kehi lekhnus.',
+  feedbackTooMany: 'Dherai sandesh pathaisaknubhayo. Ali pachhi pheri garnus.',
+  feedbackFailed: 'Pathauna sakiyena. Internet check garera pheri garnus.',
   onlineTab: 'Online',
   kick: 'Nikaalnus',
   kickConfirm: (n) => `${n} lai room bata nikaalne?`,
@@ -756,6 +804,23 @@ const en: Strings = {
   installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
   installed: '✔ App installed',
   allRules: 'All rules',
+  feedbackSection: '💌 Problems, ideas or thanks',
+  feedbackOpen: '📝 Write to the creator',
+  feedbackTitle: '💌 Write to us',
+  feedbackKinds: { problem: '🐞 Problem', idea: '💡 Idea', thanks: '🙏 Thanks' },
+  feedbackPlaceholder: {
+    problem: 'What happened, and when? (e.g. "cards got stuck after a Kot")',
+    idea: 'What would make the game better? Share your idea…',
+    thanks: 'Tell us what you enjoyed… 😊',
+  },
+  feedbackContact: 'Email or phone (only if you want a reply)',
+  feedbackIncludeInfo: 'Include device and game details (helps fix problems)',
+  feedbackPrivacy: (c) => `Only the creator, ${c}, reads this. Other players never see it.`,
+  feedbackSend: '📨 Send',
+  feedbackSent: 'Thank you! 🙏 Your message has arrived.',
+  feedbackEmpty: 'Please write something.',
+  feedbackTooMany: 'You have sent several messages already. Please try again a bit later.',
+  feedbackFailed: 'Could not send. Check your internet and try again.',
   onlineTab: 'Online',
   kick: 'Remove',
   kickConfirm: (n) => `Remove ${n} from the room?`,
@@ -1013,6 +1078,23 @@ const ja: Strings = {
   installHint: 'Android Chrome：⋮ メニュー →「ホーム画面に追加」。iPhone Safari：共有 ⬆ →「ホーム画面に追加」。',
   installed: '✔ インストール済み',
   allRules: '全ルール',
+  feedbackSection: '💌 不具合・提案・お礼',
+  feedbackOpen: '📝 作者にメッセージを送る',
+  feedbackTitle: '💌 メッセージを送る',
+  feedbackKinds: { problem: '🐞 不具合', idea: '💡 提案', thanks: '🙏 お礼' },
+  feedbackPlaceholder: {
+    problem: '何が、いつ起きましたか？（例：「コットの後にカードが止まった」）',
+    idea: 'どうすればもっと良くなりますか？アイデアを書いてください…',
+    thanks: '楽しかったことを教えてください… 😊',
+  },
+  feedbackContact: 'メールまたは電話（返信が必要な場合のみ）',
+  feedbackIncludeInfo: '端末とゲームの情報も送る（不具合の調査に役立ちます）',
+  feedbackPrivacy: (c) => `このメッセージは作者の${c}だけが読みます。他のプレイヤーには見えません。`,
+  feedbackSend: '📨 送信',
+  feedbackSent: 'ありがとうございます！ 🙏 メッセージが届きました。',
+  feedbackEmpty: '何か書いてください。',
+  feedbackTooMany: 'すでに何件か送信済みです。少し時間をおいてからお試しください。',
+  feedbackFailed: '送信できませんでした。インターネットを確認してもう一度お試しください。',
   onlineTab: 'オンライン',
   kick: '退出させる',
   kickConfirm: (n) => `${n}をルームから退出させますか？`,

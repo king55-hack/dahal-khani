@@ -3,9 +3,11 @@
 //   on the server. WebSockets use the hibernation API, so idle rooms cost nothing.
 // - LobbyDO: a single directory of joinable rooms for the public room list.
 // - PresenceDO: counts how many people have the game open ("🟢 N online").
+// - FeedbackDO: problem reports / ideas / thanks for the creator, read with an admin key.
 
 import { DurableObject } from 'cloudflare:workers';
 import { viewFor, type Seat } from '../src/engine';
+import { feedbackAllowed, parseFeedback, sameSecret, type FeedbackEntry } from '../src/online/feedback';
 import { hashPassword, verifyPassword } from '../src/online/password';
 import {
   countOnline,
@@ -45,6 +47,9 @@ export interface Env {
   ROOMS: DurableObjectNamespace<RoomDO>;
   LOBBY: DurableObjectNamespace<LobbyDO>;
   PRESENCE: DurableObjectNamespace<PresenceDO>;
+  FEEDBACK: DurableObjectNamespace<FeedbackDO>;
+  /** secret (wrangler secret put ADMIN_KEY): lets the creator read feedback */
+  ADMIN_KEY?: string;
   /** Comma-separated list of sites allowed to connect, e.g. "https://king55-hack.github.io". */
   ALLOWED_ORIGINS: string;
 }
@@ -78,7 +83,7 @@ function corsHeaders(origin: string | null, env: Env): Record<string, string> {
     ? {
         'Access-Control-Allow-Origin': origin!,
         'Access-Control-Allow-Methods': 'GET, POST',
-        'Access-Control-Allow-Headers': 'Content-Type',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         Vary: 'Origin',
       }
     : {};
@@ -127,6 +132,31 @@ export default {
       if (req.headers.get('Upgrade') !== 'websocket') return new Response('Expected WebSocket', { status: 426 });
       if (!originAllowed(origin, env)) return new Response('Forbidden', { status: 403 });
       return env.ROOMS.get(env.ROOMS.idFromName(m[1])).fetch(req);
+    }
+
+    // Feedback: players send, the creator reads with the admin key.
+    if (url.pathname === '/api/feedback' || url.pathname === '/api/feedback/update') {
+      if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+      if (!originAllowed(origin, env)) return new Response('Forbidden', { status: 403 });
+      const box = env.FEEDBACK.get(env.FEEDBACK.idFromName('inbox'));
+      if (url.pathname === '/api/feedback' && req.method === 'POST') {
+        const body = await req.text();
+        if (!parseFeedback(body)) return new Response('Bad request', { status: 400, headers: cors });
+        const res = await box.fetch('https://feedback/add', {
+          method: 'POST',
+          body,
+          headers: { 'X-Net': req.headers.get('CF-Connecting-IP') ?? 'unknown' },
+        });
+        return new Response(res.body, { status: res.status, headers: cors });
+      }
+      // everything else is for the creator only
+      const key = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+      if (!env.ADMIN_KEY || !key || !sameSecret(key, env.ADMIN_KEY)) {
+        return new Response('Unauthorized', { status: 401, headers: cors });
+      }
+      const path = url.pathname === '/api/feedback' ? '/list' : '/update';
+      const res = await box.fetch(`https://feedback${path}`, { method: req.method, body: req.method === 'POST' ? await req.text() : undefined });
+      return new Response(res.body, { status: res.status, headers: { ...cors, 'Content-Type': 'application/json' } });
     }
 
     // Live "N online" counter.
@@ -457,5 +487,57 @@ export class PresenceDO extends DurableObject<Env> {
       .filter((ws) => ws.readyState === WebSocket.OPEN)
       .map((ws) => ws.deserializeAttachment() as PresenceConn)
       .filter((c): c is PresenceConn => !!c?.visitor);
+  }
+}
+
+/** Stores feedback messages (newest kept, oldest dropped past MAX). Only reachable through the Worker. */
+export class FeedbackDO extends DurableObject<Env> {
+  private static readonly MAX = 2000;
+  /** recent send times per network (hashed), for the spam guard — memory only */
+  private recent = new Map<string, number[]>();
+
+  async fetch(req: Request): Promise<Response> {
+    const url = new URL(req.url);
+    const now = Date.now();
+
+    if (url.pathname === '/add') {
+      const fb = parseFeedback(await req.text());
+      if (!fb) return new Response('Bad request', { status: 400 });
+      const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode('fb:' + (req.headers.get('X-Net') ?? '')));
+      const net = btoa(String.fromCharCode(...new Uint8Array(digest).slice(0, 12)));
+      const times = (this.recent.get(net) ?? []).filter((t) => now - t < 3_600_000);
+      if (!feedbackAllowed(times, now)) return new Response('Too many', { status: 429 });
+      this.recent.set(net, [...times, now]);
+
+      const id = `${now.toString(36)}-${crypto.randomUUID().slice(0, 8)}`;
+      await this.ctx.storage.put(`fb:${String(now).padStart(15, '0')}:${id}`, { ...fb, id, at: now, read: false } satisfies FeedbackEntry);
+      // keep the inbox bounded
+      const keys = [...(await this.ctx.storage.list({ prefix: 'fb:' })).keys()];
+      if (keys.length > FeedbackDO.MAX) await this.ctx.storage.delete(keys.slice(0, keys.length - FeedbackDO.MAX));
+      return Response.json({ ok: true });
+    }
+
+    if (url.pathname === '/list') {
+      const all = [...(await this.ctx.storage.list<FeedbackEntry>({ prefix: 'fb:', reverse: true, limit: 300 })).values()];
+      return Response.json({ unread: all.filter((f) => !f.read).length, items: all });
+    }
+
+    if (url.pathname === '/update' && req.method === 'POST') {
+      let body: { ids?: unknown; action?: unknown };
+      try {
+        body = (await req.json()) as typeof body;
+      } catch {
+        return new Response('Bad request', { status: 400 });
+      }
+      const ids = Array.isArray(body.ids) ? body.ids.filter((x): x is string => typeof x === 'string').slice(0, 300) : [];
+      const entries = await this.ctx.storage.list<FeedbackEntry>({ prefix: 'fb:' });
+      for (const [key, f] of entries) {
+        if (!ids.includes(f.id)) continue;
+        if (body.action === 'delete') await this.ctx.storage.delete(key);
+        else if (body.action === 'read') await this.ctx.storage.put(key, { ...f, read: true });
+      }
+      return Response.json({ ok: true });
+    }
+    return new Response('Not found', { status: 404 });
   }
 }

@@ -49,6 +49,18 @@ import { LANGS, STRINGS, type Lang, type Strings } from './i18n';
 import { infoHtml, languagePickerHtml, nameHtml, onlineHtml, settingsHtml, type Modal, type RoomInfo } from './modals';
 import { startPresence } from './presence';
 import { TOUR, tourHtml } from './tour';
+import {
+  feedbackHtml,
+  fetchInbox,
+  inboxHtml,
+  loadAdminKey,
+  saveAdminKey,
+  sendFeedback,
+  updateInbox,
+  type FeedbackForm,
+  type Inbox,
+} from './feedback';
+import type { FeedbackKind } from '../online/feedback';
 import { bubble, clearFx, dealCards } from './fx';
 import { createRoom, listRooms, OnlineClient, SERVER_URL, type ConnStatus, type FatalReason } from './online';
 import { loadPrefs, savePrefs } from './prefs';
@@ -102,6 +114,15 @@ let handInUntil = 0;
 let lastTrickKey = '';
 /** reactions panel (online) */
 let sayOpen = false;
+/** player feedback form */
+const fbForm: FeedbackForm = { kind: 'problem', message: '', contact: '', includeInfo: true, sending: false, sent: false, error: '' };
+/** creator's inbox (only on a device where the admin key was entered) */
+const inboxState: { key: string; inbox: Inbox | null; loading: boolean; error: string } = {
+  key: loadAdminKey(),
+  inbox: null,
+  loading: false,
+  error: '',
+};
 /** people with the game open right now (null = unknown) */
 let liveCount: number | null = null;
 const REACTION_EMOJI: Record<(typeof REACTIONS)[number], string> = {
@@ -599,7 +620,12 @@ function renderModal() {
       error: onlineForm.error,
       notice: onlineForm.notice,
     });
-  } else modalRoot.innerHTML = settingsHtml(t, prefs, settingsMsg, installState(), online !== null);
+  } else if (modal.kind === 'feedback') modalRoot.innerHTML = feedbackHtml(t, fbForm, CREATOR_NAME);
+  else if (modal.kind === 'inbox') modalRoot.innerHTML = inboxHtml(inboxState);
+  else {
+    const unread = inboxState.key ? (inboxState.inbox?.unread ?? 0) : null;
+    modalRoot.innerHTML = settingsHtml(t, prefs, settingsMsg, installState(), online !== null, unread);
+  }
   const who = modalRoot.querySelector('.who');
   if (who) who.textContent = CREATOR_NAME; // never parsed as HTML
   const copyright = modalRoot.querySelector('.copyright');
@@ -616,6 +642,11 @@ function openModal(m: Modal | null) {
   renderModal();
   if (!sameKind) modalRoot.querySelector('.overlay')?.scrollTo(0, 0);
   if (!sameKind && m?.kind === 'online' && !online) void refreshRooms();
+  if (!sameKind && (m?.kind === 'inbox' || (m?.kind === 'settings' && inboxState.key))) void loadInbox();
+  if (!sameKind && m?.kind === 'feedback') {
+    fbForm.sent = false;
+    fbForm.error = '';
+  }
   if (!m) schedule();
 }
 
@@ -716,7 +747,7 @@ modalRoot.addEventListener('click', (e) => {
     return renderModal();
   }
   const el = target.closest<HTMLElement>(
-    '[data-m],[data-tab],[data-lang],[data-sound],[data-anim],[data-kick],[data-mode],[data-theme],[data-bg],[data-sit],[data-online-mode],[data-pick]',
+    '[data-m],[data-tab],[data-lang],[data-sound],[data-anim],[data-kick],[data-fb-kind],[data-fb-read],[data-fb-delete],[data-mode],[data-theme],[data-bg],[data-sit],[data-online-mode],[data-pick]',
   );
   if (!el) return;
   const d = el.dataset;
@@ -733,6 +764,31 @@ modalRoot.addEventListener('click', (e) => {
   }
   if (d.tab === 'rules' || d.tab === 'allRules' || d.tab === 'online' || d.tab === 'credits') {
     return openModal({ kind: 'info', tab: d.tab });
+  }
+  if (d.m === 'feedback') return openModal({ kind: 'feedback' });
+  if (d.m === 'inbox') return openModal({ kind: 'inbox' });
+  if (d.fbKind) {
+    fbForm.kind = d.fbKind as FeedbackKind;
+    return renderModal();
+  }
+  if (d.m === 'fb-send') return void submitFeedback();
+  if (d.m === 'inbox-login') {
+    inboxState.key = modalRoot.querySelector<HTMLInputElement>('#admin-key')?.value.trim() ?? '';
+    inboxState.error = '';
+    return void loadInbox();
+  }
+  if (d.m === 'inbox-logout') {
+    inboxState.key = '';
+    inboxState.inbox = null;
+    saveAdminKey('');
+    return renderModal();
+  }
+  if (d.m === 'inbox-refresh') return void loadInbox();
+  if (d.m === 'inbox-read-all') return void inboxAction((inboxState.inbox?.items ?? []).filter((f) => !f.read).map((f) => f.id), 'read');
+  if (d.fbRead) return void inboxAction([d.fbRead], 'read');
+  if (d.fbDelete) {
+    if (confirm('Yo sandesh mettaune? / Delete this message?')) void inboxAction([d.fbDelete], 'delete');
+    return;
   }
   if (d.m === 'create') return void onlineCreate();
   if (d.m === 'refresh') return void refreshRooms();
@@ -789,6 +845,13 @@ modalRoot.addEventListener('input', (e) => {
   const el = e.target as HTMLInputElement;
   if (el.id === 'online-name') onlineForm.name = el.value;
   if (el.id === 'name-input') nameDraft = el.value;
+  if (el.id === 'fb-message') {
+    fbForm.message = el.value;
+    const count = modalRoot.querySelector('#fb-count');
+    if (count) count.textContent = String([...el.value].length);
+  }
+  if (el.id === 'fb-contact') fbForm.contact = el.value;
+  if (el.id === 'fb-info') fbForm.includeInfo = el.checked;
   if (el.id === 'online-join-pw') onlineForm.joinPassword = el.value;
   if (el.id === 'online-room-name') onlineForm.roomName = el.value;
   if (el.id === 'online-create-pw') onlineForm.createPassword = el.value;
@@ -803,6 +866,68 @@ modalRoot.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && (id === 'online-code' || id === 'online-join-pw')) onlineJoin();
   if (e.key === 'Enter' && id === 'name-input') submitName();
 });
+
+// ---------- feedback ----------
+
+async function submitFeedback() {
+  if (!SERVER_URL || fbForm.sending) return;
+  if (!fbForm.message.trim()) {
+    fbForm.error = t.feedbackEmpty;
+    return renderModal();
+  }
+  fbForm.sending = true;
+  fbForm.error = '';
+  renderModal();
+  const meta = fbForm.includeInfo
+    ? {
+        lang: prefs.lang ?? '',
+        mode: prefs.mode,
+        online: online ? `room ${online.code}` : 'offline',
+        build: __APP_BUILD__,
+        screen: `${innerWidth}x${innerHeight} @${devicePixelRatio}x`,
+        device: navigator.userAgent,
+      }
+    : {};
+  const result = await sendFeedback(SERVER_URL, {
+    kind: fbForm.kind,
+    message: fbForm.message,
+    contact: fbForm.contact,
+    meta,
+  });
+  fbForm.sending = false;
+  if (result === 'ok') {
+    fbForm.sent = true;
+    fbForm.message = '';
+    sfx.coin();
+  } else fbForm.error = result === 'too_many' ? t.feedbackTooMany : t.feedbackFailed;
+  if (modal?.kind === 'feedback') renderModal();
+}
+
+async function loadInbox() {
+  if (!SERVER_URL || !inboxState.key) return renderModal();
+  inboxState.loading = true;
+  if (modal?.kind === 'inbox') renderModal();
+  const result = await fetchInbox(SERVER_URL, inboxState.key);
+  inboxState.loading = false;
+  if (result === 'unauthorized') {
+    inboxState.error = 'unauthorized';
+    inboxState.inbox = null;
+    saveAdminKey('');
+  } else if (result === 'error') {
+    inboxState.error = t.feedbackFailed;
+  } else {
+    inboxState.error = '';
+    inboxState.inbox = result;
+    saveAdminKey(inboxState.key); // the key worked: remember it on this device
+  }
+  if (modal?.kind === 'inbox' || modal?.kind === 'settings') renderModal();
+}
+
+async function inboxAction(ids: string[], action: 'read' | 'delete') {
+  if (!SERVER_URL || !inboxState.key || !ids.length) return;
+  await updateInbox(SERVER_URL, inboxState.key, ids, action);
+  await loadInbox();
+}
 
 // ---------- online play ----------
 
@@ -1139,6 +1264,8 @@ if (previewResult) {
   roundCoins = coinsFor(r, 0);
   state = { ...state, phase: 'roundOver', lastResult: r, tensWon: tens, tricksWon: tricks };
 }
+// The creator opens their inbox with ?admin
+if (new URLSearchParams(location.search).has('admin') && SERVER_URL && !modal) modal = { kind: 'inbox' };
 // Opened from an invite link: rejoin straight away if we were already in that room, else ask for a name.
 if (onlineForm.codeInput && SERVER_URL && !modal) {
   let rejoin = false;

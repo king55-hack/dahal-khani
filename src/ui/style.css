@@ -956,3 +956,37 @@ header .score { white-space: nowrap; }
 .sheet .tabs { flex-wrap: wrap; }
 .sheet .tabs button { flex: 1 1 auto; white-space: nowrap; padding: 6px 8px; }
 .sheet ol { margin: 4px 0; padding-left: 22px; }
+
+/* ---------- feedback form + creator's inbox ---------- */
+.fb-section { border-top: 1px solid #e5e7eb; margin-top: 16px; padding-top: 12px; }
+.fb-section .fb-open { margin-top: 2px; }
+.fb-section .inbox-open { width: 100%; margin-top: 8px; }
+.fb-kinds button { font-size: 13px; padding: 8px 4px; }
+.feedback-modal textarea {
+  width: 100%; margin-top: 10px; font: inherit; font-size: 15px; line-height: 1.4; padding: 10px 12px;
+  border-radius: 12px; border: 1.5px solid #cbd5e1; color: #111; background: #fff; resize: vertical; min-height: 110px;
+}
+.feedback-modal textarea:focus, .feedback-modal input:focus { outline: 2px solid #0f5a33; border-color: #0f5a33; }
+.fb-count { text-align: right; font-size: 11px; color: #94a3b8; margin-top: 2px; }
+.fb-check { display: flex; gap: 8px; align-items: flex-start; font-size: 13px; color: #374151; margin: 6px 0; }
+.fb-check input { margin-top: 2px; width: 18px; height: 18px; accent-color: #0f5a33; flex: none; }
+.fb-sent { text-align: center; padding: 10px 0; }
+.fb-sent-icon { font-size: 54px; animation: pop2 .5s cubic-bezier(.2, 1.6, .4, 1); }
+.fb-sent h2 { font-size: 18px; margin: 6px 0 14px; }
+.badge {
+  display: inline-block; min-width: 20px; padding: 1px 6px; border-radius: 999px; background: #dc2626; color: #fff;
+  font-size: 12px; font-weight: 800; text-align: center; vertical-align: middle;
+}
+.inbox-modal { width: min(620px, 100%); }
+.admin-key { width: 100%; font: inherit; font-size: 16px; padding: 10px; border-radius: 10px; border: 1.5px solid #cbd5e1; margin: 8px 0 12px; }
+.inbox-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.fb-list { display: grid; gap: 8px; }
+.fb-item { border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 10px; background: #fff; }
+.fb-item.unread { border-color: #0f5a33; box-shadow: inset 4px 0 0 #0f5a33; }
+.fb-head { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; text-transform: capitalize; }
+.fb-head small { color: #64748b; text-transform: none; }
+.fb-msg { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 14px; color: #111; margin: 6px 0; }
+.fb-contact { font-size: 13px; color: #0f5a33; font-weight: 700; overflow-wrap: anywhere; }
+.fb-meta { font-size: 11px; color: #64748b; margin-top: 4px; overflow-wrap: anywhere; }
+.fb-actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 6px; }
+.danger-text { color: #b91c1c; }

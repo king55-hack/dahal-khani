@@ -18,7 +18,9 @@ export type Modal =
   | { kind: 'tour'; step: number }
   | { kind: 'info'; tab: InfoTab }
   | { kind: 'settings' }
-  | { kind: 'online' };
+  | { kind: 'online' }
+  | { kind: 'feedback' }
+  | { kind: 'inbox' };
 
 const MODES: readonly TrumpMode[] = ['open', 'bandHukum', 'cutHukum'];
 
@@ -110,6 +112,8 @@ export function settingsHtml(
   message: string,
   install: InstallState,
   online = false,
+  /** creator's device only: unread feedback count (null = not the creator) */
+  inboxUnread: number | null = null,
 ): string {
   const bgs = BACKGROUNDS.map(
     (b) => `<button class="bg-tile ${prefs.background === b ? 'on' : ''}" data-bg="${b}">
@@ -182,7 +186,16 @@ export function settingsHtml(
       online
         ? `<button class="danger" data-m="leave">${t.leaveRoom}</button>`
         : `<button class="danger" data-m="newgame">↺ ${t.newGame}</button>`
-    }`,
+    }
+    <section class="fb-section">
+      <h3>${t.feedbackSection}</h3>
+      <button class="primary fb-open" data-m="feedback">${t.feedbackOpen}</button>
+      ${
+        inboxUnread !== null
+          ? `<button class="ghost inbox-open" data-m="inbox">📬 Inbox${inboxUnread ? ` <span class="badge">${inboxUnread}</span>` : ''}</button>`
+          : ''
+      }
+    </section>`,
     { closable: true, cls: 'settings-modal', label: t.settings },
   );
 }

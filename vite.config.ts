@@ -34,6 +34,8 @@ const securityHeaders = (CSP: string): Plugin => ({
 
 export default defineConfig(({ mode }) => ({
   base: './', // works from any sub-path (e.g. GitHub Pages)
+  // shown in problem reports so the creator knows which version a player had
+  define: { __APP_BUILD__: JSON.stringify(new Date().toISOString().slice(0, 16).replace('T', ' ')) },
   plugins: [securityHeaders(csp(loadEnv(mode, process.cwd(), 'VITE_').VITE_SERVER_URL))],
   server: {
     host: true, // also reachable from a phone on the same Wi-Fi

@@ -223,6 +223,23 @@ describe('room game', () => {
     expect(handle(room, 0, { t: 'play', card: notMine }, ALL, 0)).toBe('illegal');
   });
 
+  it('a player holding the led suit cannot play another suit (server enforces it)', () => {
+    const { room } = lobbyWith('a', 'b');
+    handle(room, 0, { t: 'start' }, ALL, 0, seeded(2));
+    handle(room, 0, { t: 'trump', suit: 'S' }, ALL, 0);
+    const g = room.game!;
+    // lead a suit that seat 2 holds while also holding some other suit
+    const h2 = g.hands[2];
+    const lead = g.hands[0].find((c) => h2.some((x) => x.suit === c.suit) && h2.some((x) => x.suit !== c.suit))!;
+    expect(handle(room, 0, { t: 'play', card: lead }, ALL, 0)).toBeNull();
+    expect(runAuto(room, ALL, TIMING.bot)).toBe(true); // bot in seat 1 plays
+    const off = room.game!.hands[2].find((c) => c.suit !== lead.suit)!;
+    const on = room.game!.hands[2].find((c) => c.suit === lead.suit)!;
+    expect(handle(room, 2, { t: 'play', card: off }, ALL, TIMING.bot)).toBe('illegal');
+    expect(room.game!.currentTrick).toHaveLength(2); // the rejected card was not played
+    expect(handle(room, 2, { t: 'play', card: on }, ALL, TIMING.bot)).toBeNull();
+  });
+
   it('bots, disconnected players and AFK players are moved automatically on time', () => {
     const { room } = lobbyWith('a', 'b');
     handle(room, 0, { t: 'start' }, ALL, 0, seeded(3));

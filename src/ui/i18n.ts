@@ -422,6 +422,7 @@ const ne: Strings = {
     <ul>
       <li>५२ पत्ती, जोकर छैन। ठूलोदेखि सानो: A K Q J 10 9 … 2।</li>
       <li>सुरुमा सबैलाई ५ पत्ती। डिलरपछिको खेलाडीले ५ पत्ती हेरेर <b>तुरुप</b> (रङ) छान्छ।</li>
+      <li><b>तुरुप भनेको?</b> त्यो राउन्डको सबैभन्दा बलियो रङ — तुरुपको सानो २ ले पनि अरू रङको A लाई काट्छ। अङ्ग्रेजीमा <b>trump</b>; कतै <b>हुकुम</b> वा <b>रङ</b> पनि भनिन्छ।</li>
       <li>त्यसपछि ४ + ४ पत्ती थपेर सबैको १३ पत्ती हुन्छ। डिलर हरेक राउन्ड घुम्छ।</li>
     </ul>
     <h3>२. खेल्ने नियम</h3>
@@ -696,6 +697,7 @@ const neRom: Strings = {
     <ul>
       <li>52 patti, joker chhaina. Thulo dekhi saano: A K Q J 10 9 … 2.</li>
       <li>Suruma sabailai 5 patti. Dealer pachhiko khelaadi le 5 patti herera <b>TURUP</b> (rang) chunchha.</li>
+      <li><b>TURUP bhaneko?</b> Tyo round ko sabai bhanda baliyo rang — TURUP ko saano 2 le pani aru rang ko A lai kaatchha. English ma <b>trump</b>; katai <b>hukum</b> wa <b>rang</b> pani bhaninchha.</li>
       <li>Tyaspachhi 4 + 4 patti thapera sabaiko 13 patti hunchha. Dealer har round ghumchha.</li>
     </ul>
     <h3>2. Khelne niyam</h3>
@@ -970,6 +972,7 @@ const en: Strings = {
     <ul>
       <li>52 cards, no jokers. High to low: A K Q J 10 9 … 2.</li>
       <li>Everyone gets 5 cards. The player after the dealer looks at them and picks the <b>TRUMP</b> suit.</li>
+      <li><b>What is “Turup”?</b> The Nepali word for <b>trump</b>: the strongest suit for that round — even a trump 2 beats an Ace of any other suit. Some places also call it <b>hukum</b> or <b>rang</b>.</li>
       <li>Then 4 + 4 more cards each, so everyone has 13. The dealer rotates every round.</li>
     </ul>
     <h3>2. Playing</h3>
@@ -1244,6 +1247,7 @@ const ja: Strings = {
     <ul>
       <li>ジョーカーなしの52枚。強い順：A K Q J 10 9 … 2。</li>
       <li>まず全員に5枚。ディーラーの次の人がその5枚を見て<b>切り札</b>（トゥルップ）のスートを選びます。</li>
+      <li><b>「トゥルップ」とは？</b>ネパール語で<b>切り札</b>（英語の trump）のこと。そのラウンドで一番強いスートで、切り札の2でも他のスートのAに勝ちます。地域によっては<b>フクム</b>や<b>ラング</b>とも呼ばれます。（日本語の「トランプ」はカード一式の意味なので注意！）</li>
       <li>その後4枚＋4枚を配り、全員13枚になります。ディーラーは毎ラウンド交代します。</li>
     </ul>
     <h3>2. 遊び方</h3>

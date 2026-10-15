@@ -28,6 +28,7 @@ const ne: RulesFn = (p, c) => `
     <li>हरेक राउन्डमा डिलर एक सिट अगाडि सर्छ।</li>
   </ul>
   <h3>५. तुरुप (तीन मोड)</h3>
+  <p><b>तुरुप भनेको:</b> त्यो राउन्डको सबैभन्दा बलियो रङ। तुरुपको जुनसुकै पत्ती (२ पनि) ले अरू रङको जुनसुकै पत्ती (A पनि) लाई काट्छ। अङ्ग्रेजीमा <b>trump</b>; ठाउँअनुसार <b>हुकुम</b> वा <b>रङ</b> पनि भनिन्छ।</p>
   <ul>
     <li><b>साधारण:</b> डिलरपछिको खेलाडीले आफ्ना ५ पत्ती हेरेर तुरुप छान्छ; सबैले देख्छन्।</li>
     <li><b>बन्द हुकुम:</b> त्यही खेलाडीले तुरुप लुकाएर छान्छ। पहिलो पटक कसैसँग चालिएको रङ नभएपछि तुरुप खुल्छ र त्यहीबाट तुरुपले काम गर्छ। खुल्नुअघिका हात साधारण रूपमा गनिन्छन्।</li>
@@ -92,6 +93,7 @@ const neRom: RulesFn = (p, c) => `
     <li>Har round ma dealer ek seat agaadi sarchha.</li>
   </ul>
   <h3>5. TURUP (tin mode)</h3>
+  <p><b>TURUP bhaneko:</b> tyo round ko sabai bhanda baliyo rang. TURUP ko jun sukai patti (2 pani) le aru rang ko jun sukai patti (A pani) lai kaatchha. English ma <b>trump</b>; thaau anusaar <b>hukum</b> wa <b>rang</b> pani bhaninchha.</p>
   <ul>
     <li><b>Normal:</b> dealer pachhiko khelaadi le aafna 5 patti herera TURUP chunchha; sabaile dekhchhan.</li>
     <li><b>Band hukum:</b> tyahi khelaadi le TURUP lukayera chunchha. Pahilo patak kasaisanga chaaleko rang nabhayepachhi TURUP khulchha ra tyahi bata TURUP le kaam garchha. Khulnu aghi ka haat saadharan rup ma ganinchhan.</li>
@@ -156,6 +158,7 @@ const en: RulesFn = (p, c) => `
     <li>The dealer moves one seat on every round.</li>
   </ul>
   <h3>5. Trump (three modes)</h3>
+  <p><b>“Turup”</b> is the Nepali word for <b>trump</b>: the strongest suit for that round. Any trump card (even a 2) beats any card of another suit (even an Ace). In some places it is also called <b>hukum</b> or <b>rang</b>.</p>
   <ul>
     <li><b>Normal:</b> the player after the dealer looks at their 5 cards and picks trump; everyone sees it.</li>
     <li><b>Band hukum:</b> the same player picks trump secretly. It is revealed the first time someone cannot follow the led suit, and counts from then on. Tricks before the reveal are decided normally.</li>
@@ -220,6 +223,7 @@ const ja: RulesFn = (p, c) => `
     <li>ディーラーは毎ラウンド1席ずつ移ります。</li>
   </ul>
   <h3>5. 切り札（3つのモード）</h3>
+  <p><b>「トゥルップ」</b>はネパール語で<b>切り札</b>（英語の trump）。そのラウンドで一番強いスートです。切り札なら2でも、他のスートのAに勝ちます。地域によっては<b>フクム</b>や<b>ラング</b>とも呼ばれます。（日本語の「トランプ」はカード一式のことなので別の意味です。）</p>
   <ul>
     <li><b>ノーマル：</b>ディーラーの次の人が5枚を見て切り札を選び、全員に公開します。</li>
     <li><b>バンド・フクム：</b>同じ人が切り札を秘密で選びます。誰かが初めてリードされたスートを出せなくなった時に公開され、その時から有効になります。公開前のトリックは通常どおり判定します。</li>

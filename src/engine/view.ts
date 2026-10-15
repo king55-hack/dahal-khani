@@ -12,9 +12,14 @@ export interface PlayerView extends GameState {
 export function viewFor(state: GameState, seat: Seat): PlayerView {
   const hands: GameState['hands'] = [[], [], [], []];
   hands[seat] = state.hands[seat].map((c) => ({ ...c }));
+  const copy = structuredClone(state);
   return {
-    ...structuredClone(state),
+    ...copy,
     hands,
+    // only the most recent trick's cards can be looked at again; older ones keep just the winner
+    completedTricks: copy.completedTricks.map((t, i, all) =>
+      i === all.length - 1 ? t : { winner: t.winner, plays: [] },
+    ),
     undealt: [],
     trump: visibleTrump(state, seat),
     handCounts: [

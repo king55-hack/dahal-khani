@@ -114,6 +114,10 @@ let handInUntil = 0;
 let lastTrickKey = '';
 /** reactions panel (online) */
 let sayOpen = false;
+/** showing the previous trick (only that one) in the middle of the table, for a few seconds */
+let peekLast = false;
+let peekTimer = 0;
+const PEEK_MS = 3000;
 /** player feedback form */
 const fbForm: FeedbackForm = { kind: 'problem', message: '', contact: '', includeInfo: true, sending: false, sent: false, error: '' };
 /** creator's inbox (only on a device where the admin key was entered) */
@@ -224,6 +228,7 @@ function react(prev: GameState, next: GameState) {
   }
 
   if (next.currentTrick.length > prev.currentTrick.length) sfx.card();
+  if (next.currentTrick.length !== prev.currentTrick.length || next.phase !== prev.phase) stopPeek();
 
   if (next.completedTricks.length > prev.completedTricks.length && next.completedTricks.length > 0) {
     const last = next.completedTricks[next.completedTricks.length - 1];
@@ -354,8 +359,27 @@ function seatHtml(seat: Seat): string {
   </div>`;
 }
 
+function canPeek(): boolean {
+  return state.phase === 'playing' && state.completedTricks.length > 0;
+}
+
+function stopPeek() {
+  peekLast = false;
+  window.clearTimeout(peekTimer);
+}
+
+/** The previous trick, shown instead of the current one while the 🕘 button is on. */
+function lastTrickHtml(): string {
+  const last = state.completedTricks[state.completedTricks.length - 1];
+  const slots = last.plays
+    .map((p) => cardHtml(p.card, { cls: `slot slot-${POS[p.seat]} ${p.seat === last.winner ? 'winner' : ''}` }))
+    .join('');
+  return `<div class="trick peek"><div class="trick-cards">${slots}</div><div class="peek-label">🕘 ${t.lastTrick}</div></div>`;
+}
+
 function trickHtml(): string {
   const s = state;
+  if (peekLast && canPeek()) return lastTrickHtml();
   const winner = s.phase === 'trickComplete' ? trickWinner(s.currentTrick, currentTrump(s)) : null;
   const key = `${s.roundNumber}:${s.completedTricks.length}:${s.currentTrick.length}`;
   const isNew = key !== lastTrickKey;
@@ -563,6 +587,7 @@ function render() {
       ${seatHtml(2)}${seatHtml(3)}${trickHtml()}${seatHtml(1)}
     </main>
     <div class="status-row">
+      ${canPeek() ? `<button class="last-btn ${peekLast ? 'on' : ''}" data-action="last" aria-pressed="${peekLast}" aria-label="${t.lastTrick}" title="${t.lastTrick}">🕘</button>` : ''}
       <div class="status">${statusText()}</div>
       ${online ? `<button class="say-btn" data-action="say" aria-label="${t.sayTitle}" title="${t.sayTitle}">💬</button>` : ''}
     </div>
@@ -1198,6 +1223,17 @@ app.addEventListener('click', (e) => {
   const el = (e.target as HTMLElement).closest<HTMLElement>('[data-card],[data-suit],[data-action],[data-say]');
   if (el?.dataset.action === 'say') {
     sayOpen = !sayOpen;
+    return render();
+  }
+  if (el?.dataset.action === 'last') {
+    if (peekLast) stopPeek();
+    else if (canPeek()) {
+      peekLast = true;
+      peekTimer = window.setTimeout(() => {
+        peekLast = false;
+        render();
+      }, PEEK_MS);
+    }
     return render();
   }
   if (el?.dataset.say) {

@@ -121,6 +121,8 @@ export interface Strings {
   tour: Record<TourStepId, { title: string; body: string }>;
   say: Record<(typeof QUICK_MESSAGES)[number], string>;
   sayTitle: string;
+  /** button that shows only the previous trick, for a few seconds */
+  lastTrick: string;
   animations: string;
   animationsHint: string;
   online: string;
@@ -344,6 +346,7 @@ const ne: Strings = {
     again: 'अर्को राउन्ड! 🔁',
   },
   sayTitle: 'प्रतिक्रिया र सन्देश',
+  lastTrick: 'पछिल्लो हात',
   animations: 'एनिमेसन',
   animationsHint: 'पत्ती बाँडेको, फालेको र हात उठाएको एनिमेसन',
   online: 'अनलाइन',
@@ -619,6 +622,7 @@ const neRom: Strings = {
     again: 'Arko round! 🔁',
   },
   sayTitle: 'Reaction ra message',
+  lastTrick: 'Pachhillo haat',
   animations: 'Animation',
   animationsHint: 'Patti baadeko, phaaleko ra haat uthaaeko animation',
   online: 'Online',
@@ -894,6 +898,7 @@ const en: Strings = {
     again: 'One more round! 🔁',
   },
   sayTitle: 'Reactions & messages',
+  lastTrick: 'Last trick',
   animations: 'Animations',
   animationsHint: 'Dealing, card throws and trick pick-up',
   online: 'Online',
@@ -1169,6 +1174,7 @@ const ja: Strings = {
     again: 'もう1ラウンド！ 🔁',
   },
   sayTitle: 'リアクションとメッセージ',
+  lastTrick: '直前のトリック',
   animations: 'アニメーション',
   animationsHint: '配札・カードを出す・トリックを取る動き',
   online: 'オンライン',

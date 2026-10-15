@@ -3,6 +3,9 @@ import {
   botChooseCard,
   botChooseTrump,
   cardId,
+  collectTrick,
+  legalCards,
+  playCard,
   rotateView,
   teamOf,
   viewFor,
@@ -298,6 +301,18 @@ describe('player views', () => {
     expect(v.hands[1]).toEqual([]);
     expect(v.handCounts).toEqual([13, 13, 13, 13]);
     expect(v.undealt).toEqual([]);
+  });
+
+  it('show only the most recent finished trick (older ones keep just the winner)', () => {
+    let g = startedGame();
+    for (let i = 0; i < 12; i++) {
+      g = playCard(g, g.turn, legalCards(g, g.turn)[0]);
+      if (g.phase === 'trickComplete') g = collectTrick(g);
+    }
+    expect(g.completedTricks).toHaveLength(3);
+    const v = viewFor(g, 1);
+    expect(v.completedTricks.map((t) => t.plays.length)).toEqual([0, 0, 4]);
+    expect(v.completedTricks.map((t) => t.winner)).toEqual(g.completedTricks.map((t) => t.winner));
   });
 
   it('hide a band hukum trump from everyone but the chooser', () => {

@@ -118,30 +118,31 @@ export function settingsHtml(
   const bgs = BACKGROUNDS.map((bg) => {
     const b = bg.id;
     const owned = prefs.unlockedBgs.includes(b);
-    const tag = owned ? (prefs.background === b ? '✔' : '') : `🔒 ${bg.price} 🪙`;
-    return `<button class="bg-tile ${prefs.background === b ? 'on' : ''} ${owned ? '' : 'locked'}" data-bg="${b}"
+    const on = prefs.background === b;
+    return `<button class="bg-tile shop-tile ${on ? 'on' : ''} ${owned ? '' : 'locked'}" data-bg="${b}"
         title="${owned ? t.backgrounds[b] : t.unlockFor(bg.price)}">
-      <span class="bg-preview bg-${b}"></span>
+      <span class="bg-preview bg-${b}">${tileBadge(owned, on)}</span>
       <span class="theme-name">${t.backgrounds[b]}</span>
-      <span class="theme-tag">${tag}</span>
+      ${owned ? '' : pricePill(bg.price, prefs.coins)}
     </button>`;
   }).join('');
   const installBox = install.installed
     ? `<p>${t.installed}</p>`
     : `${install.canPrompt ? `<button class="install" data-m="install">${t.installButton}</button>` : ''}
        <p>${t.installHint}</p>`;
-  const modes = MODES.map((m) => modeButton(t, m, prefs.mode === m, prefs.unlockedModes, 'data-mode')).join('');
+  const modes = MODES.map((m) => modeButton(t, m, prefs.mode === m, prefs.unlockedModes, prefs.coins, 'data-mode')).join('');
   const themes = THEMES.map((th) => {
     const owned = prefs.unlocked.includes(th.id);
-    const tag = owned ? (prefs.theme === th.id ? '✔' : '') : `🔒 ${th.price} 🪙`;
-    return `<button class="theme-tile ${prefs.theme === th.id ? 'on' : ''} ${owned ? '' : 'locked'}"
+    const on = prefs.theme === th.id;
+    return `<button class="theme-tile shop-tile ${on ? 'on' : ''} ${owned ? '' : 'locked'}"
         data-theme="${th.id}" title="${owned ? t.themes[th.id] : t.unlockFor(th.price)}">
       <span class="theme-preview theme-${th.id}">
         <span class="card red mini"><span class="corner">A<br>♥</span><span class="pip">♥</span></span>
         <span class="mini-back"></span>
+        ${tileBadge(owned, on)}
       </span>
       <span class="theme-name">${t.themes[th.id]}</span>
-      <span class="theme-tag">${tag}</span>
+      ${owned ? '' : pricePill(th.price, prefs.coins)}
     </button>`;
   }).join('');
   return shell(
@@ -205,18 +206,40 @@ export function settingsHtml(
 
 export type RoomInfo = Extract<ServerMsg, { t: 'room' }>;
 
+/** Coin price on something not bought yet: glows green when the player can afford it. */
+function pricePill(price: number, coins: number): string {
+  const can = coins >= price;
+  return `<span class="price-pill ${can ? 'can' : ''}">${can ? '🔓' : '🔒'}<b>${price}</b><i class="coin-dot"></i></span>`;
+}
+
+/** Corner badge on a shop tile: a lock while not bought, a tick on the one in use. */
+function tileBadge(owned: boolean, on: boolean): string {
+  if (!owned) return '<i class="tile-badge lock">🔒</i>';
+  return on ? '<i class="tile-badge tick">✔</i>' : '';
+}
+
 /** A game-mode choice; one that is not bought yet shows its price and is bought on tap. */
-function modeButton(t: Strings, m: TrumpMode, on: boolean, owned: readonly TrumpMode[], attr: string, disabled = false): string {
+function modeButton(
+  t: Strings,
+  m: TrumpMode,
+  on: boolean,
+  owned: readonly TrumpMode[],
+  coins: number,
+  attr: string,
+  disabled = false,
+): string {
   const locked = !owned.includes(m);
-  return `<button class="mode-opt ${on ? 'on' : ''} ${locked ? 'locked' : ''}" ${attr}="${m}" ${disabled ? 'disabled' : ''}
+  return `<button class="mode-opt shop-tile ${on ? 'on' : ''} ${locked ? 'locked' : ''}" ${attr}="${m}" ${disabled ? 'disabled' : ''}
       ${locked ? `title="${t.unlockFor(MODE_PRICES[m])}"` : ''}>
-    <b>${t.modes[m].name}${locked ? ` <span class="mode-price">🔒 ${MODE_PRICES[m]} 🪙</span>` : ''}</b><small>${t.modes[m].desc}</small>
+    <span class="mode-head"><b>${t.modes[m].name}</b>${locked ? pricePill(MODE_PRICES[m], coins) : on ? '<i class="tile-badge tick inline">✔</i>' : ''}</span>
+    <small>${t.modes[m].desc}</small>
   </button>`;
 }
 
 export interface OnlineView {
   /** game modes this player has bought (they can only pick these as host) */
   unlockedModes: readonly TrumpMode[];
+  coins: number;
   /** null when no server is configured */
   available: boolean;
   name: string;
@@ -329,7 +352,7 @@ export function onlineHtml(t: Strings, v: OnlineView): string {
   const isHost = r.host === r.you || r.host === null || !r.seats[r.host]?.connected;
   // only the host picks; a mode they have not bought yet shows its price (the others just play it)
   const modes = MODES.map((m) =>
-    modeButton(t, m, r.mode === m, isHost ? v.unlockedModes : MODES, 'data-online-mode', !isHost),
+    modeButton(t, m, r.mode === m, isHost ? v.unlockedModes : MODES, v.coins, 'data-online-mode', !isHost),
   ).join('');
   return shell(
     `<h2>🌐 ${escapeHtml(r.name)}</h2>

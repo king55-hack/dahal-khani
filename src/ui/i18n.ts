@@ -123,6 +123,12 @@ export interface Strings {
   sayTitle: string;
   /** button that shows only the previous trick, for a few seconds */
   lastTrick: string;
+  /** tooltip on the AI tag of a computer player */
+  aiBot: string;
+  /** tooltip on the temporary AI tag of someone whose connection dropped */
+  aiStandIn: string;
+  /** tooltip on the green dot of a connected player */
+  onlineNow: string;
   animations: string;
   animationsHint: string;
   online: string;
@@ -347,6 +353,9 @@ const ne: Strings = {
   },
   sayTitle: 'प्रतिक्रिया र सन्देश',
   lastTrick: 'पछिल्लो हात',
+  aiBot: 'कम्प्युटर (AI) खेलाडी',
+  aiStandIn: 'नेट गयो — अहिले AI ले खेल्दैछ',
+  onlineNow: 'अनलाइन छ',
   animations: 'एनिमेसन',
   animationsHint: 'पत्ती बाँडेको, फालेको र हात उठाएको एनिमेसन',
   online: 'अनलाइन',
@@ -623,6 +632,9 @@ const neRom: Strings = {
   },
   sayTitle: 'Reaction ra message',
   lastTrick: 'Pachhillo haat',
+  aiBot: 'Computer (AI) khelaadi',
+  aiStandIn: 'Net gayo — ahile AI le kheldai chha',
+  onlineNow: 'Online chha',
   animations: 'Animation',
   animationsHint: 'Patti baadeko, phaaleko ra haat uthaaeko animation',
   online: 'Online',
@@ -899,6 +911,9 @@ const en: Strings = {
   },
   sayTitle: 'Reactions & messages',
   lastTrick: 'Last trick',
+  aiBot: 'Computer (AI) player',
+  aiStandIn: 'Disconnected — the AI is playing for now',
+  onlineNow: 'Online',
   animations: 'Animations',
   animationsHint: 'Dealing, card throws and trick pick-up',
   online: 'Online',
@@ -1175,6 +1190,9 @@ const ja: Strings = {
   },
   sayTitle: 'リアクションとメッセージ',
   lastTrick: '直前のトリック',
+  aiBot: 'コンピューター（AI）プレイヤー',
+  aiStandIn: '接続が切れました — 今はAIがプレイ中',
+  onlineNow: 'オンライン',
   animations: 'アニメーション',
   animationsHint: '配札・カードを出す・トリックを取る動き',
   online: 'オンライン',

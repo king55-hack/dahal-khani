@@ -527,9 +527,65 @@ body.theme-neon #app .card, .theme-preview.theme-neon .card { box-shadow: 0 0 0 
 .modes { display: grid; gap: 6px; }
 .mode-opt { display: flex; flex-direction: column; text-align: left; padding: 8px 10px; gap: 2px; }
 .mode-opt small { color: #4b5563; font-size: 12px; line-height: 1.35; }
+.mode-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .mode-opt.locked { background: #f3f4f6; }
 .mode-opt.locked small { color: #6b7280; }
-.mode-price { float: right; font-size: 12px; font-weight: 700; color: #92400e; }
+
+/* ---------- shop: things bought with coins ---------- */
+.shop-tile {
+  position: relative; cursor: pointer;
+  border-width: 2px; border-bottom-width: 4px; border-radius: 14px;
+  transition: transform .08s, border-bottom-width .08s;
+}
+.shop-tile:active { transform: translateY(2px); border-bottom-width: 2px; }
+.shop-tile.on { border-color: #16a34a; background: #ecfdf5; box-shadow: 0 0 0 2px #86efac, 0 0 14px rgba(34,197,94,.35); }
+.shop-tile .theme-preview, .shop-tile .bg-preview { position: relative; }
+.tile-badge {
+  position: absolute; top: -7px; right: -7px; width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 900;
+  border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,.35); z-index: 2;
+}
+.tile-badge.lock { background: #374151; filter: none; }
+.tile-badge.tick { background: #16a34a; color: #fff; }
+.tile-badge.inline { position: static; flex: none; }
+.price-pill {
+  position: relative; overflow: hidden;
+  display: inline-flex; align-items: center; gap: 3px;
+  padding: 2px 9px 2px 7px; border-radius: 999px; font-size: 12px; white-space: nowrap;
+  background: linear-gradient(#e5e7eb, #cbd5e1); color: #374151;
+  box-shadow: 0 2px 0 #94a3b8;
+}
+.price-pill b { font-size: 13px; }
+.price-pill .coin-dot {
+  width: 13px; height: 13px; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff7c2, #fbbf24 55%, #b45309);
+  box-shadow: inset 0 0 0 1.5px #d97706;
+}
+/* affordable: gold-green, with a shine sweeping across now and then */
+.price-pill.can {
+  background: linear-gradient(#bef264, #22c55e); color: #052e16; box-shadow: 0 2px 0 #15803d;
+  animation: pill-bob 1.6s ease-in-out infinite;
+}
+.price-pill.can::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-120%);
+  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.75) 50%, transparent 70%);
+  animation: pill-shine 2.4s ease-in-out infinite;
+}
+@keyframes pill-bob { 50% { transform: translateY(-2px); } }
+@keyframes pill-shine { 60%, 100% { transform: translateX(120%); } }
+/* just bought: bounce + coins fly out; not enough coins: shake */
+.shop-tile.pop { animation: shop-pop .5s cubic-bezier(.3, 1.6, .5, 1); }
+@keyframes shop-pop { 0% { transform: scale(.85); } 60% { transform: scale(1.08); } 100% { transform: scale(1); } }
+.shop-tile.shake { animation: shop-shake .4s ease-in-out; }
+@keyframes shop-shake { 20%, 60% { transform: translateX(-6px); } 40%, 80% { transform: translateX(6px); } }
+.coin-burst {
+  position: absolute; left: 50%; top: 40%; width: 14px; height: 14px; margin: -7px; border-radius: 50%;
+  pointer-events: none; z-index: 3;
+  background: radial-gradient(circle at 35% 30%, #fff7c2, #fbbf24 55%, #b45309);
+  animation: coin-burst .7s ease-out forwards;
+}
+@keyframes coin-burst { to { transform: translate(var(--dx), var(--dy)) scale(.6); opacity: 0; } }
+body.no-anim .price-pill.can, body.no-anim .price-pill.can::after, body.no-anim .shop-tile.pop, body.no-anim .shop-tile.shake { animation: none; }
 .themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(88px, 1fr)); gap: 8px; }
 .theme-tile { padding: 6px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .theme-tile.locked .theme-preview, .bg-tile.locked .bg-preview { filter: grayscale(.6) brightness(.8); }
@@ -723,18 +779,23 @@ body.no-anim .fx-card { display: none; }
 
 /* ---------- reactions & quick messages ---------- */
 .status-row { position: relative; display: flex; align-items: center; justify-content: center; }
-.say-btn {
-  position: absolute; right: 0; top: 50%; transform: translateY(-50%);
-  width: 38px; height: 38px; border-radius: 50%; border: none; font-size: 19px;
-  background: rgba(0,0,0,.35); box-shadow: 0 0 0 1.5px rgba(255,213,74,.6);
+.say-btn { position: absolute; right: 0; top: 50%; transform: translateY(-50%); font-size: 21px; }
+/* round, glossy, "pressable" buttons like in mobile games */
+.game-btn {
+  width: 44px; height: 44px; border-radius: 50%; padding: 0; cursor: pointer;
+  border: 2px solid #fff6cf;
+  background: radial-gradient(circle at 35% 28%, #fff3b0 0 12%, #ffcf3f 38%, #e89a0c 100%);
+  box-shadow: 0 4px 0 #a35f00, 0 6px 10px rgba(0,0,0,.45), inset 0 -3px 0 rgba(0,0,0,.12);
+  transition: transform .08s, box-shadow .08s;
 }
-/* 🕘 last trick: mirror of the 💬 button, on the left */
-.last-btn {
-  position: absolute; left: 0; top: 50%; transform: translateY(-50%);
-  width: 38px; height: 38px; border-radius: 50%; border: none; font-size: 18px;
-  background: rgba(0,0,0,.35); box-shadow: 0 0 0 1.5px rgba(255,255,255,.35);
+.game-btn:active { transform: translateY(calc(-50% + 3px)); box-shadow: 0 1px 0 #a35f00, 0 2px 4px rgba(0,0,0,.45); }
+.game-btn.on {
+  background: radial-gradient(circle at 35% 28%, #d9f99d 0 12%, #4ade80 40%, #15803d 100%);
+  box-shadow: 0 4px 0 #14532d, 0 0 0 4px rgba(74,222,128,.35), 0 6px 12px rgba(0,0,0,.45);
 }
-.last-btn.on { background: var(--gold); box-shadow: 0 0 0 2px #fff; }
+/* last trick: mirror of the 💬 button, on the left */
+.last-btn { position: absolute; left: 0; top: 50%; transform: translateY(-50%); }
+.last-btn svg { width: 30px; height: 30px; display: block; margin: auto; }
 .trick.peek { box-shadow: inset 0 0 0 2px rgba(255,213,74,.55); }
 .trick.peek .slot { filter: saturate(.75) brightness(.92); }
 .trick.peek .slot.winner { filter: none; }
@@ -1027,3 +1088,158 @@ body.bg-galaicha, .bg-preview.bg-galaicha {
     #2a0d0d;
 }
 body.bg-galaicha::before { content: none; } /* the old drawn border is no longer needed */
+
+/* =====================================================================
+   Game UI skin: every button is a chunky, glossy "candy" button that
+   sinks when pressed, like in mobile games. Kept last so it wins.
+   ===================================================================== */
+button.primary, button.share, button.danger, button.install, button.ghost, button.link,
+.sheet .close, .sheet .tabs button, button.small, .kick-btn {
+  --top: #4ade80; --mid: #16a34a; --bot: #15803d; --edge: #0b5126; --fg: #fff;
+  position: relative;
+  border: none; color: var(--fg); font-weight: 800; letter-spacing: .2px;
+  background: linear-gradient(180deg, var(--top) 0%, var(--mid) 55%, var(--bot) 100%);
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.45),
+    inset 0 -3px 0 rgba(0,0,0,.18),
+    0 4px 0 var(--edge),
+    0 6px 10px rgba(0,0,0,.22);
+  text-shadow: 0 1px 0 rgba(0,0,0,.3);
+  transition: transform .08s, box-shadow .08s, filter .15s;
+}
+button.primary, button.share, button.danger, button.install, button.ghost { border-radius: 16px; }
+button.primary:hover, button.share:hover, button.danger:hover, button.install:hover, button.ghost:hover,
+.sheet .tabs button:hover, button.small:hover { filter: brightness(1.06); }
+button.primary:active, button.share:active, button.danger:active, button.install:active, button.ghost:active,
+button.link:active, .sheet .close:active, .sheet .tabs button:active, button.small:active, .kick-btn:active {
+  transform: translateY(3px);
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.45), inset 0 -2px 0 rgba(0,0,0,.18), 0 1px 0 var(--edge);
+}
+button.primary:disabled { filter: grayscale(.6); opacity: .6; transform: none; }
+
+/* colours */
+button.share, button.install { --top: #60a5fa; --mid: #2563eb; --bot: #1d4ed8; --edge: #1e3a8a; }
+button.danger, .kick-btn { --top: #fb7185; --mid: #e11d48; --bot: #be123c; --edge: #881337; color: #fff; }
+button.ghost, button.link, .sheet .tabs button {
+  --top: #ffffff; --mid: #f8fafc; --bot: #e2e8f0; --edge: #94a3b8; --fg: #0f5a33; text-shadow: none;
+}
+.guide-btn { --fg: #0f5a33; }
+.sheet .tabs button.on {
+  --top: #fde68a; --mid: #fbbf24; --bot: #f59e0b; --edge: #b45309; --fg: #422006;
+  background: linear-gradient(180deg, var(--top) 0%, var(--mid) 55%, var(--bot) 100%); color: var(--fg);
+}
+button.link { border-radius: 999px; padding: 4px 12px; }
+.kick-btn { border-radius: 999px; }
+
+/* the × that closes a sheet: a round red button */
+.sheet .close {
+  --top: #fca5a5; --mid: #ef4444; --bot: #dc2626; --edge: #7f1d1d;
+  position: absolute;
+  width: 38px; height: 38px; border-radius: 50%; font-size: 22px; font-weight: 900; line-height: 1;
+}
+
+/* header: ⓘ ⚙ 🌐 as little round-cornered glossy keys */
+button.small {
+  --top: #2f855a; --mid: #1f6f45; --bot: #14532d; --edge: #052e16; --fg: #fff;
+  border-radius: 13px; min-width: 42px; min-height: 40px; font-size: 21px; padding: 2px 8px;
+  box-shadow:
+    inset 0 2px 0 rgba(255,255,255,.3),
+    inset 0 -2px 0 rgba(0,0,0,.25),
+    0 3px 0 var(--edge),
+    0 0 0 1.5px rgba(255,213,74,.55);
+}
+
+/* the big "do this now" buttons shine every few seconds */
+button.primary.start, button[data-m="name-ok"], button[data-action="next"] { overflow: hidden; }
+button.primary.start::after, button[data-m="name-ok"]::after, button[data-action="next"]::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-120%); pointer-events: none;
+  background: linear-gradient(100deg, transparent 30%, rgba(255,255,255,.55) 50%, transparent 70%);
+  animation: pill-shine 2.6s ease-in-out infinite;
+}
+
+/* choices (language, sound, animation, feedback kind, seats): chunky tiles like the shop */
+.lang-btn, .seg button, .seat-card {
+  border-width: 2px; border-bottom-width: 4px; border-radius: 14px;
+  transition: transform .08s, border-bottom-width .08s;
+}
+.lang-btn:active, .seg button:active, button.seat-card:active { transform: translateY(2px); border-bottom-width: 2px; }
+.lang-btn.on, .seg button.on {
+  border-color: #16a34a; background: #ecfdf5; box-shadow: 0 0 0 2px #86efac, 0 0 12px rgba(34,197,94,.3);
+}
+
+/* trump picker: glossy white keys that hop in one after another */
+.suit-btn {
+  border-radius: 14px;
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 60%, #e2e8f0 100%);
+  box-shadow: inset 0 2px 0 #fff, 0 4px 0 #94a3b8, 0 6px 12px rgba(0,0,0,.35);
+  animation: suit-hop .45s cubic-bezier(.3, 1.6, .5, 1) backwards;
+}
+.suit-btn:nth-child(2) { animation-delay: .06s; }
+.suit-btn:nth-child(3) { animation-delay: .12s; }
+.suit-btn:nth-child(4) { animation-delay: .18s; }
+.suit-btn:hover { transform: translateY(-3px); }
+.suit-btn:active { transform: translateY(3px); box-shadow: inset 0 2px 0 #fff, 0 1px 0 #94a3b8; }
+@keyframes suit-hop { from { transform: translateY(14px) scale(.7); opacity: 0; } }
+
+body.no-anim .suit-btn,
+body.no-anim button.primary.start::after, body.no-anim button[data-m="name-ok"]::after, body.no-anim button[data-action="next"]::after { animation: none; }
+
+/* the header keys never get squeezed; the live count sits on the 🌐 key like a notification bubble */
+header button.small { flex: none; }
+header .score { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+header .live-badge {
+  position: absolute; top: -7px; right: -8px; z-index: 1;
+  padding: 2px 5px 2px 4px; border-radius: 999px; gap: 3px; font-size: 11px; text-shadow: none;
+  background: #052e16; color: #bbf7d0; box-shadow: 0 0 0 1.5px #22c55e;
+}
+header .live-dot { width: 7px; height: 7px; }
+/* phones: still big enough to tap easily, but the header must fit on one line */
+@media (max-width: 420px) {
+  header { gap: 4px; }
+  header .score { font-size: 13px; }
+  header .trump-badge { padding: 1px 6px; }
+  button.small { min-width: 36px; min-height: 36px; font-size: 18px; padding: 2px 5px; }
+  /* the room number is in the 🌐 window anyway */
+  .room-chip .chip-code { display: none; }
+}
+
+/* ---------- player portraits, AI tag, online dot ---------- */
+.avatar-wrap { position: relative; line-height: 0; }
+.avatar {
+  display: grid; place-items: center; overflow: hidden;
+  width: 46px; height: 46px; border-radius: 50%;
+  border: 2.5px solid #fff6cf; box-shadow: 0 3px 8px rgba(0,0,0,.45);
+  background: #334155;
+}
+.avatar svg { width: 100%; height: 100%; display: block; }
+.avatar.initial { font-size: 20px; font-weight: 900; color: #fff; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
+.avatar.initial.team0 { background: linear-gradient(#38bdf8, #0369a1); }
+.avatar.initial.team1 { background: linear-gradient(#fb7185, #be123c); }
+.seat.active .avatar { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(255,213,74,.45), 0 3px 8px rgba(0,0,0,.45); }
+/* AI: a small violet pill after the name; amber and dashed while it only stands in for someone offline */
+.ai-tag {
+  display: inline-block; margin-left: 4px; padding: 0 5px; border-radius: 999px; vertical-align: 1px;
+  font-size: 9.5px; font-weight: 900; letter-spacing: .5px; line-height: 15px; text-shadow: none;
+  background: linear-gradient(#a78bfa, #7c3aed); color: #fff; box-shadow: 0 1px 0 #4c1d95;
+}
+.ai-tag.temp {
+  background: #fef3c7; color: #92400e; box-shadow: none; outline: 1.5px dashed #f59e0b; outline-offset: -1.5px;
+  animation: ai-temp 1.6s ease-in-out infinite;
+}
+@keyframes ai-temp { 50% { opacity: .55; } }
+/* green while connected; goes dark when the connection drops */
+.net-dot {
+  position: absolute; right: 0; bottom: 1px; width: 12px; height: 12px; border-radius: 50%;
+  border: 2px solid #fff; transition: background .4s, box-shadow .4s;
+}
+.net-dot.on { background: #22c55e; box-shadow: 0 0 6px #22c55e; }
+.net-dot.off { background: #374151; box-shadow: none; }
+body.no-anim .ai-tag.temp { animation: none; }
+@media (max-width: 400px) {
+  .avatar { width: 40px; height: 40px; }
+}
+@media (orientation: landscape) and (max-height: 560px) {
+  .avatar { width: 30px; height: 30px; border-width: 2px; }
+  .avatar.initial { font-size: 14px; }
+  .net-dot { width: 9px; height: 9px; border-width: 1.5px; }
+}

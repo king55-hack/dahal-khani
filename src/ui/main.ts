@@ -64,6 +64,7 @@ import type { FeedbackKind } from '../online/feedback';
 import { bubble, clearFx, dealCards } from './fx';
 import { createRoom, listRooms, OnlineClient, SERVER_URL, type ConnStatus, type FatalReason } from './online';
 import { loadPrefs, savePrefs } from './prefs';
+import { avatarFor, avatarHtml, type AvatarId } from './avatars';
 import { setSoundEnabled, sfx, unlockAudio } from './sound';
 import { BACKGROUNDS, isBackgroundId, isThemeId, MODE_PRICES, THEMES } from './themes';
 
@@ -118,6 +119,15 @@ let sayOpen = false;
 let peekLast = false;
 let peekTimer = 0;
 const PEEK_MS = 3000;
+/** two cards with a "go back" arrow: the previous trick */
+const LAST_TRICK_ICON = `<svg viewBox="0 0 32 32" aria-hidden="true">
+  <rect x="5" y="7" width="13" height="18" rx="2.5" transform="rotate(-12 11.5 16)" fill="#fff" stroke="#7c2d12" stroke-width="1.4"/>
+  <rect x="12" y="6" width="13" height="18" rx="2.5" transform="rotate(8 18.5 15)" fill="#fff" stroke="#7c2d12" stroke-width="1.4"/>
+  <text x="18.6" y="18.5" font-size="9" font-weight="700" text-anchor="middle" fill="#dc2626" transform="rotate(8 18.5 15)">♥</text>
+  <circle cx="9" cy="24" r="6.2" fill="#2563eb" stroke="#fff" stroke-width="1.6"/>
+  <path d="M6.3 24.3a2.9 2.9 0 1 0 1-2.6" fill="none" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M5.6 20.3l1.9 1.6-2.3.9z" fill="#fff"/>
+</svg>`;
 /** player feedback form */
 const fbForm: FeedbackForm = { kind: 'problem', message: '', contact: '', includeInfo: true, sending: false, sent: false, error: '' };
 /** creator's inbox (only on a device where the admin key was entered) */
@@ -173,7 +183,25 @@ const onlineForm = {
 function name(seat: Seat): string {
   const info = online?.room?.seats[(seat + online.seat) % 4];
   if (!online || !info || seat === HUMAN) return t.names[seat];
-  return escapeHtml((info.bot ? '🤖 ' : '') + info.name);
+  return escapeHtml(info.name);
+}
+
+/** Offline the three others are always the AI players Gajendra, Sita and Ranjana. */
+const OFFLINE_AVATARS: Record<Seat, AvatarId | null> = { 0: null, 1: 'gajendra', 2: 'sita', 3: 'ranjana' };
+
+/** Portrait, AI tag and online dot for a seat at the table. */
+function seatIdentity(seat: Seat): { avatar: string; tag: string; dot: string } {
+  const team = teamOf(seat);
+  const ai = `<span class="ai-tag" title="${t.aiBot}">AI</span>`;
+  const info = online?.room?.seats[(seat + online.seat) % 4];
+  if (!online || !info) return { avatar: avatarHtml(OFFLINE_AVATARS[seat], t.names[seat], team), tag: ai, dot: '' };
+  if (info.bot) return { avatar: avatarHtml(avatarFor(info.name), info.name, team), tag: ai, dot: '' };
+  // a real person: green dot while connected; if their connection drops the AI plays for them meanwhile
+  return {
+    avatar: avatarHtml(null, info.name, team),
+    tag: info.connected ? '' : `<span class="ai-tag temp" title="${t.aiStandIn}">AI</span>`,
+    dot: `<i class="net-dot ${info.connected ? 'on' : 'off'}" title="${info.connected ? t.onlineNow : t.aiStandIn}"></i>`,
+  };
 }
 
 function handCount(seat: Seat): number {
@@ -352,8 +380,10 @@ function seatHtml(seat: Seat): string {
   const partner = seat === 2 ? ` <small>${t.partner}</small>` : '';
   const n = handCount(seat);
   const backs = Array.from({ length: Math.min(n, 13) }, () => '<i class="back"></i>').join('');
+  const who = seatIdentity(seat);
   return `<div class="seat seat-${POS[seat]} team${teamOf(seat)} ${active ? 'active' : ''}">
-    <div class="name">${name(seat)}${partner}</div>
+    <div class="avatar-wrap">${who.avatar}${who.dot}</div>
+    <div class="name">${name(seat)}${who.tag}${partner}</div>
     <div class="backs">${backs}</div>
     <div class="chips">${dealer}${chooser}<span class="count">${n}</span></div>
   </div>`;
@@ -574,7 +604,7 @@ function render() {
       <span class="coin-chip" title="${t.coins}">🪙 ${prefs.coins}</span>
       ${
         online
-          ? `<button class="small room-chip" data-action="online" title="${t.online}">${online.status === 'open' ? '🌐' : '⏳'} ${online.code}${liveBadge()}</button>`
+          ? `<button class="small room-chip" data-action="online" title="${t.online}">${online.status === 'open' ? '🌐' : '⏳'}<span class="chip-code">${online.code}</span>${liveBadge()}</button>`
           : SERVER_URL
             ? `<button class="small globe-btn" data-action="online" title="${t.playOnline}" aria-label="${t.online}">🌐${liveBadge()}</button>`
             : ''
@@ -587,9 +617,9 @@ function render() {
       ${seatHtml(2)}${seatHtml(3)}${trickHtml()}${seatHtml(1)}
     </main>
     <div class="status-row">
-      ${canPeek() ? `<button class="last-btn ${peekLast ? 'on' : ''}" data-action="last" aria-pressed="${peekLast}" aria-label="${t.lastTrick}" title="${t.lastTrick}">🕘</button>` : ''}
+      ${canPeek() ? `<button class="last-btn game-btn ${peekLast ? 'on' : ''}" data-action="last" aria-pressed="${peekLast}" aria-label="${t.lastTrick}" title="${t.lastTrick}">${LAST_TRICK_ICON}</button>` : ''}
       <div class="status">${statusText()}</div>
-      ${online ? `<button class="say-btn" data-action="say" aria-label="${t.sayTitle}" title="${t.sayTitle}">💬</button>` : ''}
+      ${online ? `<button class="say-btn game-btn" data-action="say" aria-label="${t.sayTitle}" title="${t.sayTitle}">💬</button>` : ''}
     </div>
     ${handHtml()}
     ${online && sayOpen ? sayPanelHtml() : ''}
@@ -645,6 +675,7 @@ function renderModal() {
       error: onlineForm.error,
       notice: onlineForm.notice,
       unlockedModes: prefs.unlockedModes,
+      coins: prefs.coins,
     });
   } else if (modal.kind === 'feedback') modalRoot.innerHTML = feedbackHtml(t, fbForm, CREATOR_NAME);
   else if (modal.kind === 'inbox') modalRoot.innerHTML = inboxHtml(inboxState);
@@ -719,6 +750,27 @@ function setLanguage(lang: Lang) {
   else renderModal();
 }
 
+/** Bounce a shop tile after buying it, or shake it when coins are short (after the modal re-rendered). */
+function tileFx(selector: string, cls: 'pop' | 'shake') {
+  modalRoot.querySelector(selector)?.classList.add(cls);
+  if (cls === 'pop') burstCoins(modalRoot.querySelector(selector));
+}
+
+/** A few coins jump out of a tile that was just bought. */
+function burstCoins(el: Element | null) {
+  if (!el || !prefs.animations) return;
+  for (let i = 0; i < 8; i++) {
+    const c = document.createElement('i');
+    c.className = 'coin-burst';
+    const a = (Math.PI * 2 * i) / 8;
+    c.style.setProperty('--dx', `${Math.round(Math.cos(a) * 46)}px`);
+    c.style.setProperty('--dy', `${Math.round(Math.sin(a) * 34 - 18)}px`);
+    el.appendChild(c);
+  }
+}
+
+const modeSel = (mode: TrumpMode) => `[data-mode="${mode}"],[data-online-mode="${mode}"]`;
+
 /** Make sure a mode is owned, paying for it if needed. False (with a message) when coins are short. */
 function buyMode(mode: TrumpMode): boolean {
   if (prefs.unlockedModes.includes(mode)) return true;
@@ -728,6 +780,7 @@ function buyMode(mode: TrumpMode): boolean {
     if (modal?.kind === 'online') onlineForm.error = msg;
     else settingsMsg = msg;
     renderModal();
+    tileFx(modeSel(mode), 'shake');
     return false;
   }
   prefs.coins -= price;
@@ -745,6 +798,7 @@ function setMode(mode: TrumpMode) {
   }
   if (mode === prefs.mode) return;
   settingsMsg = '';
+  const bought = !prefs.unlockedModes.includes(mode);
   if (!buyMode(mode)) return;
   prefs.mode = mode;
   savePrefs(prefs);
@@ -760,16 +814,19 @@ function setMode(mode: TrumpMode) {
     settingsMsg = t.modeNextRound;
   }
   renderModal();
+  if (bought) tileFx(modeSel(mode), 'pop');
 }
 
 function pickTheme(id: string) {
   if (!isThemeId(id)) return;
   const theme = THEMES.find((th) => th.id === id)!;
   settingsMsg = '';
-  if (!prefs.unlocked.includes(id)) {
+  const bought = !prefs.unlocked.includes(id);
+  if (bought) {
     if (prefs.coins < theme.price) {
       settingsMsg = t.notEnoughCoins(theme.price - prefs.coins);
       renderModal();
+      tileFx(`[data-theme="${id}"]`, 'shake');
       return;
     }
     prefs.coins -= theme.price;
@@ -781,16 +838,19 @@ function pickTheme(id: string) {
   applyLookAndLanguage();
   render();
   renderModal();
+  if (bought) tileFx(`[data-theme="${id}"]`, 'pop');
 }
 
 function pickBackground(id: string) {
   if (!isBackgroundId(id)) return;
   const bg = BACKGROUNDS.find((b) => b.id === id)!;
   settingsMsg = '';
-  if (!prefs.unlockedBgs.includes(id)) {
+  const bought = !prefs.unlockedBgs.includes(id);
+  if (bought) {
     if (prefs.coins < bg.price) {
       settingsMsg = t.notEnoughCoins(bg.price - prefs.coins);
       renderModal();
+      tileFx(`[data-bg="${id}"]`, 'shake');
       return;
     }
     prefs.coins -= bg.price;
@@ -802,6 +862,7 @@ function pickBackground(id: string) {
   applyLookAndLanguage();
   render();
   renderModal();
+  if (bought) tileFx(`[data-bg="${id}"]`, 'pop');
 }
 
 modalRoot.addEventListener('click', (e) => {

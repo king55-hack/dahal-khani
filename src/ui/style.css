@@ -90,14 +90,31 @@ button.small {
 .team-panel .tname { font-weight: 700; margin-right: auto; }
 .team-panel .stat { display: flex; align-items: center; gap: 4px; white-space: nowrap; }
 .team-panel .stat span { color: var(--muted); }
+.dots { display: inline-flex; gap: 3px; vertical-align: middle; }
+/* Dahal lamps: an empty socket with a faint "10" ... */
 .dot {
-  display: inline-block;
-  width: 9px; height: 9px;
-  border-radius: 50%;
-  margin: 0 1px;
-  border: 1.5px solid var(--gold);
+  display: inline-grid; place-items: center;
+  width: 17px; height: 17px; border-radius: 50%;
+  font-style: normal; font-size: 8px; font-weight: 900; letter-spacing: -.3px; line-height: 1;
+  color: rgba(255,213,74,.35);
+  background: radial-gradient(circle at 50% 35%, #1f2a24, #0b1410);
+  box-shadow: inset 0 2px 3px rgba(0,0,0,.7), 0 0 0 1.5px rgba(255,213,74,.45);
 }
-.dot.on { background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+/* ... that lights up as a shining gold coin */
+.dot.on {
+  position: relative; overflow: hidden;
+  color: #6b4100; text-shadow: 0 1px 0 rgba(255,255,255,.5);
+  background: radial-gradient(circle at 35% 30%, #fffbeb 0 10%, #fcd34d 40%, #f59e0b 75%, #b45309 100%);
+  box-shadow: 0 0 0 1.5px #fde68a, 0 0 8px 1px rgba(251,191,36,.85), inset 0 -2px 0 rgba(146,64,14,.35);
+}
+.dot.on::after {
+  content: ''; position: absolute; inset: 0; transform: translateX(-130%);
+  background: linear-gradient(110deg, transparent 35%, rgba(255,255,255,.85) 50%, transparent 65%);
+  animation: pill-shine 2.4s ease-in-out infinite; animation-delay: var(--shine-delay, 0ms);
+}
+.dot.new { animation: dot-pop .6s cubic-bezier(.3, 1.8, .5, 1); }
+@keyframes dot-pop { 0% { transform: scale(.3); } 60% { transform: scale(1.35); } 100% { transform: scale(1); } }
+body.no-anim .dot.on::after, body.no-anim .dot.new { animation: none; }
 
 /* ---------- table ---------- */
 .table {
@@ -232,7 +249,28 @@ button.small {
   letter-spacing: .5px;
   opacity: .0;
 }
-.hand .card.ten::after { opacity: 1; right: 30%; }
+/* in my hand a 10 wears a shiny gold "DAHAL" ribbon with a light sweeping across it */
+.hand .card.ten::after {
+  opacity: 1; left: 5%; right: auto; bottom: 4%;
+  padding: 1px 4px; border-radius: 4px;
+  font-size: calc(var(--cw) * .125); font-weight: 900; letter-spacing: .6px; line-height: 1.25;
+  color: #5b3a00;
+  background: linear-gradient(110deg, #d97706 0%, #fcd34d 35%, #fffbeb 48%, #fcd34d 60%, #d97706 100%);
+  background-size: 260% 100%;
+  box-shadow: 0 1px 0 #92400e, 0 0 6px rgba(251,191,36,.7);
+  animation: dahal-shine 2.4s linear infinite;
+  animation-delay: var(--shine-delay, 0ms);
+}
+.hand .card.ten {
+  animation: dahal-glow 2.4s ease-in-out infinite;
+  animation-delay: var(--shine-delay, 0ms);
+}
+@keyframes dahal-shine { from { background-position: 130% 0; } to { background-position: -130% 0; } }
+@keyframes dahal-glow {
+  0%, 100% { box-shadow: 0 2px 5px rgba(0,0,0,.35), 0 0 0 1.5px rgba(251,191,36,.55); }
+  50% { box-shadow: 0 2px 5px rgba(0,0,0,.35), 0 0 0 2px #fbbf24, 0 0 14px rgba(251,191,36,.75); }
+}
+body.no-anim .hand .card.ten, body.no-anim .hand .card.ten::after { animation: none; }
 
 /* ---------- status + hand ---------- */
 .status {
@@ -797,8 +835,20 @@ body.no-anim .fx-card { display: none; }
 .last-btn { position: absolute; left: 0; top: 50%; transform: translateY(-50%); }
 .last-btn svg { width: 30px; height: 30px; display: block; margin: auto; }
 .trick.peek { box-shadow: inset 0 0 0 2px rgba(255,213,74,.55); }
-.trick.peek .slot { filter: saturate(.75) brightness(.92); }
-.trick.peek .slot.winner { filter: none; }
+/* previous trick: the winning card stands out (bigger, gold glow, crown); the rest step back */
+.trick.peek .slot.loser { filter: grayscale(.5) brightness(.6); }
+.trick.peek .slot.winner {
+  filter: none; z-index: 3; scale: 1.14;
+  box-shadow: 0 0 0 3px var(--gold), 0 0 22px 4px rgba(255,213,74,.8);
+  animation: peek-win .45s cubic-bezier(.3, 1.6, .5, 1);
+}
+.trick.peek .slot.winner::before {
+  content: '👑'; position: absolute; left: 50%; top: 0; transform: translate(-50%, -78%);
+  font-size: calc(var(--cw) * .42); line-height: 1; filter: drop-shadow(0 2px 2px rgba(0,0,0,.5));
+}
+@keyframes peek-win { from { scale: .9; } }
+.peek-status { color: #fff; }
+body.no-anim .trick.peek .slot.winner { animation: none; }
 .peek-label {
   position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); z-index: 3;
   padding: 2px 10px; border-radius: 999px; white-space: nowrap;
@@ -1242,4 +1292,35 @@ body.no-anim .ai-tag.temp { animation: none; }
   .avatar { width: 30px; height: 30px; border-width: 2px; }
   .avatar.initial { font-size: 14px; }
   .net-dot { width: 9px; height: 9px; border-width: 1.5px; }
+}
+
+/* ---------- names in messages: coloured, so "who" and "what" read apart ---------- */
+.toast { font-weight: 600; line-height: 1.4; border: 1.5px solid rgba(255,213,74,.5); background: rgba(10,20,15,.88); }
+.toast .who { font-weight: 900; }
+.toast .who.team0 { color: #7dd3fc; }
+.toast .who.team1 { color: #fda4af; }
+.toast-suit {
+  display: inline-block; padding: 0 7px; border-radius: 999px; background: #fff; font-weight: 800; white-space: nowrap;
+}
+.toast-suit.red { color: var(--red); }
+.toast-suit.black { color: #111; }
+.fx-bubble { display: flex; flex-direction: column; align-items: center; gap: 1px; }
+.bubble-who { font-size: 11px; font-weight: 900; letter-spacing: .3px; line-height: 1.1; }
+.bubble-who.team0 { color: #0369a1; }
+.bubble-who.team1 { color: #be123c; }
+.bubble-text { color: #111; }
+.fx-bubble.big .bubble-who { font-size: 11px; }
+
+/* the "N online" bubble sits on the lower corner of the 🌐 key so it is never cut off at the top */
+header .live-badge {
+  top: auto; bottom: -8px; right: -10px;
+  padding: 2px 6px 2px 5px; font-size: 11px; color: #fff;
+  background: linear-gradient(#4ade80, #16a34a); box-shadow: 0 0 0 1.5px #fff, 0 2px 4px rgba(0,0,0,.4);
+  text-shadow: 0 1px 0 rgba(0,0,0,.25);
+}
+header .live-dot { background: #fff; animation-name: live-pulse-white; }
+@keyframes live-pulse-white {
+  0% { box-shadow: 0 0 0 0 rgba(255,255,255,.8); }
+  70% { box-shadow: 0 0 0 6px rgba(255,255,255,0); }
+  100% { box-shadow: 0 0 0 0 rgba(255,255,255,0); }
 }

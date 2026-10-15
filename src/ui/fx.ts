@@ -46,15 +46,21 @@ export function dealCards(dealer: Seat, perPlayer: number): number {
   return i * stagger + fly;
 }
 
-/** A speech bubble above a seat for a few seconds. `text` must already be safe plain text. */
-export function bubble(seat: Seat, text: string, big: boolean) {
+/** A speech bubble above a seat for a few seconds: who said it (in their team colour), then what. */
+export function bubble(seat: Seat, who: string, text: string, big: boolean, team: 0 | 1) {
   const at = seatCenter(seat);
   if (!at) return;
   layer.querySelector(`.fx-bubble[data-seat="${seat}"]`)?.remove(); // one bubble per player
   const b = document.createElement('div');
   b.className = `fx-bubble seat-${seat}${big ? ' big' : ''}`;
   b.dataset.seat = String(seat);
-  b.textContent = text;
+  const name = document.createElement('span');
+  name.className = `bubble-who team${team}`;
+  name.textContent = who; // plain text: player names are never parsed as HTML
+  const said = document.createElement('span');
+  said.className = 'bubble-text';
+  said.textContent = text;
+  b.append(name, said);
   b.style.left = `${at.x}px`;
   b.style.top = `${at.y}px`;
   layer.appendChild(b);

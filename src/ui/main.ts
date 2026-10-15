@@ -180,6 +180,17 @@ const onlineForm = {
 // ---------- flow ----------
 
 /** Display name for a (local) seat — already HTML-escaped. */
+/** A player's name as plain (unescaped) text, for places that set textContent. */
+function plainName(seat: Seat): string {
+  const info = online?.room?.seats[(seat + online.seat) % 4];
+  return online && info && seat !== HUMAN ? info.name : t.names[seat];
+}
+
+/** A player's name highlighted in their team colour, for toasts. */
+function who(seat: Seat): string {
+  return `<b class="who team${teamOf(seat)}">${name(seat)}</b>`;
+}
+
 function name(seat: Seat): string {
   const info = online?.room?.seats[(seat + online.seat) % 4];
   if (!online || !info || seat === HUMAN) return t.names[seat];
@@ -207,7 +218,8 @@ function seatIdentity(seat: Seat): { avatar: string; tag: string; dot: string } 
 function handCount(seat: Seat): number {
   return online ? ((state as PlayerView).handCounts?.[seat] ?? 0) : state.hands[seat].length;
 }
-const suitLabel = (s: Suit) => `${SUIT_SYMBOL[s]} ${SUIT_NAME[s]}`;
+/** The trump suit inside a toast, as a small white chip so it stands apart from the words. */
+const suitLabel = (s: Suit) => `<span class="toast-suit ${isRed(s) ? 'red' : 'black'}">${SUIT_SYMBOL[s]} ${SUIT_NAME[s]}</span>`;
 
 function apply(next: GameState) {
   const prev = state;
@@ -241,15 +253,15 @@ function react(prev: GameState, next: GameState) {
   const mode = next.settings.trumpMode;
   if (prev.phase === 'choosingTrump' && next.phase === 'playing') {
     if (mode === 'open' && next.trump) {
-      showToast(t.toastTrumpChosen(name(next.trumpChooser), suitLabel(next.trump)), 2200);
+      showToast(t.toastTrumpChosen(who(next.trumpChooser), suitLabel(next.trump)), 2200);
     } else if (mode === 'bandHukum' && next.trumpChooser !== HUMAN) {
-      showToast(t.toastTrumpHidden(name(next.trumpChooser)), 2200);
+      showToast(t.toastTrumpHidden(who(next.trumpChooser)), 2200);
     }
   } else if (!prev.trumpRevealed && next.trumpRevealed && next.trump && prev.phase !== 'choosingTrump') {
     sfx.reveal();
     showToast(
       mode === 'cutHukum'
-        ? t.toastCut(name(next.trumpChooser), suitLabel(next.trump))
+        ? t.toastCut(who(next.trumpChooser), suitLabel(next.trump))
         : t.toastReveal(suitLabel(next.trump)),
       2400,
     );
@@ -258,12 +270,16 @@ function react(prev: GameState, next: GameState) {
   if (next.currentTrick.length > prev.currentTrick.length) sfx.card();
   if (next.currentTrick.length !== prev.currentTrick.length || next.phase !== prev.phase) stopPeek();
 
+  for (const team of [0, 1] as const) {
+    if (next.tensWon[team] > prev.tensWon[team]) tensPop[team] = { from: prev.tensWon[team], until: Date.now() + 700 };
+  }
+
   if (next.completedTricks.length > prev.completedTricks.length && next.completedTricks.length > 0) {
     const last = next.completedTricks[next.completedTricks.length - 1];
     const tens = last.plays.filter((p) => isTen(p.card)).length;
     if (tens > 0) {
       sfx.dahal();
-      showToast(t.toastDahal(name(last.winner), tens), 1500);
+      showToast(t.toastDahal(who(last.winner), tens), 1500);
     } else sfx.trick();
   }
 
@@ -365,8 +381,19 @@ function cardHtml(card: Card, opts: { cls?: string; data?: string } = {}): strin
   </div>`;
 }
 
-function tensDots(n: number): string {
-  return Array.from({ length: 4 }, (_, i) => `<i class="dot ${i < n ? 'on' : ''}"></i>`).join('');
+/** Dahal lights that just switched on pop once: [team] = { from: lit before, until: time } */
+const tensPop: { from: number; until: number }[] = [
+  { from: 0, until: 0 },
+  { from: 0, until: 0 },
+];
+
+/** Four "10" lamps per team: dark sockets, gold coins once a Dahal is taken. */
+function tensDots(n: number, team: 0 | 1): string {
+  const pop = Date.now() < tensPop[team].until ? tensPop[team].from : n;
+  return Array.from(
+    { length: 4 },
+    (_, i) => `<i class="dot ${i < n ? 'on' : ''} ${i < n && i >= pop ? 'new' : ''}">10</i>`,
+  ).join('');
 }
 
 function seatHtml(seat: Seat): string {
@@ -402,7 +429,7 @@ function stopPeek() {
 function lastTrickHtml(): string {
   const last = state.completedTricks[state.completedTricks.length - 1];
   const slots = last.plays
-    .map((p) => cardHtml(p.card, { cls: `slot slot-${POS[p.seat]} ${p.seat === last.winner ? 'winner' : ''}` }))
+    .map((p) => cardHtml(p.card, { cls: `slot slot-${POS[p.seat]} ${p.seat === last.winner ? 'winner' : 'loser'}` }))
     .join('');
   return `<div class="trick peek"><div class="trick-cards">${slots}</div><div class="peek-label">🕘 ${t.lastTrick}</div></div>`;
 }
@@ -444,6 +471,12 @@ function trickHtml(): string {
 
 function statusText(): string {
   const s = state;
+  if (peekLast && canPeek()) {
+    const last = s.completedTricks[s.completedTricks.length - 1];
+    const card = last.plays.find((p) => p.seat === last.winner)!.card;
+    const label = `<span class="toast-suit ${isRed(card.suit) ? 'red' : 'black'}">${rankLabel(card.rank)}${SUIT_SYMBOL[card.suit]}</span>`;
+    return `<span class="peek-status">${t.peekStatus(who(last.winner), label)}</span>`;
+  }
   if (s.phase === 'choosingTrump') return s.trumpChooser === HUMAN ? t.yourTurnChooseTrump : '';
   if (s.phase === 'trickComplete') return t.trickWonBy(name(trickWinner(s.currentTrick, currentTrump(s))));
   if (s.phase === 'playing') {
@@ -481,7 +514,7 @@ function teamPanel(team: 0 | 1): string {
   const s = state;
   return `<div class="team-panel team${team}">
     <div class="tname">${team === 0 ? t.teamUs : t.teamThem}</div>
-    <div class="stat"><span>${t.dahal}</span><b>${tensDots(s.tensWon[team])}</b></div>
+    <div class="stat"><span>${t.dahal}</span><b class="dots">${tensDots(s.tensWon[team], team)}</b></div>
     <div class="stat"><span>${t.haat}</span><b>${s.tricksWon[team]}</b></div>
   </div>`;
 }
@@ -595,6 +628,8 @@ function summaryHtml(): string {
 }
 
 function render() {
+  // looping shines keep their rhythm although the table is redrawn after every move
+  document.body.style.setProperty('--shine-delay', `-${Date.now() % 2400}ms`);
   const s = state;
   app.innerHTML = `
     <header>
@@ -1194,7 +1229,7 @@ function onServerMessage(m: ServerMsg) {
   } else if (m.t === 'say') {
     const local = ((m.seat - online.seat + 4) % 4) as Seat;
     const { text, emoji } = sayText(m.id);
-    bubble(local, text, emoji);
+    bubble(local, plainName(local), text, emoji, teamOf(local));
     sfx.click();
   } else if (m.t === 'error') {
     online.waiting = false;

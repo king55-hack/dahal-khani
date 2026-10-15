@@ -65,7 +65,7 @@ import { bubble, clearFx, dealCards } from './fx';
 import { createRoom, listRooms, OnlineClient, SERVER_URL, type ConnStatus, type FatalReason } from './online';
 import { loadPrefs, savePrefs } from './prefs';
 import { setSoundEnabled, sfx, unlockAudio } from './sound';
-import { isBackgroundId, isThemeId, THEMES } from './themes';
+import { BACKGROUNDS, isBackgroundId, isThemeId, MODE_PRICES, THEMES } from './themes';
 
 const HUMAN: Seat = 0;
 /** Screen position for each seat (play goes counter-clockwise: bottom → right → top → left). */
@@ -644,6 +644,7 @@ function renderModal() {
       room: online?.room ?? null,
       error: onlineForm.error,
       notice: onlineForm.notice,
+      unlockedModes: prefs.unlockedModes,
     });
   } else if (modal.kind === 'feedback') modalRoot.innerHTML = feedbackHtml(t, fbForm, CREATOR_NAME);
   else if (modal.kind === 'inbox') modalRoot.innerHTML = inboxHtml(inboxState);
@@ -718,12 +719,33 @@ function setLanguage(lang: Lang) {
   else renderModal();
 }
 
+/** Make sure a mode is owned, paying for it if needed. False (with a message) when coins are short. */
+function buyMode(mode: TrumpMode): boolean {
+  if (prefs.unlockedModes.includes(mode)) return true;
+  const price = MODE_PRICES[mode];
+  const msg = prefs.coins < price ? t.notEnoughCoins(price - prefs.coins) : '';
+  if (msg) {
+    if (modal?.kind === 'online') onlineForm.error = msg;
+    else settingsMsg = msg;
+    renderModal();
+    return false;
+  }
+  prefs.coins -= price;
+  prefs.unlockedModes.push(mode);
+  savePrefs(prefs);
+  sfx.coin();
+  render();
+  return true;
+}
+
 function setMode(mode: TrumpMode) {
   if (online) {
     settingsMsg = t.modeHostOnly;
     return renderModal();
   }
   if (mode === prefs.mode) return;
+  settingsMsg = '';
+  if (!buyMode(mode)) return;
   prefs.mode = mode;
   savePrefs(prefs);
   // If no card has been played yet this round, re-deal right away in the new mode.
@@ -755,6 +777,27 @@ function pickTheme(id: string) {
     sfx.coin();
   }
   prefs.theme = id;
+  savePrefs(prefs);
+  applyLookAndLanguage();
+  render();
+  renderModal();
+}
+
+function pickBackground(id: string) {
+  if (!isBackgroundId(id)) return;
+  const bg = BACKGROUNDS.find((b) => b.id === id)!;
+  settingsMsg = '';
+  if (!prefs.unlockedBgs.includes(id)) {
+    if (prefs.coins < bg.price) {
+      settingsMsg = t.notEnoughCoins(bg.price - prefs.coins);
+      renderModal();
+      return;
+    }
+    prefs.coins -= bg.price;
+    prefs.unlockedBgs.push(id);
+    sfx.coin();
+  }
+  prefs.background = id;
   savePrefs(prefs);
   applyLookAndLanguage();
   render();
@@ -835,7 +878,10 @@ modalRoot.addEventListener('click', (e) => {
   }
   if (d.sit !== undefined) return online?.client.send({ t: 'sit', seat: Number(d.sit) as Seat });
   const om = d.onlineMode;
-  if (om === 'open' || om === 'bandHukum' || om === 'cutHukum') return online?.client.send({ t: 'mode', mode: om });
+  if (om === 'open' || om === 'bandHukum' || om === 'cutHukum') {
+    if (!buyMode(om)) return;
+    return online?.client.send({ t: 'mode', mode: om });
+  }
   if (d.lang && LANGS.includes(d.lang as Lang)) return setLanguage(d.lang as Lang);
   if (d.anim) {
     prefs.animations = d.anim === 'on';
@@ -852,12 +898,7 @@ modalRoot.addEventListener('click', (e) => {
   }
   if (d.mode === 'open' || d.mode === 'bandHukum' || d.mode === 'cutHukum') return setMode(d.mode);
   if (d.theme) return pickTheme(d.theme);
-  if (d.bg && isBackgroundId(d.bg)) {
-    prefs.background = d.bg;
-    savePrefs(prefs);
-    applyLookAndLanguage();
-    return renderModal();
-  }
+  if (d.bg) return pickBackground(d.bg);
   if (d.m === 'install' && installPrompt) {
     const p = installPrompt;
     installPrompt = null;

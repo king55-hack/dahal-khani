@@ -9,7 +9,7 @@ import { LANGS, STRINGS, type Lang, type Strings } from './i18n';
 import type { Prefs } from './prefs';
 import { ONLINE_GUIDE } from './online-guide';
 import { FULL_RULES } from './rules';
-import { BACKGROUNDS, THEMES } from './themes';
+import { BACKGROUNDS, MODE_PRICES, THEMES } from './themes';
 
 export type InfoTab = 'rules' | 'allRules' | 'online' | 'credits';
 export type Modal =
@@ -115,21 +115,22 @@ export function settingsHtml(
   /** creator's device only: unread feedback count (null = not the creator) */
   inboxUnread: number | null = null,
 ): string {
-  const bgs = BACKGROUNDS.map(
-    (b) => `<button class="bg-tile ${prefs.background === b ? 'on' : ''}" data-bg="${b}">
+  const bgs = BACKGROUNDS.map((bg) => {
+    const b = bg.id;
+    const owned = prefs.unlockedBgs.includes(b);
+    const tag = owned ? (prefs.background === b ? '✔' : '') : `🔒 ${bg.price} 🪙`;
+    return `<button class="bg-tile ${prefs.background === b ? 'on' : ''} ${owned ? '' : 'locked'}" data-bg="${b}"
+        title="${owned ? t.backgrounds[b] : t.unlockFor(bg.price)}">
       <span class="bg-preview bg-${b}"></span>
       <span class="theme-name">${t.backgrounds[b]}</span>
-    </button>`,
-  ).join('');
+      <span class="theme-tag">${tag}</span>
+    </button>`;
+  }).join('');
   const installBox = install.installed
     ? `<p>${t.installed}</p>`
     : `${install.canPrompt ? `<button class="install" data-m="install">${t.installButton}</button>` : ''}
        <p>${t.installHint}</p>`;
-  const modes = MODES.map(
-    (m) => `<button class="mode-opt ${prefs.mode === m ? 'on' : ''}" data-mode="${m}">
-      <b>${t.modes[m].name}</b><small>${t.modes[m].desc}</small>
-    </button>`,
-  ).join('');
+  const modes = MODES.map((m) => modeButton(t, m, prefs.mode === m, prefs.unlockedModes, 'data-mode')).join('');
   const themes = THEMES.map((th) => {
     const owned = prefs.unlocked.includes(th.id);
     const tag = owned ? (prefs.theme === th.id ? '✔' : '') : `🔒 ${th.price} 🪙`;
@@ -204,7 +205,18 @@ export function settingsHtml(
 
 export type RoomInfo = Extract<ServerMsg, { t: 'room' }>;
 
+/** A game-mode choice; one that is not bought yet shows its price and is bought on tap. */
+function modeButton(t: Strings, m: TrumpMode, on: boolean, owned: readonly TrumpMode[], attr: string, disabled = false): string {
+  const locked = !owned.includes(m);
+  return `<button class="mode-opt ${on ? 'on' : ''} ${locked ? 'locked' : ''}" ${attr}="${m}" ${disabled ? 'disabled' : ''}
+      ${locked ? `title="${t.unlockFor(MODE_PRICES[m])}"` : ''}>
+    <b>${t.modes[m].name}${locked ? ` <span class="mode-price">🔒 ${MODE_PRICES[m]} 🪙</span>` : ''}</b><small>${t.modes[m].desc}</small>
+  </button>`;
+}
+
 export interface OnlineView {
+  /** game modes this player has bought (they can only pick these as host) */
+  unlockedModes: readonly TrumpMode[];
   /** null when no server is configured */
   available: boolean;
   name: string;
@@ -315,10 +327,9 @@ export function onlineHtml(t: Strings, v: OnlineView): string {
 
   const r = v.room;
   const isHost = r.host === r.you || r.host === null || !r.seats[r.host]?.connected;
-  const modes = MODES.map(
-    (m) => `<button class="mode-opt ${r.mode === m ? 'on' : ''}" data-online-mode="${m}" ${isHost ? '' : 'disabled'}>
-      <b>${t.modes[m].name}</b><small>${t.modes[m].desc}</small>
-    </button>`,
+  // only the host picks; a mode they have not bought yet shows its price (the others just play it)
+  const modes = MODES.map((m) =>
+    modeButton(t, m, r.mode === m, isHost ? v.unlockedModes : MODES, 'data-online-mode', !isHost),
   ).join('');
   return shell(
     `<h2>🌐 ${escapeHtml(r.name)}</h2>

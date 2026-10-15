@@ -310,7 +310,7 @@ const ne: Strings = {
     },
     coins: {
       title: '🪙 सिक्का',
-      body: 'हरेक राउन्डपछि सिक्का पाइन्छ:<br>• हारे पनि २ दहल: <b>+५</b><br>• हात धेरैले जित: <b>+१०</b><br>• ३ दहलले जित: <b>+२०</b><br>• कोट: <b>+३०</b> · बाउन्ने (५२ पत्ती): <b>+४०</b><br>सिक्काले ⚙ सेटिङमा नयाँ पत्ती डिजाइन खोल्न मिल्छ।',
+      body: 'हरेक राउन्डपछि सिक्का पाइन्छ:<br>• हारे पनि २ दहल: <b>+५</b><br>• हात धेरैले जित: <b>+१०</b><br>• ३ दहलले जित: <b>+२०</b><br>• कोट: <b>+३०</b> · बाउन्ने (५२ पत्ती): <b>+४०</b><br>सिक्काले ⚙ सेटिङमा नयाँ पत्ती डिजाइन, टेबल ब्याकग्राउन्ड र बन्द/कट हुकुम मोड खोल्न मिल्छ।',
     },
     online: {
       title: '🌐 अनलाइन',
@@ -443,7 +443,7 @@ const ne: Strings = {
     <h3>४. स्कोर र सिक्का</h3>
     <ul>
       <li>साधारण जित: <b>${p.normal}</b> अंक · <b>कोट</b> (चारै दहल): <b>${p.kot}</b> · <b>बाउन्ने</b> (सबै १३ हात): <b>${p.baunne}</b></li>
-      <li>सिक्का 🪙: हात धेरै लिएर जित +${c.winOnTricks}, ३ दहल लिएर जित +${c.winThreeTens}, कोट +${c.kot}, बाउन्ने (५२ पत्ती) +${c.baunne}। २ दहल लिएर हारे पनि +${c.lostWithTwoTens}; अरू हारमा ०। सिक्काले नयाँ पत्ती डिजाइन खोल्न सकिन्छ।</li>
+      <li>सिक्का 🪙: हात धेरै लिएर जित +${c.winOnTricks}, ३ दहल लिएर जित +${c.winThreeTens}, कोट +${c.kot}, बाउन्ने (५२ पत्ती) +${c.baunne}। २ दहल लिएर हारे पनि +${c.lostWithTwoTens}; अरू हारमा ०। सिक्काले नयाँ पत्ती डिजाइन, ब्याकग्राउन्ड र बन्द हुकुम (१०) / कट हुकुम (२०) मोड खोल्न सकिन्छ।</li>
     </ul>
     <h3>५. तीन मोड (सेटिङ ⚙ मा)</h3>
     <ul>
@@ -586,7 +586,7 @@ const neRom: Strings = {
     },
     coins: {
       title: '🪙 Coin',
-      body: 'Har round pachhi coin paainchha:<br>• Hare pani 2 Dahal: <b>+5</b><br>• Haat badhi le jit: <b>+10</b><br>• 3 Dahal le jit: <b>+20</b><br>• Kot: <b>+30</b> · Baunne (52 patti): <b>+40</b><br>Coin le ⚙ Setting ma naya patti design kholna milchha.',
+      body: 'Har round pachhi coin paainchha:<br>• Hare pani 2 Dahal: <b>+5</b><br>• Haat badhi le jit: <b>+10</b><br>• 3 Dahal le jit: <b>+20</b><br>• Kot: <b>+30</b> · Baunne (52 patti): <b>+40</b><br>Coin le ⚙ Setting ma naya patti design, table background ra Band/Cut hukum mode kholna milchha.',
     },
     online: {
       title: '🌐 Online',
@@ -719,7 +719,7 @@ const neRom: Strings = {
     <h3>4. Score ra coin</h3>
     <ul>
       <li>Saadharan jit: <b>${p.normal}</b> point · <b>Kot</b> (chaarai Dahal): <b>${p.kot}</b> · <b>Baunne</b> (sabai 13 haat): <b>${p.baunne}</b></li>
-      <li>Coin 🪙: haat badhi khaayera jit +${c.winOnTricks}, 3 Dahal khaayera jit +${c.winThreeTens}, Kot +${c.kot}, Baunne (52 patti) +${c.baunne}. 2 Dahal khaayera hare pani +${c.lostWithTwoTens}; aru haar ma 0. Coin le naya patti design kholna sakinchha.</li>
+      <li>Coin 🪙: haat badhi khaayera jit +${c.winOnTricks}, 3 Dahal khaayera jit +${c.winThreeTens}, Kot +${c.kot}, Baunne (52 patti) +${c.baunne}. 2 Dahal khaayera hare pani +${c.lostWithTwoTens}; aru haar ma 0. Coin le naya patti design, background ra Band hukum (10) / Cut hukum (20) mode kholna sakinchha.</li>
     </ul>
     <h3>5. Tin ota mode (Setting ⚙ ma)</h3>
     <ul>
@@ -862,7 +862,7 @@ const en: Strings = {
     },
     coins: {
       title: '🪙 Coins',
-      body: 'You earn coins after every round:<br>• Lost but took 2 tens: <b>+5</b><br>• Won on tricks: <b>+10</b><br>• Won with 3 tens: <b>+20</b><br>• Kot: <b>+30</b> · Baunne (all 52 cards): <b>+40</b><br>Spend them in ⚙ Settings to unlock card designs.',
+      body: 'You earn coins after every round:<br>• Lost but took 2 tens: <b>+5</b><br>• Won on tricks: <b>+10</b><br>• Won with 3 tens: <b>+20</b><br>• Kot: <b>+30</b> · Baunne (all 52 cards): <b>+40</b><br>Spend them in ⚙ Settings to unlock card designs, table backgrounds and the Band / Cut hukum modes.',
     },
     online: {
       title: '🌐 Online',
@@ -995,7 +995,7 @@ const en: Strings = {
     <h3>4. Score and coins</h3>
     <ul>
       <li>Normal win: <b>${p.normal}</b> point · <b>Kot</b> (all four 10s): <b>${p.kot}</b> · <b>Baunne</b> (all 13 tricks): <b>${p.baunne}</b></li>
-      <li>Coins 🪙: win on tricks +${c.winOnTricks}, win with 3 tens +${c.winThreeTens}, Kot +${c.kot}, Baunne (all 52 cards) +${c.baunne}. Losing with 2 tens still gives +${c.lostWithTwoTens}; other losses 0. Spend coins to unlock card designs.</li>
+      <li>Coins 🪙: win on tricks +${c.winOnTricks}, win with 3 tens +${c.winThreeTens}, Kot +${c.kot}, Baunne (all 52 cards) +${c.baunne}. Losing with 2 tens still gives +${c.lostWithTwoTens}; other losses 0. Spend coins to unlock card designs, backgrounds and the Band hukum (10) / Cut hukum (20) modes.</li>
     </ul>
     <h3>5. Three modes (in Settings ⚙)</h3>
     <ul>
@@ -1138,7 +1138,7 @@ const ja: Strings = {
     },
     coins: {
       title: '🪙 コイン',
-      body: '毎ラウンド後にコインがもらえます：<br>• 負けてもダハル2枚：<b>+5</b><br>• トリック数で勝ち：<b>+10</b><br>• ダハル3枚で勝ち：<b>+20</b><br>• コット：<b>+30</b> · バウンネ（52枚すべて）：<b>+40</b><br>⚙ 設定でカードデザインの解放に使えます。',
+      body: '毎ラウンド後にコインがもらえます：<br>• 負けてもダハル2枚：<b>+5</b><br>• トリック数で勝ち：<b>+10</b><br>• ダハル3枚で勝ち：<b>+20</b><br>• コット：<b>+30</b> · バウンネ（52枚すべて）：<b>+40</b><br>⚙ 設定でカードデザイン、テーブル背景、バンド／カット・フクムモードの解放に使えます。',
     },
     online: {
       title: '🌐 オンライン',
@@ -1271,7 +1271,7 @@ const ja: Strings = {
     <h3>4. スコアとコイン</h3>
     <ul>
       <li>通常の勝ち：<b>${p.normal}</b>点 · <b>コット</b>（10を4枚全部）：<b>${p.kot}</b>点 · <b>バウンネ</b>（13トリック全部）：<b>${p.baunne}</b>点</li>
-      <li>コイン 🪙：トリック数で勝ち +${c.winOnTricks}、ダハル3枚で勝ち +${c.winThreeTens}、コット +${c.kot}、バウンネ（52枚すべて）+${c.baunne}。ダハル2枚で負けても +${c.lostWithTwoTens}、その他の負けは0。コインでカードデザインを解放できます。</li>
+      <li>コイン 🪙：トリック数で勝ち +${c.winOnTricks}、ダハル3枚で勝ち +${c.winThreeTens}、コット +${c.kot}、バウンネ（52枚すべて）+${c.baunne}。ダハル2枚で負けても +${c.lostWithTwoTens}、その他の負けは0。コインでカードデザイン、背景、バンド・フクム（10）／カット・フクム（20）モードを解放できます。</li>
     </ul>
     <h3>5. 3つのモード（設定 ⚙）</h3>
     <ul>

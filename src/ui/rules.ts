@@ -60,7 +60,7 @@ const ne: RulesFn = (p, c) => `
     <li>हारे पनि २ दहल लिएको भए (हात थोरै भएर हारेको): +${c.lostWithTwoTens}। अरू हारमा ०।</li>
     <li>हात धेरै लिएर जित: +${c.winOnTricks} · ३ दहल लिएर जित: +${c.winThreeTens}</li>
     <li>कोट लगाएर जित: +${c.kot} · बाउन्ने (सबै ५२ पत्ती): +${c.baunne} — सबैभन्दा धेरै, "पूर्ण विजय" उत्सवसहित!</li>
-    <li>सिक्काले नयाँ पत्ती डिजाइन खोल्न सकिन्छ। सिक्का यही ब्राउजरमा सेभ हुन्छ।</li>
+    <li>सिक्काले नयाँ पत्ती डिजाइन, टेबल ब्याकग्राउन्ड र बन्द हुकुम (१०) / कट हुकुम (२०) मोड खोल्न सकिन्छ। नयाँ खेलाडी साधारण मोडबाट सुरु गर्छन्। सिक्का यही ब्राउजरमा सेभ हुन्छ।</li>
   </ul>
   <h3>१०. अनलाइन खेल</h3>
   <ul>
@@ -125,7 +125,7 @@ const neRom: RulesFn = (p, c) => `
     <li>Hare pani 2 Dahal khaayeko bhaye (haat thorai bhayera hareko): +${c.lostWithTwoTens}. Aru haar ma 0.</li>
     <li>Haat badhi khaayera jit: +${c.winOnTricks} · 3 Dahal khaayera jit: +${c.winThreeTens}</li>
     <li>Kot laayera jit: +${c.kot} · Baunne (sabai 52 patti): +${c.baunne} — sabai bhanda badhi, "Purna Bijay" utsav sahit!</li>
-    <li>Coin le naya patti design kholna sakinchha. Coin yahi browser ma save hunchha.</li>
+    <li>Coin le naya patti design, table background ra Band hukum (10) / Cut hukum (20) mode kholna sakinchha. Naya khelaadi Normal mode bata suru garchhan. Coin yahi browser ma save hunchha.</li>
   </ul>
   <h3>10. Online khel</h3>
   <ul>
@@ -190,7 +190,7 @@ const en: RulesFn = (p, c) => `
     <li>Lost but took 2 tens (lost only on tricks): +${c.lostWithTwoTens}. Other losses: 0.</li>
     <li>Won on more tricks: +${c.winOnTricks} · won with 3 tens: +${c.winThreeTens}</li>
     <li>Won with Kot: +${c.kot} · Baunne (all 52 cards): +${c.baunne} — the maximum, with a "Flawless Victory" celebration!</li>
-    <li>Spend coins to unlock card designs. Coins are saved in this browser.</li>
+    <li>Spend coins to unlock card designs, table backgrounds and the Band hukum (10) / Cut hukum (20) modes. New players start with Normal. Coins are saved in this browser.</li>
   </ul>
   <h3>10. Online games</h3>
   <ul>
@@ -255,7 +255,7 @@ const ja: RulesFn = (p, c) => `
     <li>負けてもダハル2枚（トリック数で負け）：+${c.lostWithTwoTens}。その他の負けは0。</li>
     <li>トリック数で勝ち：+${c.winOnTricks} · ダハル3枚で勝ち：+${c.winThreeTens}</li>
     <li>コットで勝ち：+${c.kot} · バウンネ（52枚すべて）：+${c.baunne} — 最高額、「完全勝利」演出つき！</li>
-    <li>コインでカードデザインを解放できます。コインはこのブラウザに保存されます。</li>
+    <li>コインでカードデザイン、テーブル背景、バンド・フクム（10）／カット・フクム（20）モードを解放できます。新しいプレイヤーはノーマルから始めます。コインはこのブラウザに保存されます。</li>
   </ul>
   <h3>10. オンライン対戦</h3>
   <ul>

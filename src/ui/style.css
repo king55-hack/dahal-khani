@@ -642,6 +642,10 @@ button.danger { margin-top: 16px; width: 100%; padding: 10px; color: #b91c1c; bo
   display: inline-block; margin: 0 0 8px; padding: 4px 12px; border-radius: 999px;
   background: #fef3c7; color: #92400e; font-weight: 800; animation: pop2 .5s .3s both cubic-bezier(.2,1.6,.4,1);
 }
+.coins-lost {
+  display: inline-block; margin: 0 0 8px; padding: 4px 12px; border-radius: 999px;
+  background: #fee2e2; color: #b91c1c; font-weight: 800; animation: pop2 .5s .3s both cubic-bezier(.2,1.6,.4,1);
+}
 .lang-pick { text-align: center; padding: 6px 0; }
 .lang-pick h2 { font-size: 26px; margin: 2px 0; }
 .lang-pick .muted { color: #555; font-size: 14px; margin: 4px 0 14px; }

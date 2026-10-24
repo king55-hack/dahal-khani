@@ -1,7 +1,7 @@
 // HTML for the dialogs: first-launch language picker, ⓘ info (how to play / all rules / credits),
 // ⚙ settings and the 🌐 online lobby.
 // All text comes from i18n.ts; the creator name is inserted with textContent by main.ts.
-import type { TrumpMode } from '../engine';
+import type { Difficulty, TrumpMode } from '../engine';
 import { COIN_REWARDS, GAME_SETTINGS } from '../settings';
 import type { RoomListing, ServerMsg } from '../online/protocol';
 import { escapeHtml } from './html';
@@ -23,6 +23,8 @@ export type Modal =
   | { kind: 'inbox' };
 
 const MODES: readonly TrumpMode[] = ['open', 'bandHukum', 'cutHukum'];
+const LEVELS: readonly Difficulty[] = ['easy', 'medium', 'hard'];
+const LEVEL_ICON: Record<Difficulty, string> = { easy: '🌱', medium: '⚔️', hard: '🔥' };
 
 function shell(inner: string, opts: { closable: boolean; cls?: string; label: string }) {
   return `<div class="overlay dialog" data-m="backdrop">
@@ -131,6 +133,12 @@ export function settingsHtml(
     : `${install.canPrompt ? `<button class="install" data-m="install">${t.installButton}</button>` : ''}
        <p>${t.installHint}</p>`;
   const modes = MODES.map((m) => modeButton(t, m, prefs.mode === m, prefs.unlockedModes, prefs.coins, 'data-mode')).join('');
+  const levels = LEVELS.map(
+    (l) => `<button class="mode-opt level-opt ${prefs.difficulty === l ? 'on' : ''}" data-level="${l}">
+      <span class="mode-head"><b>${LEVEL_ICON[l]} ${t.levels[l].name}</b>${prefs.difficulty === l ? '<i class="tile-badge tick inline">✔</i>' : ''}</span>
+      <small>${t.levels[l].desc}</small>
+    </button>`,
+  ).join('');
   const themes = THEMES.map((th) => {
     const owned = prefs.unlocked.includes(th.id);
     const on = prefs.theme === th.id;
@@ -171,6 +179,11 @@ export function settingsHtml(
     <section>
       <h3>${t.gameMode}</h3>
       <div class="modes">${modes}</div>
+    </section>
+    <section>
+      <h3>${t.botLevel}</h3>
+      <div class="modes">${levels}</div>
+      <p class="muted">${online ? t.botLevelOnline : t.botLevelHint}</p>
     </section>
     <section>
       <h3>${t.cardDesign}</h3>

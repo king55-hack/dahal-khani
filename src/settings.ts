@@ -29,3 +29,10 @@ export const COIN_REWARDS = {
   kot: 30, // won with all four Dahal
   baunne: 40, // won all 13 tricks (all 52 cards) — the maximum
 };
+
+/** Coins taken away when the opponents win big. Only a player who already has `minCoins` or more loses any. */
+export const COIN_PENALTIES = {
+  minCoins: 50,
+  kot: 10, // opponents captured all four Dahal
+  baunne: 20, // opponents won all 13 tricks (all 52 cards)
+};

@@ -1,5 +1,6 @@
 // Complete rules ("Sabai niyam") shown in the ⓘ dialog, in every language.
 import type { PointValues } from '../engine';
+import { COIN_PENALTIES } from '../settings';
 import { TIMING } from '../online/room';
 import type { CoinValues, Lang } from './i18n';
 
@@ -58,6 +59,7 @@ const ne: RulesFn = (p, c) => `
   <h3>९. सिक्का (यो एपमा)</h3>
   <ul>
     <li>हारे पनि २ दहल लिएको भए (हात थोरै भएर हारेको): +${c.lostWithTwoTens}। अरू हारमा ०।</li>
+    <li>⚠ तिमीसँग ${COIN_PENALTIES.minCoins} वा बढी सिक्का छ भने, विपक्षीले कोट गरे −${COIN_PENALTIES.kot}, बाउन्ने (५२ पत्ती) गरे −${COIN_PENALTIES.baunne} सिक्का काटिन्छ।</li>
     <li>हात धेरै लिएर जित: +${c.winOnTricks} · ३ दहल लिएर जित: +${c.winThreeTens}</li>
     <li>कोट लगाएर जित: +${c.kot} · बाउन्ने (सबै ५२ पत्ती): +${c.baunne} — सबैभन्दा धेरै, "पूर्ण विजय" उत्सवसहित!</li>
     <li>सिक्काले नयाँ पत्ती डिजाइन, टेबल ब्याकग्राउन्ड र बन्द हुकुम (१०) / कट हुकुम (२०) मोड खोल्न सकिन्छ। नयाँ खेलाडी साधारण मोडबाट सुरु गर्छन्। सिक्का यही ब्राउजरमा सेभ हुन्छ।</li>
@@ -123,6 +125,7 @@ const neRom: RulesFn = (p, c) => `
   <h3>9. Coin (yo app ma)</h3>
   <ul>
     <li>Hare pani 2 Dahal khaayeko bhaye (haat thorai bhayera hareko): +${c.lostWithTwoTens}. Aru haar ma 0.</li>
+    <li>⚠ Timisanga ${COIN_PENALTIES.minCoins} wa badhi coin chha bhane, bipakshi le Kot gare −${COIN_PENALTIES.kot}, Baunne (52 patti) gare −${COIN_PENALTIES.baunne} coin katinchha.</li>
     <li>Haat badhi khaayera jit: +${c.winOnTricks} · 3 Dahal khaayera jit: +${c.winThreeTens}</li>
     <li>Kot laayera jit: +${c.kot} · Baunne (sabai 52 patti): +${c.baunne} — sabai bhanda badhi, "Purna Bijay" utsav sahit!</li>
     <li>Coin le naya patti design, table background ra Band hukum (10) / Cut hukum (20) mode kholna sakinchha. Naya khelaadi Normal mode bata suru garchhan. Coin yahi browser ma save hunchha.</li>
@@ -188,6 +191,7 @@ const en: RulesFn = (p, c) => `
   <h3>9. Coins (in this app)</h3>
   <ul>
     <li>Lost but took 2 tens (lost only on tricks): +${c.lostWithTwoTens}. Other losses: 0.</li>
+    <li>⚠ If you hold ${COIN_PENALTIES.minCoins} or more coins, a Kot against you costs −${COIN_PENALTIES.kot} and a Baunne against you costs −${COIN_PENALTIES.baunne}.</li>
     <li>Won on more tricks: +${c.winOnTricks} · won with 3 tens: +${c.winThreeTens}</li>
     <li>Won with Kot: +${c.kot} · Baunne (all 52 cards): +${c.baunne} — the maximum, with a "Flawless Victory" celebration!</li>
     <li>Spend coins to unlock card designs, table backgrounds and the Band hukum (10) / Cut hukum (20) modes. New players start with Normal. Coins are saved in this browser.</li>
@@ -253,6 +257,7 @@ const ja: RulesFn = (p, c) => `
   <h3>9. コイン（このアプリ）</h3>
   <ul>
     <li>負けてもダハル2枚（トリック数で負け）：+${c.lostWithTwoTens}。その他の負けは0。</li>
+    <li>⚠ コインを${COIN_PENALTIES.minCoins}枚以上持っていると、相手にコットされたら −${COIN_PENALTIES.kot}、バウンネされたら −${COIN_PENALTIES.baunne} コイン。</li>
     <li>トリック数で勝ち：+${c.winOnTricks} · ダハル3枚で勝ち：+${c.winThreeTens}</li>
     <li>コットで勝ち：+${c.kot} · バウンネ（52枚すべて）：+${c.baunne} — 最高額、「完全勝利」演出つき！</li>
     <li>コインでカードデザイン、テーブル背景、バンド・フクム（10）／カット・フクム（20）モードを解放できます。新しいプレイヤーはノーマルから始めます。コインはこのブラウザに保存されます。</li>

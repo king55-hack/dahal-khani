@@ -12,7 +12,7 @@ Play **offline** against 3 bots (partner Sita; opponents Gajendra and Ranjana) o
 Works on phones (portrait and landscape).
 
 Features: 4 languages (नेपाली, Nepali Roman, English, 日本語), 3 trump modes (Normal, Band hukum,
-Cut hukum), coins for winning rounds, unlockable card designs, table backgrounds (Normal, Gundri
+Cut hukum), 3 bot levels (Easy / Medium / Hard), coins for winning rounds (and lost coins when you are Kot'd or Baunne'd while holding 50+), unlockable card designs, table backgrounds (Normal, Gundri
 straw mat, Galaicha carpet), sound on/off — all in ⚙ Settings. Installable on phones (Add to Home Screen)
 and playable offline after the first visit.
 
@@ -61,6 +61,18 @@ Allowed sites are set in `wrangler.jsonc` (`ALLOWED_ORIGINS`).
   language dialogs), `themes.ts` (card designs and prices), `sound.ts`, `prefs.ts` (saved in the browser).
 - `src/settings.ts` — point values, coin rewards, default trump mode, bot speed, creator name.
 - Debug: add `?autoplay` to the URL to watch bots play every seat; in `npm run dev`, `?result=kot-lose` (or `baunne-win`, `normal-win`, …) previews a result screen.
+
+## Bot levels (⚙ Settings → Bot level, offline games)
+
+- **Easy** — simple rules of thumb (the original bot).
+- **Medium** — guesses who holds which cards by dealing the unseen cards out at random and playing each of
+  its options to the end of the round in every guess, but only remembers the last 3 tricks (plus which 10s are gone).
+- **Hard** — same look-ahead with a perfect memory of every card played, it notices who has run out of a suit
+  and uses that in its guesses (about 200 guessed deals per move, a fraction of a second).
+
+The bots never look at your hand: they only use the cards they can see, the hand sizes and the suits players
+failed to follow (`src/engine/smart-bot.ts`, with a test that shuffling the other hands changes nothing).
+Online rooms keep using the Easy bot. Coin penalty values are in `COIN_PENALTIES` (`src/settings.ts`).
 
 ## Rules (short)
 

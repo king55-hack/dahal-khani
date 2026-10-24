@@ -23,6 +23,14 @@ export type Team = 0 | 1;
  */
 export type TrumpMode = 'open' | 'bandHukum' | 'cutHukum';
 
+/**
+ * How well the bots play (offline).
+ * - easy:   simple rules of thumb (the original bot)
+ * - medium: guesses who holds which cards, but only remembers the last few tricks
+ * - hard:   remembers every card played, notes who ran out of a suit, and guesses the hidden hands
+ */
+export type Difficulty = 'easy' | 'medium' | 'hard';
+
 export interface PointValues {
   normal: number;
   kot: number;

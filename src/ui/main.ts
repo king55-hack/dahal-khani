@@ -916,7 +916,7 @@ modalRoot.addEventListener('click', (e) => {
     return renderModal();
   }
   const el = target.closest<HTMLElement>(
-    '[data-m],[data-tab],[data-lang],[data-sound],[data-anim],[data-kick],[data-fb-kind],[data-fb-read],[data-fb-delete],[data-mode],[data-level],[data-theme],[data-bg],[data-sit],[data-online-mode],[data-pick]',
+    '[data-m],[data-tab],[data-lang],[data-sound],[data-anim],[data-kick],[data-fb-kind],[data-fb-read],[data-fb-delete],[data-mode],[data-level],[data-online-level],[data-theme],[data-bg],[data-sit],[data-online-mode],[data-pick]',
   );
   if (!el) return;
   const d = el.dataset;
@@ -983,6 +983,8 @@ modalRoot.addEventListener('click', (e) => {
     if (!buyMode(om)) return;
     return online?.client.send({ t: 'mode', mode: om });
   }
+  const ol = d.onlineLevel;
+  if (ol === 'easy' || ol === 'medium' || ol === 'hard') return online?.client.send({ t: 'level', level: ol });
   if (d.lang && LANGS.includes(d.lang as Lang)) return setLanguage(d.lang as Lang);
   if (d.level === 'easy' || d.level === 'medium' || d.level === 'hard') {
     prefs.difficulty = d.level;

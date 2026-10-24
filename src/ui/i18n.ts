@@ -248,7 +248,7 @@ const ne: Strings = {
   coinsLost: (n) => `-${n} सिक्का 🪙 (कट/बाउन्ने खाएकोले)`,
   botLevel: 'बोटको स्तर',
   botLevelHint: 'बोटहरू कति तेज खेल्छन् — अफलाइन खेलमा लागू हुन्छ।',
-  botLevelOnline: 'अनलाइन कोठामा बोटहरू सधैँ सजिलो स्तरमा खेल्छन्।',
+  botLevelOnline: 'अनलाइन कोठामा बोटको स्तर कोठाको होस्टले छान्छ।',
   levels: {
     easy: { name: 'सजिलो', desc: 'पुरानै जस्तो सरल खेल। नयाँ खेलाडीका लागि राम्रो।' },
     medium: { name: 'मध्यम', desc: 'को कुन पत्ती राख्यो भनी अनुमान लगाउँछ, तर पछिल्ला ३ हात मात्र सम्झन्छ।' },
@@ -537,7 +537,7 @@ const neRom: Strings = {
   coinsLost: (n) => `-${n} coin 🪙 (kot/baunne khayera)`,
   botLevel: 'Bot ko star',
   botLevelHint: 'Botharu kati tez khelchhan — offline khel ma laagu hunchha.',
-  botLevelOnline: 'Online kotha ma botharu sadhai sajilo star ma khelchhan.',
+  botLevelOnline: 'Online kotha ma bot ko star kotha ko host le chunchha.',
   levels: {
     easy: { name: 'Sajilo', desc: 'Purano jastai saral khel. Naya khelaadi ko lagi ramro.' },
     medium: { name: 'Madhyam', desc: 'Ko ko sanga kun patti chha anuman garchhan, tara pachhillo 3 haat matra samjhanchhan.' },
@@ -826,7 +826,7 @@ const en: Strings = {
   coinsLost: (n) => `-${n} coins 🪙 (lost a Kot / Baunne)`,
   botLevel: 'Bot level',
   botLevelHint: 'How well the bots play — applies to offline games.',
-  botLevelOnline: 'In online rooms the bots always play at Easy.',
+  botLevelOnline: 'In online rooms the host picks the bot level.',
   levels: {
     easy: { name: 'Easy', desc: 'Simple rules of thumb, like before. Good for learning.' },
     medium: { name: 'Medium', desc: 'Guesses who holds which cards, but only remembers the last 3 tricks.' },
@@ -1115,7 +1115,7 @@ const ja: Strings = {
   coinsLost: (n) => `-${n}コイン 🪙 (コット/バウンネで負け)`,
   botLevel: 'ボットのレベル',
   botLevelHint: 'ボットの強さ。オフライン対戦に適用されます。',
-  botLevelOnline: 'オンラインのルームではボットは常に「かんたん」です。',
+  botLevelOnline: 'オンラインのルームでは、ホストがボットのレベルを選びます。',
   levels: {
     easy: { name: 'かんたん', desc: 'これまで通りのシンプルな打ち方。練習向き。' },
     medium: { name: 'ふつう', desc: '誰がどのカードを持つか推測しますが、直近3トリックしか覚えていません。' },

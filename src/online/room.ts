@@ -9,6 +9,9 @@ import {
   newGame,
   nextRound,
   playCard,
+  smartChooseCard,
+  type Brain,
+  type Difficulty,
   type GameState,
   type Rng,
   type Seat,
@@ -35,6 +38,8 @@ export interface RoomData {
   seats: (SeatInfo | null)[];
   host: Seat | null;
   mode: TrumpMode;
+  /** how well this room's bots play (rooms saved before levels existed have none: easy) */
+  level: Difficulty;
   game: GameState | null;
   /** When the game last changed — automatic moves are timed from here. */
   since: number;
@@ -55,6 +60,15 @@ export const TIMING = {
 };
 export const PASSWORD_TRIES = 10;
 
+/**
+ * Look-ahead sizes for online bots. A Cloudflare Worker has a small CPU allowance per request and its clock
+ * stands still while it computes, so the time budget is useless there: the guess count is what limits the work.
+ */
+const ONLINE_BRAINS: Record<Exclude<Difficulty, 'easy'>, Brain> = {
+  medium: { memoryTricks: 3, samples: 8, budgetMs: Infinity },
+  hard: { memoryTricks: Infinity, samples: 24, budgetMs: Infinity },
+};
+
 /** Seats are filled so the first two players are partners: 0, then 2, then 1, 3. */
 const JOIN_ORDER: Seat[] = [0, 2, 1, 3];
 
@@ -72,6 +86,7 @@ export function createRoom(
     seats: [null, null, null, null],
     host: null,
     mode: GAME_SETTINGS.trumpMode,
+    level: 'easy',
     game: null,
     since: now,
     lastActivity: now,
@@ -175,6 +190,11 @@ export function handle(
         if (!canHost(room, seat, connected)) return 'not_host';
         room.mode = msg.mode;
         return null;
+      case 'level':
+        if (g) return 'started';
+        if (!canHost(room, seat, connected)) return 'not_host';
+        room.level = msg.level;
+        return null;
       case 'start': {
         if (g) return 'started';
         if (!canHost(room, seat, connected)) return 'not_host';
@@ -234,7 +254,11 @@ export function runAuto(room: RoomData, connected: readonly boolean[], now: numb
   if (g.phase === 'trickComplete') room.game = collectTrick(g);
   else if (g.phase === 'choosingTrump') {
     room.game = chooseTrump(g, g.trumpChooser, botChooseTrump(g.hands[g.trumpChooser]));
-  } else room.game = playCard(g, g.turn, botChooseCard(g, g.turn));
+  } else {
+    const level = room.level ?? 'easy';
+    const card = level === 'easy' ? botChooseCard(g, g.turn) : smartChooseCard(g, g.turn, ONLINE_BRAINS[level]);
+    room.game = playCard(g, g.turn, card);
+  }
   room.since = now;
   return true;
 }
@@ -251,6 +275,7 @@ export function roomMessage(room: RoomData, you: Seat, connected: readonly boole
     you,
     host: room.host,
     mode: room.mode,
+    level: room.level ?? 'easy',
     started: room.game !== null,
     seats,
   };

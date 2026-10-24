@@ -72,7 +72,7 @@ Allowed sites are set in `wrangler.jsonc` (`ALLOWED_ORIGINS`).
 
 The bots never look at your hand: they only use the cards they can see, the hand sizes and the suits players
 failed to follow (`src/engine/smart-bot.ts`, with a test that shuffling the other hands changes nothing).
-Online rooms keep using the Easy bot. Coin penalty values are in `COIN_PENALTIES` (`src/settings.ts`).
+In online rooms the host picks the bot level in the lobby before starting (default Easy). Online bots use fewer guessed deals (8 / 24) so the free Cloudflare plan's CPU limit is respected. Coin penalty values are in `COIN_PENALTIES` (`src/settings.ts`).
 
 ## Rules (short)
 

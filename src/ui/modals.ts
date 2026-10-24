@@ -367,6 +367,12 @@ export function onlineHtml(t: Strings, v: OnlineView): string {
   const modes = MODES.map((m) =>
     modeButton(t, m, r.mode === m, isHost ? v.unlockedModes : MODES, v.coins, 'data-online-mode', !isHost),
   ).join('');
+  const levels = LEVELS.map(
+    (l) => `<button class="mode-opt level-opt ${r.level === l ? 'on' : ''}" data-online-level="${l}" ${isHost ? '' : 'disabled'}>
+      <span class="mode-head"><b>${LEVEL_ICON[l]} ${t.levels[l].name}</b>${r.level === l ? '<i class="tile-badge tick inline">✔</i>' : ''}</span>
+      <small>${t.levels[l].desc}</small>
+    </button>`,
+  ).join('');
   return shell(
     `<h2>🌐 ${escapeHtml(r.name)}</h2>
     <p class="room-meta"><span class="room-code">${escapeHtml(r.code)}</span>
@@ -379,11 +385,15 @@ export function onlineHtml(t: Strings, v: OnlineView): string {
     </div>
     ${
       r.started
-        ? `<p class="muted">${t.modes[r.mode].name}</p>`
+        ? `<p class="muted">${t.modes[r.mode].name} · ${LEVEL_ICON[r.level]} ${t.levels[r.level].name}</p>`
         : `<p class="muted">${t.botsFill}</p>
     <section>
       <h3>${t.gameMode}</h3>
       <div class="modes">${modes}</div>
+    </section>
+    <section>
+      <h3>${t.botLevel}</h3>
+      <div class="modes">${levels}</div>
     </section>
     ${
       isHost

@@ -9,7 +9,7 @@ import { LANGS, STRINGS, type Lang, type Strings } from './i18n';
 import type { Prefs } from './prefs';
 import { ONLINE_GUIDE } from './online-guide';
 import { FULL_RULES } from './rules';
-import { BACKGROUNDS, MODE_PRICES, THEMES } from './themes';
+import { BACKGROUNDS, LEVEL_PRICES, MODE_PRICES, THEMES } from './themes';
 
 export type InfoTab = 'rules' | 'allRules' | 'online' | 'credits';
 export type Modal =
@@ -133,11 +133,8 @@ export function settingsHtml(
     : `${install.canPrompt ? `<button class="install" data-m="install">${t.installButton}</button>` : ''}
        <p>${t.installHint}</p>`;
   const modes = MODES.map((m) => modeButton(t, m, prefs.mode === m, prefs.unlockedModes, prefs.coins, 'data-mode')).join('');
-  const levels = LEVELS.map(
-    (l) => `<button class="mode-opt level-opt ${prefs.difficulty === l ? 'on' : ''}" data-level="${l}">
-      <span class="mode-head"><b>${LEVEL_ICON[l]} ${t.levels[l].name}</b>${prefs.difficulty === l ? '<i class="tile-badge tick inline">✔</i>' : ''}</span>
-      <small>${t.levels[l].desc}</small>
-    </button>`,
+  const levels = LEVELS.map((l) =>
+    levelButton(t, l, prefs.difficulty === l, prefs.unlockedLevels, prefs.coins, 'data-level'),
   ).join('');
   const themes = THEMES.map((th) => {
     const owned = prefs.unlocked.includes(th.id);
@@ -249,9 +246,29 @@ function modeButton(
   </button>`;
 }
 
+/** A bot-level choice; one that is not bought yet shows its price and is bought on tap. */
+function levelButton(
+  t: Strings,
+  l: Difficulty,
+  on: boolean,
+  owned: readonly Difficulty[],
+  coins: number,
+  attr: string,
+  disabled = false,
+): string {
+  const locked = !owned.includes(l);
+  return `<button class="mode-opt level-opt shop-tile ${on ? 'on' : ''} ${locked ? 'locked' : ''}" ${attr}="${l}" ${disabled ? 'disabled' : ''}
+      ${locked ? `title="${t.unlockFor(LEVEL_PRICES[l])}"` : ''}>
+    <span class="mode-head"><b>${LEVEL_ICON[l]} ${t.levels[l].name}</b>${locked ? pricePill(LEVEL_PRICES[l], coins) : on ? '<i class="tile-badge tick inline">✔</i>' : ''}</span>
+    <small>${t.levels[l].desc}</small>
+  </button>`;
+}
+
 export interface OnlineView {
   /** game modes this player has bought (they can only pick these as host) */
   unlockedModes: readonly TrumpMode[];
+  /** bot levels this player has bought (host only picks from these) */
+  unlockedLevels: readonly Difficulty[];
   coins: number;
   /** null when no server is configured */
   available: boolean;
@@ -367,11 +384,8 @@ export function onlineHtml(t: Strings, v: OnlineView): string {
   const modes = MODES.map((m) =>
     modeButton(t, m, r.mode === m, isHost ? v.unlockedModes : MODES, v.coins, 'data-online-mode', !isHost),
   ).join('');
-  const levels = LEVELS.map(
-    (l) => `<button class="mode-opt level-opt ${r.level === l ? 'on' : ''}" data-online-level="${l}" ${isHost ? '' : 'disabled'}>
-      <span class="mode-head"><b>${LEVEL_ICON[l]} ${t.levels[l].name}</b>${r.level === l ? '<i class="tile-badge tick inline">✔</i>' : ''}</span>
-      <small>${t.levels[l].desc}</small>
-    </button>`,
+  const levels = LEVELS.map((l) =>
+    levelButton(t, l, r.level === l, isHost ? v.unlockedLevels : LEVELS, v.coins, 'data-online-level', !isHost),
   ).join('');
   return shell(
     `<h2>🌐 ${escapeHtml(r.name)}</h2>

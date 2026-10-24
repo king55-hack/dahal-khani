@@ -25,6 +25,7 @@ import {
   trickWinner,
   visibleTrump,
   type Card,
+  type Difficulty,
   type GameState,
   type PlayerView,
   type Seat,
@@ -66,7 +67,7 @@ import { createRoom, listRooms, OnlineClient, SERVER_URL, type ConnStatus, type 
 import { loadPrefs, savePrefs } from './prefs';
 import { avatarFor, avatarHtml, type AvatarId } from './avatars';
 import { setSoundEnabled, sfx, unlockAudio } from './sound';
-import { BACKGROUNDS, isBackgroundId, isThemeId, MODE_PRICES, THEMES } from './themes';
+import { BACKGROUNDS, isBackgroundId, isThemeId, LEVEL_PRICES, MODE_PRICES, THEMES } from './themes';
 
 const HUMAN: Seat = 0;
 /** Screen position for each seat (play goes counter-clockwise: bottom → right → top → left). */
@@ -715,6 +716,7 @@ function renderModal() {
       error: onlineForm.error,
       notice: onlineForm.notice,
       unlockedModes: prefs.unlockedModes,
+      unlockedLevels: prefs.unlockedLevels,
       coins: prefs.coins,
     });
   } else if (modal.kind === 'feedback') modalRoot.innerHTML = feedbackHtml(t, fbForm, CREATOR_NAME);
@@ -825,6 +827,28 @@ function buyMode(mode: TrumpMode): boolean {
   }
   prefs.coins -= price;
   prefs.unlockedModes.push(mode);
+  savePrefs(prefs);
+  sfx.coin();
+  render();
+  return true;
+}
+
+const levelSel = (level: Difficulty) => `[data-level="${level}"],[data-online-level="${level}"]`;
+
+/** Make sure a bot level is owned, paying for it if needed. False (with a message) when coins are short. */
+function buyLevel(level: Difficulty): boolean {
+  if (prefs.unlockedLevels.includes(level)) return true;
+  const price = LEVEL_PRICES[level];
+  if (prefs.coins < price) {
+    const msg = t.notEnoughCoins(price - prefs.coins);
+    if (modal?.kind === 'online') onlineForm.error = msg;
+    else settingsMsg = msg;
+    renderModal();
+    tileFx(levelSel(level), 'shake');
+    return false;
+  }
+  prefs.coins -= price;
+  prefs.unlockedLevels.push(level);
   savePrefs(prefs);
   sfx.coin();
   render();
@@ -984,14 +1008,21 @@ modalRoot.addEventListener('click', (e) => {
     return online?.client.send({ t: 'mode', mode: om });
   }
   const ol = d.onlineLevel;
-  if (ol === 'easy' || ol === 'medium' || ol === 'hard') return online?.client.send({ t: 'level', level: ol });
+  if (ol === 'easy' || ol === 'medium' || ol === 'hard') {
+    if (!buyLevel(ol)) return;
+    return online?.client.send({ t: 'level', level: ol });
+  }
   if (d.lang && LANGS.includes(d.lang as Lang)) return setLanguage(d.lang as Lang);
   if (d.level === 'easy' || d.level === 'medium' || d.level === 'hard') {
+    settingsMsg = '';
+    const bought = !prefs.unlockedLevels.includes(d.level);
+    if (!buyLevel(d.level)) return;
     prefs.difficulty = d.level;
     savePrefs(prefs);
-    settingsMsg = '';
-    sfx.card();
-    return renderModal();
+    if (!bought) sfx.card();
+    renderModal();
+    if (bought) tileFx(levelSel(d.level), 'pop');
+    return;
   }
   if (d.anim) {
     prefs.animations = d.anim === 'on';

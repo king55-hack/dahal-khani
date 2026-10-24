@@ -64,6 +64,8 @@ Allowed sites are set in `wrangler.jsonc` (`ALLOWED_ORIGINS`).
 
 ## Bot levels (⚙ Settings → Bot level, offline games)
 
+Easy is free; **Medium costs 20 coins and Hard 30 coins** to unlock (once, then it is yours; prices in `LEVEL_PRICES`, `src/ui/themes.ts`).
+
 - **Easy** — simple rules of thumb (the original bot).
 - **Medium** — guesses who holds which cards by dealing the unseen cards out at random and playing each of
   its options to the end of the round in every guess, but only remembers the last 3 tricks (plus which 10s are gone).

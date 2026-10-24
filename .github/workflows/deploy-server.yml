@@ -1,0 +1,49 @@
+name: Test and deploy room server (Cloudflare Worker)
+
+# Runs when the server or anything it shares with the game changes on main, or by hand from the Actions tab.
+# One-time setup: add the repository secret CLOUDFLARE_API_TOKEN (template "Edit Cloudflare Workers")
+# and, if the token can see several accounts, CLOUDFLARE_ACCOUNT_ID. Without the token this workflow
+# only runs the tests and skips the deploy.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'server/**'
+      - 'src/engine/**'
+      - 'src/online/**'
+      - 'src/settings.ts'
+      - 'wrangler.jsonc'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/deploy-server.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# a second deploy waits for the first instead of cancelling it half way
+concurrency:
+  group: deploy-server
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npx tsc --noEmit -p server
+      - name: Deploy Worker
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npm run server:deploy
+      - name: Deploy skipped
+        if: env.CLOUDFLARE_API_TOKEN == ''
+        run: echo "::notice::CLOUDFLARE_API_TOKEN is not set, so the Worker was not deployed. See the comment at the top of this workflow."

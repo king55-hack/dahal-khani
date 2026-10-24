@@ -57,6 +57,8 @@ function lobbyWith(...names: string[]): { room: RoomData; seats: Seat[]; tokens:
 
 describe('protocol', () => {
   it('validates client messages strictly', () => {
+    expect(parseClientMsg('{"t":"level","level":"hard"}')).toEqual({ t: 'level', level: 'hard' });
+    expect(parseClientMsg('{"t":"level","level":"god"}')).toBeNull();
     expect(parseClientMsg('{"t":"play","card":{"suit":"H","rank":10}}')).toEqual({
       t: 'play',
       card: { suit: 'H', rank: 10 },
@@ -197,6 +199,33 @@ describe('room lobby', () => {
     expect(handle(room, 2, { t: 'start' }, ALL, 0)).toBe('not_host');
     expect(handle(room, 2, { t: 'mode', mode: 'cutHukum' }, ALL, 0)).toBe('not_host');
     expect(handle(room, 2, { t: 'mode', mode: 'cutHukum' }, [false, true, true, true], 0)).toBeNull();
+  });
+
+  it('the host picks the bot level before the game; others cannot, and it is locked after the start', () => {
+    const { room } = lobbyWith('a', 'b');
+    expect(room.level).toBe('easy');
+    expect(handle(room, 2, { t: 'level', level: 'hard' }, ALL, 0)).toBe('not_host');
+    expect(handle(room, 0, { t: 'level', level: 'hard' }, ALL, 0)).toBeNull();
+    expect(roomMessage(room, 0, ALL)).toMatchObject({ level: 'hard' });
+    handle(room, 0, { t: 'start' }, ALL, 0, seeded(1));
+    expect(handle(room, 0, { t: 'level', level: 'easy' }, ALL, 0)).toBe('started');
+  });
+
+  it('bots in a medium / hard room still make legal moves', () => {
+    for (const level of ['medium', 'hard'] as const) {
+      const { room } = lobbyWith('a');
+      handle(room, 0, { t: 'level', level }, ALL, 0);
+      handle(room, 0, { t: 'start' }, ALL, 0, seeded(3));
+      let now = 0;
+      for (let i = 0; i < 400 && room.game!.completedTricks.length < 13; i++) {
+        const g = room.game!;
+        if (g.phase === 'roundOver') break;
+        const humanTurn = g.phase === 'playing' ? g.turn === 0 : g.trumpChooser === 0;
+        now += 100_000; // the AFK timer plays seat 0 too: everything stays automatic
+        expect(runAuto(room, ALL, now) || humanTurn).toBe(true);
+      }
+      expect(room.game!.phase).toBe('roundOver');
+    }
   });
 
   it('fills empty seats with bots on start', () => {

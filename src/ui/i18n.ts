@@ -1,5 +1,6 @@
 // All on-screen text in 4 languages. Add a language by adding one more entry to STRINGS.
 import type { PointValues, TrumpMode } from '../engine';
+import { COIN_PENALTIES } from '../settings';
 import type { QUICK_MESSAGES } from '../online/protocol';
 import type { FatalReason } from './online';
 import type { TourStepId } from './tour';
@@ -66,6 +67,11 @@ export interface Strings {
   totalScore: string;
   nextRound: string;
   coinsEarned: (n: number) => string;
+  coinsLost: (n: number) => string;
+  botLevel: string;
+  botLevelHint: string;
+  botLevelOnline: string;
+  levels: Record<'easy' | 'medium' | 'hard', { name: string; desc: string }>;
   confirmReset: string;
   settings: string;
   language: string;
@@ -239,6 +245,15 @@ const ne: Strings = {
   totalScore: 'जम्मा स्कोर',
   nextRound: 'अर्को राउन्ड ▶',
   coinsEarned: (n) => `+${n} सिक्का 🪙`,
+  coinsLost: (n) => `-${n} सिक्का 🪙 (कट/बाउन्ने खाएकोले)`,
+  botLevel: 'बोटको स्तर',
+  botLevelHint: 'बोटहरू कति तेज खेल्छन् — अफलाइन खेलमा लागू हुन्छ।',
+  botLevelOnline: 'अनलाइन कोठामा बोटको स्तर कोठाको होस्टले छान्छ।',
+  levels: {
+    easy: { name: 'सजिलो', desc: 'पुरानै जस्तो सरल खेल। नयाँ खेलाडीका लागि राम्रो।' },
+    medium: { name: 'मध्यम', desc: 'को कुन पत्ती राख्यो भनी अनुमान लगाउँछ, तर पछिल्ला ३ हात मात्र सम्झन्छ।' },
+    hard: { name: 'कठिन', desc: 'खेलिएका सबै पत्ती सम्झन्छ, कसको रङ सकियो थाहा पाउँछ र बाँकी पत्ती कसँग छ भनी अनुमान गरेर खेल्छ।' },
+  },
   confirmReset: 'नयाँ खेल सुरु गर्ने? स्कोर ० हुन्छ।',
   settings: 'सेटिङ',
   language: 'भाषा',
@@ -455,7 +470,7 @@ const ne: Strings = {
     <h3>४. स्कोर र सिक्का</h3>
     <ul>
       <li>साधारण जित: <b>${p.normal}</b> अंक · <b>कोट</b> (चारै दहल): <b>${p.kot}</b> · <b>बाउन्ने</b> (सबै १३ हात): <b>${p.baunne}</b></li>
-      <li>सिक्का 🪙: हात धेरै लिएर जित +${c.winOnTricks}, ३ दहल लिएर जित +${c.winThreeTens}, कोट +${c.kot}, बाउन्ने (५२ पत्ती) +${c.baunne}। २ दहल लिएर हारे पनि +${c.lostWithTwoTens}; अरू हारमा ०। सिक्काले नयाँ पत्ती डिजाइन, ब्याकग्राउन्ड र बन्द हुकुम (१०) / कट हुकुम (२०) मोड खोल्न सकिन्छ।</li>
+      <li>सिक्का 🪙: हात धेरै लिएर जित +${c.winOnTricks}, ३ दहल लिएर जित +${c.winThreeTens}, कोट +${c.kot}, बाउन्ने (५२ पत्ती) +${c.baunne}। २ दहल लिएर हारे पनि +${c.lostWithTwoTens}; अरू हारमा ०। ${COIN_PENALTIES.minCoins}+ सिक्का हुँदा कोटले हारे −${COIN_PENALTIES.kot}, बाउन्नेले हारे −${COIN_PENALTIES.baunne}। सिक्काले नयाँ पत्ती डिजाइन, ब्याकग्राउन्ड र बन्द हुकुम (१०) / कट हुकुम (२०) मोड खोल्न सकिन्छ।</li>
     </ul>
     <h3>५. तीन मोड (सेटिङ ⚙ मा)</h3>
     <ul>
@@ -519,6 +534,15 @@ const neRom: Strings = {
   totalScore: 'Jamma score',
   nextRound: 'Arko round ▶',
   coinsEarned: (n) => `+${n} coin 🪙`,
+  coinsLost: (n) => `-${n} coin 🪙 (kot/baunne khayera)`,
+  botLevel: 'Bot ko star',
+  botLevelHint: 'Botharu kati tez khelchhan — offline khel ma laagu hunchha.',
+  botLevelOnline: 'Online kotha ma bot ko star kotha ko host le chunchha.',
+  levels: {
+    easy: { name: 'Sajilo', desc: 'Purano jastai saral khel. Naya khelaadi ko lagi ramro.' },
+    medium: { name: 'Madhyam', desc: 'Ko ko sanga kun patti chha anuman garchhan, tara pachhillo 3 haat matra samjhanchhan.' },
+    hard: { name: 'Kathin', desc: 'Khelieka sabai patti samjhanchhan, kasko rang sakiyo thaha paunchhan ra baaki patti kasanga chha anuman garera khelchhan.' },
+  },
   confirmReset: 'Naya khel suru garne? Score 0 hunchha.',
   settings: 'Setting',
   language: 'Bhasa',
@@ -735,7 +759,7 @@ const neRom: Strings = {
     <h3>4. Score ra coin</h3>
     <ul>
       <li>Saadharan jit: <b>${p.normal}</b> point · <b>Kot</b> (chaarai Dahal): <b>${p.kot}</b> · <b>Baunne</b> (sabai 13 haat): <b>${p.baunne}</b></li>
-      <li>Coin 🪙: haat badhi khaayera jit +${c.winOnTricks}, 3 Dahal khaayera jit +${c.winThreeTens}, Kot +${c.kot}, Baunne (52 patti) +${c.baunne}. 2 Dahal khaayera hare pani +${c.lostWithTwoTens}; aru haar ma 0. Coin le naya patti design, background ra Band hukum (10) / Cut hukum (20) mode kholna sakinchha.</li>
+      <li>Coin 🪙: haat badhi khaayera jit +${c.winOnTricks}, 3 Dahal khaayera jit +${c.winThreeTens}, Kot +${c.kot}, Baunne (52 patti) +${c.baunne}. 2 Dahal khaayera hare pani +${c.lostWithTwoTens}; aru haar ma 0. ${COIN_PENALTIES.minCoins}+ coin huda Kot le hare −${COIN_PENALTIES.kot}, Baunne le hare −${COIN_PENALTIES.baunne}. Coin le naya patti design, background ra Band hukum (10) / Cut hukum (20) mode kholna sakinchha.</li>
     </ul>
     <h3>5. Tin ota mode (Setting ⚙ ma)</h3>
     <ul>
@@ -799,6 +823,15 @@ const en: Strings = {
   totalScore: 'Total score',
   nextRound: 'Next round ▶',
   coinsEarned: (n) => `+${n} coins 🪙`,
+  coinsLost: (n) => `-${n} coins 🪙 (lost a Kot / Baunne)`,
+  botLevel: 'Bot level',
+  botLevelHint: 'How well the bots play — applies to offline games.',
+  botLevelOnline: 'In online rooms the host picks the bot level.',
+  levels: {
+    easy: { name: 'Easy', desc: 'Simple rules of thumb, like before. Good for learning.' },
+    medium: { name: 'Medium', desc: 'Guesses who holds which cards, but only remembers the last 3 tricks.' },
+    hard: { name: 'Hard', desc: 'Remembers every card played, notices who ran out of a suit and guesses the hidden hands before each move.' },
+  },
   confirmReset: 'Start a new game? The score goes back to 0.',
   settings: 'Settings',
   language: 'Language',
@@ -878,7 +911,7 @@ const en: Strings = {
     },
     coins: {
       title: '🪙 Coins',
-      body: 'You earn coins after every round:<br>• Lost but took 2 tens: <b>+5</b><br>• Won on tricks: <b>+10</b><br>• Won with 3 tens: <b>+20</b><br>• Kot: <b>+30</b> · Baunne (all 52 cards): <b>+40</b><br>Spend them in ⚙ Settings to unlock card designs, table backgrounds and the Band / Cut hukum modes.',
+      body: 'You earn coins after every round:<br>• Lost but took 2 tens: <b>+5</b><br>• Won on tricks: <b>+10</b><br>• Won with 3 tens: <b>+20</b><br>• Kot: <b>+30</b> · Baunne (all 52 cards): <b>+40</b><br>• With 50+ coins, losing to a Kot costs <b>−10</b>, to a Baunne <b>−20</b><br>Spend them in ⚙ Settings to unlock card designs, table backgrounds and the Band / Cut hukum modes.',
     },
     online: {
       title: '🌐 Online',
@@ -1015,7 +1048,7 @@ const en: Strings = {
     <h3>4. Score and coins</h3>
     <ul>
       <li>Normal win: <b>${p.normal}</b> point · <b>Kot</b> (all four 10s): <b>${p.kot}</b> · <b>Baunne</b> (all 13 tricks): <b>${p.baunne}</b></li>
-      <li>Coins 🪙: win on tricks +${c.winOnTricks}, win with 3 tens +${c.winThreeTens}, Kot +${c.kot}, Baunne (all 52 cards) +${c.baunne}. Losing with 2 tens still gives +${c.lostWithTwoTens}; other losses 0. Spend coins to unlock card designs, backgrounds and the Band hukum (10) / Cut hukum (20) modes.</li>
+      <li>Coins 🪙: win on tricks +${c.winOnTricks}, win with 3 tens +${c.winThreeTens}, Kot +${c.kot}, Baunne (all 52 cards) +${c.baunne}. Losing with 2 tens still gives +${c.lostWithTwoTens}; other losses 0. With ${COIN_PENALTIES.minCoins}+ coins, losing to a Kot costs −${COIN_PENALTIES.kot} and to a Baunne −${COIN_PENALTIES.baunne}. Spend coins to unlock card designs, backgrounds and the Band hukum (10) / Cut hukum (20) modes.</li>
     </ul>
     <h3>5. Three modes (in Settings ⚙)</h3>
     <ul>
@@ -1079,6 +1112,15 @@ const ja: Strings = {
   totalScore: '合計スコア',
   nextRound: '次のラウンド ▶',
   coinsEarned: (n) => `+${n} コイン 🪙`,
+  coinsLost: (n) => `-${n}コイン 🪙 (コット/バウンネで負け)`,
+  botLevel: 'ボットのレベル',
+  botLevelHint: 'ボットの強さ。オフライン対戦に適用されます。',
+  botLevelOnline: 'オンラインのルームでは、ホストがボットのレベルを選びます。',
+  levels: {
+    easy: { name: 'かんたん', desc: 'これまで通りのシンプルな打ち方。練習向き。' },
+    medium: { name: 'ふつう', desc: '誰がどのカードを持つか推測しますが、直近3トリックしか覚えていません。' },
+    hard: { name: 'むずかしい', desc: '出たカードをすべて覚え、スートが切れた人を見抜き、見えない手札を推測して打ちます。' },
+  },
   confirmReset: '新しいゲームを始めますか？スコアは0に戻ります。',
   settings: '設定',
   language: '言語',
@@ -1295,7 +1337,7 @@ const ja: Strings = {
     <h3>4. スコアとコイン</h3>
     <ul>
       <li>通常の勝ち：<b>${p.normal}</b>点 · <b>コット</b>（10を4枚全部）：<b>${p.kot}</b>点 · <b>バウンネ</b>（13トリック全部）：<b>${p.baunne}</b>点</li>
-      <li>コイン 🪙：トリック数で勝ち +${c.winOnTricks}、ダハル3枚で勝ち +${c.winThreeTens}、コット +${c.kot}、バウンネ（52枚すべて）+${c.baunne}。ダハル2枚で負けても +${c.lostWithTwoTens}、その他の負けは0。コインでカードデザイン、背景、バンド・フクム（10）／カット・フクム（20）モードを解放できます。</li>
+      <li>コイン 🪙：トリック数で勝ち +${c.winOnTricks}、ダハル3枚で勝ち +${c.winThreeTens}、コット +${c.kot}、バウンネ（52枚すべて）+${c.baunne}。ダハル2枚で負けても +${c.lostWithTwoTens}、その他の負けは0。コインが${COIN_PENALTIES.minCoins}枚以上のとき、コットで負けると −${COIN_PENALTIES.kot}、バウンネで負けると −${COIN_PENALTIES.baunne}。コインでカードデザイン、背景、バンド・フクム（10）／カット・フクム（20）モードを解放できます。</li>
     </ul>
     <h3>5. 3つのモード（設定 ⚙）</h3>
     <ul>

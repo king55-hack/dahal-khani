@@ -2,7 +2,8 @@
 
 import { createDeck, isTen, sameCard, SUITS } from './cards';
 import { legalCards, partnerOf, teamOf, trickWinner, visibleTrump } from './game';
-import type { Card, GameState, Play, Seat, Suit } from './types';
+import { BRAINS, smartChooseCard } from './smart-bot';
+import type { Card, Difficulty, GameState, Play, Rng, Seat, Suit } from './types';
 
 /** Pick the suit with the most cards; break ties by high cards (A, then K, ...). */
 export function botChooseTrump(hand: readonly Card[]): Suit {
@@ -104,10 +105,20 @@ function chooseLead(hand: Card[], trump: Suit | null): Card {
   return cheapest(hand, trump);
 }
 
-export function botChooseCard(state: GameState, seat: Seat): Card {
+/**
+ * Pick a card. 'easy' (the default) uses simple rules of thumb; 'medium' and 'hard' look ahead in guessed deals
+ * (see smart-bot.ts). `rng` only matters for those two.
+ */
+export function botChooseCard(
+  state: GameState,
+  seat: Seat,
+  difficulty: Difficulty = 'easy',
+  rng: Rng = Math.random,
+): Card {
   const legal = legalCards(state, seat);
   if (legal.length === 0) throw new Error('Bot has no legal card');
   if (legal.length === 1) return legal[0];
+  if (difficulty !== 'easy') return smartChooseCard(state, seat, BRAINS[difficulty], rng);
   const trick = state.currentTrick;
   // Only use trump knowledge this bot really has (band hukum hides it from all but the chooser).
   let trump = visibleTrump(state, seat);

@@ -2,7 +2,7 @@
 // Everything arriving from the network is validated here before anyone trusts it.
 
 import { SUITS } from '../engine/cards';
-import type { Card, PlayerView, Rank, Seat, Suit, TrumpMode } from '../engine';
+import type { Card, Difficulty, PlayerView, Rank, Seat, Suit, TrumpMode } from '../engine';
 
 /** First message on a new connection. The password travels here, never in the URL. */
 export interface Hello {
@@ -43,6 +43,8 @@ export type ClientMsg =
   | { t: 'close' }
   | { t: 'sit'; seat: Seat }
   | { t: 'mode'; mode: TrumpMode }
+  /** host only: how well the room's bots play */
+  | { t: 'level'; level: Difficulty }
   | { t: 'start' }
   | { t: 'trump'; suit: Suit }
   | { t: 'play'; card: Card }
@@ -77,6 +79,7 @@ export type ServerMsg =
       you: Seat;
       host: Seat | null;
       mode: TrumpMode;
+      level: Difficulty;
       started: boolean;
       seats: (SeatPublic | null)[];
     }
@@ -153,6 +156,7 @@ export function cleanPassword(raw: unknown): string | null {
 const isSeat = (v: unknown): v is Seat => v === 0 || v === 1 || v === 2 || v === 3;
 const isSuit = (v: unknown): v is Suit => SUITS.includes(v as Suit);
 const isRank = (v: unknown): v is Rank => Number.isInteger(v) && (v as number) >= 2 && (v as number) <= 14;
+const isLevel = (v: unknown): v is Difficulty => v === 'easy' || v === 'medium' || v === 'hard';
 const isMode = (v: unknown): v is TrumpMode => v === 'open' || v === 'bandHukum' || v === 'cutHukum';
 const TOKEN_RE = /^[0-9a-f-]{36}$/;
 
@@ -199,6 +203,8 @@ export function parseClientMsg(raw: unknown): ClientMsg | null {
       return isSeat(m.seat) ? { t: 'sit', seat: m.seat } : null;
     case 'mode':
       return isMode(m.mode) ? { t: 'mode', mode: m.mode } : null;
+    case 'level':
+      return isLevel(m.level) ? { t: 'level', level: m.level } : null;
     case 'start':
       return { t: 'start' };
     case 'next':

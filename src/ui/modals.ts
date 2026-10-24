@@ -1,7 +1,7 @@
 // HTML for the dialogs: first-launch language picker, ⓘ info (how to play / all rules / credits),
 // ⚙ settings and the 🌐 online lobby.
 // All text comes from i18n.ts; the creator name is inserted with textContent by main.ts.
-import type { TrumpMode } from '../engine';
+import type { Difficulty, TrumpMode } from '../engine';
 import { COIN_REWARDS, GAME_SETTINGS } from '../settings';
 import type { RoomListing, ServerMsg } from '../online/protocol';
 import { escapeHtml } from './html';
@@ -9,7 +9,7 @@ import { LANGS, STRINGS, type Lang, type Strings } from './i18n';
 import type { Prefs } from './prefs';
 import { ONLINE_GUIDE } from './online-guide';
 import { FULL_RULES } from './rules';
-import { BACKGROUNDS, MODE_PRICES, THEMES } from './themes';
+import { BACKGROUNDS, LEVEL_PRICES, MODE_PRICES, THEMES } from './themes';
 
 export type InfoTab = 'rules' | 'allRules' | 'online' | 'credits';
 export type Modal =
@@ -23,6 +23,8 @@ export type Modal =
   | { kind: 'inbox' };
 
 const MODES: readonly TrumpMode[] = ['open', 'bandHukum', 'cutHukum'];
+const LEVELS: readonly Difficulty[] = ['easy', 'medium', 'hard'];
+const LEVEL_ICON: Record<Difficulty, string> = { easy: '🌱', medium: '⚔️', hard: '🔥' };
 
 function shell(inner: string, opts: { closable: boolean; cls?: string; label: string }) {
   return `<div class="overlay dialog" data-m="backdrop">
@@ -131,6 +133,9 @@ export function settingsHtml(
     : `${install.canPrompt ? `<button class="install" data-m="install">${t.installButton}</button>` : ''}
        <p>${t.installHint}</p>`;
   const modes = MODES.map((m) => modeButton(t, m, prefs.mode === m, prefs.unlockedModes, prefs.coins, 'data-mode')).join('');
+  const levels = LEVELS.map((l) =>
+    levelButton(t, l, prefs.difficulty === l, prefs.unlockedLevels, prefs.coins, 'data-level'),
+  ).join('');
   const themes = THEMES.map((th) => {
     const owned = prefs.unlocked.includes(th.id);
     const on = prefs.theme === th.id;
@@ -171,6 +176,11 @@ export function settingsHtml(
     <section>
       <h3>${t.gameMode}</h3>
       <div class="modes">${modes}</div>
+    </section>
+    <section>
+      <h3>${t.botLevel}</h3>
+      <div class="modes">${levels}</div>
+      <p class="muted">${online ? t.botLevelOnline : t.botLevelHint}</p>
     </section>
     <section>
       <h3>${t.cardDesign}</h3>
@@ -236,9 +246,29 @@ function modeButton(
   </button>`;
 }
 
+/** A bot-level choice; one that is not bought yet shows its price and is bought on tap. */
+function levelButton(
+  t: Strings,
+  l: Difficulty,
+  on: boolean,
+  owned: readonly Difficulty[],
+  coins: number,
+  attr: string,
+  disabled = false,
+): string {
+  const locked = !owned.includes(l);
+  return `<button class="mode-opt level-opt shop-tile ${on ? 'on' : ''} ${locked ? 'locked' : ''}" ${attr}="${l}" ${disabled ? 'disabled' : ''}
+      ${locked ? `title="${t.unlockFor(LEVEL_PRICES[l])}"` : ''}>
+    <span class="mode-head"><b>${LEVEL_ICON[l]} ${t.levels[l].name}</b>${locked ? pricePill(LEVEL_PRICES[l], coins) : on ? '<i class="tile-badge tick inline">✔</i>' : ''}</span>
+    <small>${t.levels[l].desc}</small>
+  </button>`;
+}
+
 export interface OnlineView {
   /** game modes this player has bought (they can only pick these as host) */
   unlockedModes: readonly TrumpMode[];
+  /** bot levels this player has bought (host only picks from these) */
+  unlockedLevels: readonly Difficulty[];
   coins: number;
   /** null when no server is configured */
   available: boolean;
@@ -354,6 +384,9 @@ export function onlineHtml(t: Strings, v: OnlineView): string {
   const modes = MODES.map((m) =>
     modeButton(t, m, r.mode === m, isHost ? v.unlockedModes : MODES, v.coins, 'data-online-mode', !isHost),
   ).join('');
+  const levels = LEVELS.map((l) =>
+    levelButton(t, l, r.level === l, isHost ? v.unlockedLevels : LEVELS, v.coins, 'data-online-level', !isHost),
+  ).join('');
   return shell(
     `<h2>🌐 ${escapeHtml(r.name)}</h2>
     <p class="room-meta"><span class="room-code">${escapeHtml(r.code)}</span>
@@ -366,11 +399,15 @@ export function onlineHtml(t: Strings, v: OnlineView): string {
     </div>
     ${
       r.started
-        ? `<p class="muted">${t.modes[r.mode].name}</p>`
+        ? `<p class="muted">${t.modes[r.mode].name} · ${LEVEL_ICON[r.level]} ${t.levels[r.level].name}</p>`
         : `<p class="muted">${t.botsFill}</p>
     <section>
       <h3>${t.gameMode}</h3>
       <div class="modes">${modes}</div>
+    </section>
+    <section>
+      <h3>${t.botLevel}</h3>
+      <div class="modes">${levels}</div>
     </section>
     ${
       isHost

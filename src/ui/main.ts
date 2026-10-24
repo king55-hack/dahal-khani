@@ -25,13 +25,14 @@ import {
   trickWinner,
   visibleTrump,
   type Card,
+  type Difficulty,
   type GameState,
   type PlayerView,
   type Seat,
   type Suit,
   type TrumpMode,
 } from '../engine';
-import { coinsFor } from '../coins';
+import { coinsFor, coinsLostFor } from '../coins';
 import { BOT_DELAY_MS, COPYRIGHT, CREATOR_NAME, GAME_SETTINGS, TRICK_PAUSE_MS } from '../settings';
 import {
   cleanName,
@@ -66,7 +67,7 @@ import { createRoom, listRooms, OnlineClient, SERVER_URL, type ConnStatus, type 
 import { loadPrefs, savePrefs } from './prefs';
 import { avatarFor, avatarHtml, type AvatarId } from './avatars';
 import { setSoundEnabled, sfx, unlockAudio } from './sound';
-import { BACKGROUNDS, isBackgroundId, isThemeId, MODE_PRICES, THEMES } from './themes';
+import { BACKGROUNDS, isBackgroundId, isThemeId, LEVEL_PRICES, MODE_PRICES, THEMES } from './themes';
 
 const HUMAN: Seat = 0;
 /** Screen position for each seat (play goes counter-clockwise: bottom → right → top → left). */
@@ -107,6 +108,8 @@ let toast: string | null = null;
 let toastTimer: number | null = null;
 /** Coins earned in the round that just ended (shown in the summary). */
 let roundCoins = 0;
+/** Coins taken off in the round that just ended (Kot / Baunne against us while holding 50+). */
+let roundLost = 0;
 /** While cards are flying out to the players, my hand stays hidden and bots wait. */
 let dealingUntil = 0;
 /** briefly after a deal, my cards slide in */
@@ -287,10 +290,11 @@ function react(prev: GameState, next: GameState) {
     const r = next.lastResult;
     // team 0 is always "us" (online views are rotated so)
     roundCoins = coinsFor(r, 0);
-    if (roundCoins > 0) {
-      prefs.coins += roundCoins;
+    roundLost = coinsLostFor(r, 0, prefs.coins);
+    if (roundCoins > 0 || roundLost > 0) {
+      prefs.coins += roundCoins - roundLost;
       savePrefs(prefs);
-      window.setTimeout(() => sfx.coin(), 900);
+      if (roundCoins > 0) window.setTimeout(() => sfx.coin(), 900);
     }
     const weWon = r.winningTeam === 0;
     if (weWon) {
@@ -341,7 +345,7 @@ function schedule() {
   } else if (s.phase === 'playing' && (s.turn !== HUMAN || AUTOPLAY)) {
     timer = window.setTimeout(() => {
       timer = null;
-      apply(playCard(s, s.turn, botChooseCard(s, s.turn)));
+      apply(playCard(s, s.turn, botChooseCard(s, s.turn, prefs.difficulty)));
     }, AUTOPLAY ? 60 : BOT_DELAY_MS);
   } else if (s.phase === 'roundOver' && AUTOPLAY && s.lastResult?.kind === 'normal') {
     timer = window.setTimeout(() => {
@@ -365,6 +369,7 @@ function resetGame() {
   stopTimer();
   clearFx();
   roundCoins = 0;
+  roundLost = 0;
   apply(newGame({ ...GAME_SETTINGS, trumpMode: prefs.mode }));
 }
 
@@ -613,6 +618,7 @@ function summaryHtml(): string {
       <div class="result-team">${t.roundWonBy(teamName(r.winningTeam), r.points)}</div>
       <div class="why">${why}</div>
       ${roundCoins > 0 ? `<div class="coins-earned">${t.coinsEarned(roundCoins)}</div>` : ''}
+      ${roundLost > 0 ? `<div class="coins-lost">${t.coinsLost(roundLost)}</div>` : ''}
       </div>
       <div class="result-side">
       <table>
@@ -710,6 +716,7 @@ function renderModal() {
       error: onlineForm.error,
       notice: onlineForm.notice,
       unlockedModes: prefs.unlockedModes,
+      unlockedLevels: prefs.unlockedLevels,
       coins: prefs.coins,
     });
   } else if (modal.kind === 'feedback') modalRoot.innerHTML = feedbackHtml(t, fbForm, CREATOR_NAME);
@@ -826,6 +833,28 @@ function buyMode(mode: TrumpMode): boolean {
   return true;
 }
 
+const levelSel = (level: Difficulty) => `[data-level="${level}"],[data-online-level="${level}"]`;
+
+/** Make sure a bot level is owned, paying for it if needed. False (with a message) when coins are short. */
+function buyLevel(level: Difficulty): boolean {
+  if (prefs.unlockedLevels.includes(level)) return true;
+  const price = LEVEL_PRICES[level];
+  if (prefs.coins < price) {
+    const msg = t.notEnoughCoins(price - prefs.coins);
+    if (modal?.kind === 'online') onlineForm.error = msg;
+    else settingsMsg = msg;
+    renderModal();
+    tileFx(levelSel(level), 'shake');
+    return false;
+  }
+  prefs.coins -= price;
+  prefs.unlockedLevels.push(level);
+  savePrefs(prefs);
+  sfx.coin();
+  render();
+  return true;
+}
+
 function setMode(mode: TrumpMode) {
   if (online) {
     settingsMsg = t.modeHostOnly;
@@ -911,7 +940,7 @@ modalRoot.addEventListener('click', (e) => {
     return renderModal();
   }
   const el = target.closest<HTMLElement>(
-    '[data-m],[data-tab],[data-lang],[data-sound],[data-anim],[data-kick],[data-fb-kind],[data-fb-read],[data-fb-delete],[data-mode],[data-theme],[data-bg],[data-sit],[data-online-mode],[data-pick]',
+    '[data-m],[data-tab],[data-lang],[data-sound],[data-anim],[data-kick],[data-fb-kind],[data-fb-read],[data-fb-delete],[data-mode],[data-level],[data-online-level],[data-theme],[data-bg],[data-sit],[data-online-mode],[data-pick]',
   );
   if (!el) return;
   const d = el.dataset;
@@ -978,7 +1007,23 @@ modalRoot.addEventListener('click', (e) => {
     if (!buyMode(om)) return;
     return online?.client.send({ t: 'mode', mode: om });
   }
+  const ol = d.onlineLevel;
+  if (ol === 'easy' || ol === 'medium' || ol === 'hard') {
+    if (!buyLevel(ol)) return;
+    return online?.client.send({ t: 'level', level: ol });
+  }
   if (d.lang && LANGS.includes(d.lang as Lang)) return setLanguage(d.lang as Lang);
+  if (d.level === 'easy' || d.level === 'medium' || d.level === 'hard') {
+    settingsMsg = '';
+    const bought = !prefs.unlockedLevels.includes(d.level);
+    if (!buyLevel(d.level)) return;
+    prefs.difficulty = d.level;
+    savePrefs(prefs);
+    if (!bought) sfx.card();
+    renderModal();
+    if (bought) tileFx(levelSel(d.level), 'pop');
+    return;
+  }
   if (d.anim) {
     prefs.animations = d.anim === 'on';
     savePrefs(prefs);
@@ -1215,6 +1260,7 @@ function onServerMessage(m: ServerMsg) {
     if (online.fresh) {
       online.fresh = false;
       roundCoins = 0;
+      roundLost = 0;
       state = next;
       if (modal?.kind === 'online') openModal(null);
       render();
@@ -1435,6 +1481,7 @@ if (previewResult) {
   const tricks: [number, number] = kind === 'baunne' ? (ours ? [13, 0] : [0, 13]) : ours ? [8, 5] : [6, 7];
   const r = computeRoundResult(tens, tricks, GAME_SETTINGS.points);
   roundCoins = coinsFor(r, 0);
+  roundLost = coinsLostFor(r, 0, prefs.coins); // preview only: nothing is taken off
   state = { ...state, phase: 'roundOver', lastResult: r, tensWon: tens, tricksWon: tricks };
 }
 // The creator opens their inbox with ?admin

@@ -181,6 +181,7 @@ export class RoomDO extends DurableObject<Env> {
     ctx.setWebSocketAutoResponse(new WebSocketRequestResponsePair(PING, PONG));
     ctx.blockConcurrencyWhile(async () => {
       this.room = (await ctx.storage.get<RoomData>('room')) ?? null;
+      if (this.room) this.room.level ??= 'easy'; // saved before bot levels existed
     });
   }
 

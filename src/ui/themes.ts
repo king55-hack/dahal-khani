@@ -1,4 +1,4 @@
-import type { TrumpMode } from '../engine';
+import type { Difficulty, TrumpMode } from '../engine';
 
 // Card designs. Styling lives in style.css under body.theme-<id>; prices are in coins (0 = free).
 export type ThemeId = 'classic' | 'blue' | 'dhaka' | 'neon' | 'gold';
@@ -34,4 +34,7 @@ export const BACKGROUNDS: readonly Background[] = [
 export const isBackgroundId = (v: unknown): v is BackgroundId => BACKGROUNDS.some((b) => b.id === v);
 
 /** Game modes: a new player starts with Normal and buys the others once they know the game. */
+/** Bot levels: Easy is free; Medium and Hard are bought with coins. */
+export const LEVEL_PRICES: Readonly<Record<Difficulty, number>> = { easy: 0, medium: 20, hard: 30 };
+
 export const MODE_PRICES: Readonly<Record<TrumpMode, number>> = { open: 0, bandHukum: 10, cutHukum: 20 };

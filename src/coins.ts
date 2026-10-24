@@ -1,6 +1,6 @@
 // How many coins a player earns from a finished round (rules live in settings.ts → COIN_REWARDS).
 import type { RoundResult, Team } from './engine';
-import { COIN_REWARDS } from './settings';
+import { COIN_PENALTIES, COIN_REWARDS } from './settings';
 
 export function coinsFor(result: RoundResult, myTeam: Team): number {
   const won = result.winningTeam === myTeam;
@@ -12,4 +12,15 @@ export function coinsFor(result: RoundResult, myTeam: Team): number {
   if (result.kind === 'kot') return COIN_REWARDS.kot;
   if (result.tens[myTeam] >= 3) return COIN_REWARDS.winThreeTens;
   return COIN_REWARDS.winOnTricks;
+}
+
+/**
+ * Coins lost to a Kot or Baunne against us. A player with fewer than COIN_PENALTIES.minCoins is never charged,
+ * so small savings are safe; richer players have something to protect.
+ */
+export function coinsLostFor(result: RoundResult, myTeam: Team, coinsBefore: number): number {
+  if (result.winningTeam === myTeam || coinsBefore < COIN_PENALTIES.minCoins) return 0;
+  if (result.kind === 'baunne') return COIN_PENALTIES.baunne;
+  if (result.kind === 'kot') return COIN_PENALTIES.kot;
+  return 0;
 }

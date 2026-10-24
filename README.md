@@ -48,6 +48,11 @@ npm run server:deploy               # prints https://dahal-khani.<account>.worke
 gh variable set SERVER_URL --body https://dahal-khani.<account>.workers.dev
 ```
 
+Or let GitHub deploy it: add the repository secret `CLOUDFLARE_API_TOKEN` (Cloudflare → My Profile → API Tokens
+→ template "Edit Cloudflare Workers"; plus `CLOUDFLARE_ACCOUNT_ID` if the token sees several accounts). Then
+`.github/workflows/deploy-server.yml` tests and deploys the Worker on every push to `main` that touches the server
+or the shared game code, and can be started by hand from the Actions tab.
+
 After `SERVER_URL` is set, the next GitHub Pages deploy shows the 🌐 button on the live site.
 Allowed sites are set in `wrangler.jsonc` (`ALLOWED_ORIGINS`).
 

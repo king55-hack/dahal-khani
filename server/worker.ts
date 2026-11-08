@@ -50,7 +50,7 @@ export interface Env {
   FEEDBACK: DurableObjectNamespace<FeedbackDO>;
   /** secret (wrangler secret put ADMIN_KEY): lets the creator read feedback */
   ADMIN_KEY?: string;
-  /** Comma-separated list of sites allowed to connect, e.g. "https://king55-hack.github.io". */
+  /** Comma-separated list of sites allowed to connect, e.g. "https://dahal-mara-game.rajanrimal.com.np". */
   ALLOWED_ORIGINS: string;
 }
 

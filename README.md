@@ -21,7 +21,7 @@ Play **offline** against 3 bots (partner Sita; opponents Gajendra and Ranjana) o
 - **Coins:** earned by winning rounds (more for 3 Dahal, Kot and Baunne); you lose some if you are Kot'd or
   Baunne'd while holding 50+. Spend them in ⚙ Settings.
 - **Unlockable looks:** 5 card designs (Classic, Blue, Dhaka, Neon, Royal gold) and 4 table backgrounds
-  (Normal, Gundri straw mat, Galaicha carpet, carved Wood table for 30 coins).
+  (Normal = grass with a Gundri mat where the cards land, full-screen Gundri mat, Galaicha carpet, carved Wood table for 30 coins).
 - **Online, everyone sees your style:** the cards you play (and your hidden cards) are shown to the whole
   table in the card design **you** chose, even if the others have not unlocked it.
 - **Quick reactions and messages** between players (a fixed list, no free typing), a peek at the last trick,

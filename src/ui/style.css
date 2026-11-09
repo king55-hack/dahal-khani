@@ -1133,6 +1133,17 @@ body.bg-gundri, .bg-preview.bg-gundri {
     url('./textures/gundri.jpg') center / cover no-repeat,
     #7a5226;
 }
+/* On a phone held upright the mat is turned to stand upright too (the weave runs top to bottom); on a computer or a
+   phone held sideways it lies flat. The little preview in Settings always lies flat. */
+@media (orientation: portrait) {
+  body.bg-gundri {
+    background:
+      radial-gradient(ellipse at center, rgba(28, 12, 0, .1) 25%, rgba(28, 12, 0, .62) 100%),
+      linear-gradient(rgba(35, 16, 0, .26), rgba(35, 16, 0, .26)),
+      url('./textures/gundri-portrait.jpg') center / cover no-repeat,
+      #7a5226;
+  }
+}
 body.bg-galaicha, .bg-preview.bg-galaicha {
   background:
     radial-gradient(ellipse at center, rgba(0, 0, 0, .05) 30%, rgba(5, 3, 18, .55) 100%),
@@ -1375,3 +1386,38 @@ header .live-dot { background: #fff; animation-name: live-pulse-white; }
 .room-glass .mode-opt small, .room-glass .seat-card small { color: #1f2937; text-shadow: none; }
 .room-glass .mode-opt, .room-glass .seat-card { text-shadow: none; }
 .room-glass .team-col h3 { color: #fff !important; font-weight: 800; }
+
+/* ---------- default table: grass, with the Gundri mat in the middle where the cards are thrown ---------- */
+body.bg-normal, .bg-preview.bg-normal {
+  background:
+    radial-gradient(ellipse at center, rgba(0, 20, 0, .04) 30%, rgba(0, 18, 0, .5) 100%),
+    linear-gradient(rgba(0, 24, 0, .12), rgba(0, 24, 0, .12)),
+    url('./textures/grass.jpg') center / cover no-repeat,
+    #1d5a1d;
+}
+.bg-normal .trick {
+  border-radius: 10px;
+  margin: 2px;
+  background:
+    radial-gradient(ellipse at center, rgba(28, 12, 0, 0) 40%, rgba(28, 12, 0, .38) 100%),
+    url('./textures/gundri.jpg') center / cover no-repeat,
+    #a77a3a;
+  box-shadow: 0 0 0 2px rgba(80, 48, 12, .9), 0 8px 18px rgba(0, 0, 0, .55), inset 0 0 14px rgba(20, 8, 0, .5);
+}
+/* the little preview in Settings shows the mat too */
+.bg-preview.bg-normal { position: relative; }
+.bg-preview.bg-normal::after {
+  content: ''; position: absolute; left: 50%; top: 50%; width: 34%; height: 62%; transform: translate(-50%, -50%);
+  border-radius: 3px; box-shadow: 0 0 0 1px rgba(80, 48, 12, .9), 0 2px 5px rgba(0, 0, 0, .5);
+  background: url('./textures/gundri.jpg') center / cover no-repeat, #a77a3a;
+}
+/* writing that sits on the mat (choose trump, waiting) must stay readable */
+.bg-normal .trick .waiting, .bg-normal .trick .trump-pick { background: rgba(20, 10, 0, .62); border-radius: 10px; color: #fff; }
+@media (orientation: portrait) {
+  .bg-normal .trick {
+    background:
+      radial-gradient(ellipse at center, rgba(28, 12, 0, 0) 40%, rgba(28, 12, 0, .38) 100%),
+      url('./textures/gundri-portrait.jpg') center / cover no-repeat,
+      #a77a3a;
+  }
+}

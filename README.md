@@ -6,15 +6,28 @@
 
 <p align="center"><b><a href="https://dahal-mara-game.rajanrimal.com.np/">▶ Play now / Khelnus</a></b></p>
 
-Traditional Nepali 4-player card game (2 teams, like Mendikot / Dehla Pakad), as a browser prototype.
+Traditional Nepali 4-player card game (2 teams, like Mendikot / Dehla Pakad), in the browser.
 Play **offline** against 3 bots (partner Sita; opponents Gajendra and Ranjana) or **online** with friends
-(rooms with optional password; bots fill empty seats).
-Works on phones (portrait and landscape).
+(rooms with optional password; bots fill empty seats). Works on phones (portrait and landscape).
 
-Features: 4 languages (नेपाली, Nepali Roman, English, 日本語), 3 trump modes (Normal, Band hukum,
-Cut hukum), 3 bot levels (Easy / Medium / Hard), coins for winning rounds (and lost coins when you are Kot'd or Baunne'd while holding 50+), unlockable card designs, table backgrounds (Normal, Gundri
-straw mat, Galaicha carpet), sound on/off — all in ⚙ Settings. Installable on phones (Add to Home Screen)
-and playable offline after the first visit.
+## Features
+
+- **Play your way:** offline vs bots, or online in a room (public, or private with a password) with a share link
+  for friends. While friends are still joining, the waiting room shows a Nepali temple-and-mountains picture
+  behind a see-through glass panel.
+- **4 languages:** नेपाली, Nepali Roman, English, 日本語.
+- **3 trump modes:** Normal, Band hukum (hidden trump), Cut hukum.
+- **3 bot levels:** Easy / Medium / Hard (offline, and chosen by the host in an online room).
+- **Coins:** earned by winning rounds (more for 3 Dahal, Kot and Baunne); you lose some if you are Kot'd or
+  Baunne'd while holding 50+. Spend them in ⚙ Settings.
+- **Unlockable looks:** 5 card designs (Classic, Blue, Dhaka, Neon, Royal gold) and 4 table backgrounds
+  (Normal, Gundri straw mat, Galaicha carpet, carved Wood table for 30 coins).
+- **Online, everyone sees your style:** the cards you play (and your hidden cards) are shown to the whole
+  table in the card design **you** chose, even if the others have not unlocked it.
+- **Quick reactions and messages** between players (a fixed list, no free typing), a peek at the last trick,
+  a first-time guide, and special Kot / Baunne win and lose screens.
+- **Write to the creator** from ⚙ Settings, and a Portfolio link on the credits card.
+- Sound on/off, installable on phones (Add to Home Screen), and playable offline after the first visit.
 
 **Play online:** https://dahal-mara-game.rajanrimal.com.np/
 
@@ -63,7 +76,7 @@ Allowed sites are set in `wrangler.jsonc` (`ALLOWED_ORIGINS`).
 - `src/online/` — room logic and message format shared by browser and server.
 - `server/` — Cloudflare Worker / Durable Object glue.
 - `src/ui/` — browser UI only: `i18n.ts` (all text, 4 languages), `modals.ts` (settings / info /
-  language dialogs), `themes.ts` (card designs and prices), `sound.ts`, `prefs.ts` (saved in the browser).
+  language dialogs), `themes.ts` (card designs, table backgrounds and prices), `sound.ts`, `prefs.ts` (saved in the browser).
 - `src/settings.ts` — point values, coin rewards, default trump mode, bot speed, creator name.
 - Debug: add `?autoplay` to the URL to watch bots play every seat; in `npm run dev`, `?result=kot-lose` (or `baunne-win`, `normal-win`, …) previews a result screen.
 

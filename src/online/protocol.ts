@@ -4,12 +4,19 @@
 import { SUITS } from '../engine/cards';
 import type { Card, Difficulty, PlayerView, Rank, Seat, Suit, TrumpMode } from '../engine';
 
+/** Card designs a player can pick (the same ids as THEMES in ui/themes.ts). Everyone sees a player's cards in that player's design. */
+export const CARD_THEME_IDS = ['classic', 'blue', 'dhaka', 'neon', 'gold'] as const;
+export type CardThemeId = (typeof CARD_THEME_IDS)[number];
+export const isCardTheme = (v: unknown): v is CardThemeId => typeof v === 'string' && (CARD_THEME_IDS as readonly string[]).includes(v);
+
 /** First message on a new connection. The password travels here, never in the URL. */
 export interface Hello {
   t: 'hello';
   name: string;
   token: string | null;
   password: string;
+  /** the card design this player has chosen (older clients send none) */
+  theme?: CardThemeId;
 }
 
 /**
@@ -37,6 +44,8 @@ export type ClientMsg =
   | { t: 'say'; id: SayId }
   /** leaving on purpose (not a dropped connection): frees the seat */
   | { t: 'leave' }
+  /** the player changed their card design */
+  | { t: 'theme'; theme: CardThemeId }
   /** host only: remove a player */
   | { t: 'kick'; seat: Seat }
   /** host only: close the room for everyone */
@@ -54,6 +63,8 @@ export interface SeatPublic {
   name: string;
   bot: boolean;
   connected: boolean;
+  /** this player's card design; missing = classic */
+  theme?: CardThemeId;
 }
 
 export type ErrorCode =
@@ -176,7 +187,7 @@ export function parseHello(raw: unknown): Hello | null {
   const password = cleanPassword(m.password);
   if (password === null) return null;
   const token = typeof m.token === 'string' && TOKEN_RE.test(m.token) ? m.token : null;
-  return { t: 'hello', name: cleanName(m.name), token, password };
+  return { t: 'hello', name: cleanName(m.name), token, password, ...(isCardTheme(m.theme) ? { theme: m.theme } : {}) };
 }
 
 export function parseCreateRoom(raw: unknown): CreateRoomRequest | null {
@@ -195,6 +206,8 @@ export function parseClientMsg(raw: unknown): ClientMsg | null {
       return isSayId(m.id) ? { t: 'say', id: m.id } : null;
     case 'leave':
       return { t: 'leave' };
+    case 'theme':
+      return isCardTheme(m.theme) ? { t: 'theme', theme: m.theme } : null;
     case 'close':
       return { t: 'close' };
     case 'kick':

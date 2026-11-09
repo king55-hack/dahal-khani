@@ -375,6 +375,13 @@ function resetGame() {
 
 // ---------- rendering helpers ----------
 
+/** Online: the card design the player at this table position chose, so everyone sees their cards as they picked them. */
+function seatThemeClass(seat: Seat): string {
+  if (!online || seat === HUMAN) return '';
+  const theme = online.room?.seats[(seat + online.seat) % 4]?.theme;
+  return theme && theme !== prefs.theme ? `theme-${theme}` : '';
+}
+
 function cardHtml(card: Card, opts: { cls?: string; data?: string } = {}): string {
   const color = isRed(card.suit) ? 'red' : 'black';
   const ten = isTen(card) ? ' ten' : '';
@@ -416,7 +423,7 @@ function seatHtml(seat: Seat): string {
   return `<div class="seat seat-${POS[seat]} team${teamOf(seat)} ${active ? 'active' : ''}">
     <div class="avatar-wrap">${who.avatar}${who.dot}</div>
     <div class="name">${name(seat)}${who.tag}${partner}</div>
-    <div class="backs">${backs}</div>
+    <div class="backs ${seatThemeClass(seat)}">${backs}</div>
     <div class="chips">${dealer}${chooser}<span class="count">${n}</span></div>
   </div>`;
 }
@@ -434,7 +441,7 @@ function stopPeek() {
 function lastTrickHtml(): string {
   const last = state.completedTricks[state.completedTricks.length - 1];
   const slots = last.plays
-    .map((p) => cardHtml(p.card, { cls: `slot slot-${POS[p.seat]} ${p.seat === last.winner ? 'winner' : 'loser'}` }))
+    .map((p) => cardHtml(p.card, { cls: `slot slot-${POS[p.seat]} ${p.seat === last.winner ? 'winner' : 'loser'} ${seatThemeClass(p.seat)}` }))
     .join('');
   return `<div class="trick peek"><div class="trick-cards">${slots}</div><div class="peek-label">🕘 ${t.lastTrick}</div></div>`;
 }
@@ -450,7 +457,7 @@ function trickHtml(): string {
   const slots = s.currentTrick
     .map((p, i) =>
       cardHtml(p.card, {
-        cls: `slot slot-${POS[p.seat]} ${p.seat === winner ? 'winner' : ''} ${isNew && i === last ? 'enter' : ''}`,
+        cls: `slot slot-${POS[p.seat]} ${p.seat === winner ? 'winner' : ''} ${isNew && i === last ? 'enter' : ''} ${seatThemeClass(p.seat)}`,
       }),
     )
     .join('');
@@ -898,6 +905,7 @@ function pickTheme(id: string) {
     sfx.coin();
   }
   prefs.theme = id;
+  online?.client.send({ t: 'theme', theme: id });
   savePrefs(prefs);
   applyLookAndLanguage();
   render();
@@ -1226,7 +1234,7 @@ function connectTo(code: string, password = '') {
   onlineForm.notice = '';
   const playerName = onlineName();
   if (!playerName) return;
-  const client = new OnlineClient(SERVER_URL, code, playerName, password, {
+  const client = new OnlineClient(SERVER_URL, code, playerName, password, () => prefs.theme, {
     onMessage: onServerMessage,
     onStatus: (st) => {
       if (online?.client !== client) return;

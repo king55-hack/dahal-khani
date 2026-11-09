@@ -411,3 +411,34 @@ describe('leaving, kicking and closing', () => {
     expect(parseClientMsg('{"t":"kick","seat":9}')).toBeNull();
   });
 });
+
+describe('card designs in a room', () => {
+  it('each player keeps the design they chose, and everyone is told', () => {
+    const room = createRoom('123456', 0);
+    const a = join(room, 'A', null, token, 0, [true, true, true, true], 'gold');
+    const b = join(room, 'B', null, token, 0, [true, true, true, true]);
+    if ('error' in a || 'error' in b) throw new Error('join failed');
+    const msg = roomMessage(room, a.seat, [true, true, true, true]);
+    if (msg.t !== 'room') throw new Error('not a room message');
+    expect(msg.seats[a.seat]!.theme).toBe('gold');
+    expect(msg.seats[b.seat]!.theme).toBeUndefined();
+    expect(handle(room, b.seat, { t: 'theme', theme: 'neon' }, [true, true, true, true], 1)).toBeNull();
+    const again = roomMessage(room, a.seat, [true, true, true, true]);
+    if (again.t !== 'room') throw new Error('not a room message');
+    expect(again.seats[b.seat]!.theme).toBe('neon');
+  })
+
+  it('only known designs are accepted from the network', () => {
+    expect(parseClientMsg('{"t":"theme","theme":"gold"}')).toEqual({ t: 'theme', theme: 'gold' });
+    expect(parseClientMsg('{"t":"theme","theme":"<script>"}')).toBeNull();
+    expect(parseClientMsg('{"t":"theme"}')).toBeNull();
+    expect(parseHello('{"t":"hello","name":"x","token":null,"password":"","theme":"dhaka"}')!.theme).toBe('dhaka');
+    expect(parseHello('{"t":"hello","name":"x","token":null,"password":"","theme":"evil"}')!.theme).toBeUndefined();
+  })
+
+  it('the design list matches the one in the shop', async () => {
+    const { THEMES } = await import('../ui/themes');
+    const { CARD_THEME_IDS } = await import('./protocol');
+    expect(THEMES.map((t) => t.id)).toEqual([...CARD_THEME_IDS]);
+  })
+});

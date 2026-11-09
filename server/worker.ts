@@ -289,7 +289,7 @@ export class RoomDO extends DurableObject<Env> {
       }
     }
 
-    const result = join(room, hello.name, hello.token, () => crypto.randomUUID(), now, this.connected(ws));
+    const result = join(room, hello.name, hello.token, () => crypto.randomUUID(), now, this.connected(ws), hello.theme);
     if ('error' in result) return fail(result.error);
 
     // A reconnecting player replaces their old connection.

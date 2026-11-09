@@ -19,13 +19,15 @@ import {
 } from '../engine';
 import { GAME_SETTINGS } from '../settings';
 import type { PasswordHash } from './password';
-import type { ClientMsg, ErrorCode, RoomListing, SeatPublic, ServerMsg } from './protocol';
+import type { CardThemeId, ClientMsg, ErrorCode, RoomListing, SeatPublic, ServerMsg } from './protocol';
 
 export interface SeatInfo {
   name: string;
   /** Secret that lets a player reconnect to this seat; null for bots. */
   token: string | null;
   bot: boolean;
+  /** the player's chosen card design (missing = classic) */
+  theme?: CardThemeId;
 }
 
 export interface RoomData {
@@ -102,6 +104,7 @@ export function join(
   newToken: () => string,
   now: number,
   connected: readonly boolean[] = [true, true, true, true],
+  theme?: CardThemeId,
 ): JoinResult {
   room.lastActivity = now;
   // Reconnect: same token gets the same seat back.
@@ -109,12 +112,13 @@ export function join(
     const seat = room.seats.findIndex((s) => s?.token === token);
     if (seat >= 0) {
       room.seats[seat]!.name = name;
+      if (theme) room.seats[seat]!.theme = theme;
       return { seat: seat as Seat, token };
     }
   }
   const fresh = newToken();
   const take = (seat: Seat): JoinResult => {
-    room.seats[seat] = { name, token: fresh, bot: false };
+    room.seats[seat] = { name, token: fresh, bot: false, ...(theme ? { theme } : {}) };
     if (room.host === null) room.host = seat;
     return { seat, token: fresh };
   };
@@ -164,6 +168,9 @@ export function handle(
     switch (msg.t) {
       case 'say':
         return null; // chat is relayed by the server glue; it never changes the room
+      case 'theme':
+        if (room.seats[seat]) room.seats[seat]!.theme = msg.theme;
+        return null;
       case 'leave':
         vacate(room, seat);
         return null;
@@ -265,7 +272,7 @@ export function runAuto(room: RoomData, connected: readonly boolean[], now: numb
 
 export function roomMessage(room: RoomData, you: Seat, connected: readonly boolean[]): ServerMsg {
   const seats: (SeatPublic | null)[] = room.seats.map((s, i) =>
-    s ? { name: s.name, bot: s.bot, connected: s.bot || connected[i] } : null,
+    s ? { name: s.name, bot: s.bot, connected: s.bot || connected[i], ...(s.theme ? { theme: s.theme } : {}) } : null,
   );
   return {
     t: 'room',

@@ -4,6 +4,7 @@ import {
   isRoomCode,
   PING,
   PONG,
+  type CardThemeId,
   type ClientMsg,
   type CreateRoomRequest,
   type ErrorCode,
@@ -82,6 +83,8 @@ export class OnlineClient {
     private readonly name: string,
     /** only needed for the first join; afterwards the seat token is enough */
     private password: string,
+    /** the card design to tell the others about */
+    private readonly themeOf: () => CardThemeId,
     private readonly h: OnlineHandlers,
   ) {}
 
@@ -96,7 +99,7 @@ export class OnlineClient {
       this.retries = 0;
       this.lastHeard = Date.now();
       // name + password go in the first message, never in the URL
-      ws.send(JSON.stringify({ t: 'hello', name: this.name, token, password: this.password } satisfies Hello));
+      ws.send(JSON.stringify({ t: 'hello', name: this.name, token, password: this.password, theme: this.themeOf() } satisfies Hello));
       this.h.onStatus('open');
       clearInterval(this.pingTimer);
       // Heartbeat: phones switching Wi-Fi/4G can leave a socket "open" that delivers nothing.

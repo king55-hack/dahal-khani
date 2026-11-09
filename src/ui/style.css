@@ -526,7 +526,7 @@ button.primary:active { transform: translateY(2px); box-shadow: none; }
     repeating-linear-gradient(-45deg, #d4a017 0 1.5px, #4c1d95 1.5px 6px);
   --back-edge: #d4a017;
 }
-body.theme-neon #app .card, .theme-preview.theme-neon .card { box-shadow: 0 0 0 1.5px #22d3ee inset, 0 0 10px #22d3ee88; }
+body.theme-neon #app .card:not([class*="theme-"]), .theme-preview.theme-neon .card, #app .card.theme-neon { box-shadow: 0 0 0 1.5px #22d3ee inset, 0 0 10px #22d3ee88; }
 
 /* ---------- header extras ---------- */
 .coin-chip {
@@ -1332,9 +1332,9 @@ header .live-dot { background: #fff; animation-name: live-pulse-white; }
 /* ---------- waiting room: the Nepal temple-and-mountains picture shows behind a glass panel ---------- */
 .overlay.room-wait {
   background:
-    linear-gradient(rgba(6, 20, 24, .22), rgba(6, 20, 24, .22)),
-    url('./textures/room-bg.png') center bottom / cover no-repeat,
-    #1f6f66;
+    linear-gradient(rgba(6, 20, 24, .12), rgba(6, 20, 24, .12)),
+    url('./textures/room-bg.jpg') center / cover no-repeat,
+    #2e6a5e;
 }
 .modal.room-glass {
   background: rgba(255, 255, 255, .14);

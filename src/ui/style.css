@@ -696,7 +696,6 @@ body.bg-galaicha::before {
 }
 .bg-tile.on { border-color: #0f5a33; background: #ecfdf5; box-shadow: 0 0 0 1.5px #0f5a33; }
 .bg-preview { width: 100%; height: 56px; border-radius: 8px; background: var(--table-bg); }
-.bg-preview.bg-galaicha { box-shadow: inset 0 0 0 3px #d4a017, inset 0 0 0 5px #1e3a8a; }
 .install-box { margin-top: 4px; }
 .install-box p { font-size: 13px; color: #4b5563; margin: 4px 0 0; }
 button.install {
@@ -1124,22 +1123,22 @@ header .score { white-space: nowrap; }
 .fb-actions { display: flex; gap: 6px; justify-content: flex-end; margin-top: 6px; }
 .danger-text { color: #b91c1c; }
 
-/* Gundri from a real photo of a woven straw mat (seamless tile). The url() is kept out of
-   the --table-bg custom property so the bundler's rewritten path always resolves correctly. */
+/* Gundri and Galaicha from real photos, shown whole with `cover` (cropped to the mat / carpet itself, no white
+   edges). The url() is kept out of the --table-bg custom property so the bundler's rewritten path always resolves.
+   A vignette and a light dimming keep the cream cards, gold status line and names readable on the bright weave. */
 body.bg-gundri, .bg-preview.bg-gundri {
   background:
-    radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 30%, rgba(28, 14, 0, .55) 100%),
-    url('./textures/gundri.jpg') 0 0 / 340px auto repeat,
-    #5a4430;
+    radial-gradient(ellipse at center, rgba(28, 12, 0, .1) 25%, rgba(28, 12, 0, .62) 100%),
+    linear-gradient(rgba(35, 16, 0, .26), rgba(35, 16, 0, .26)),
+    url('./textures/gundri.jpg') center / cover no-repeat,
+    #7a5226;
 }
-
-/* Galaicha from a real Nepali carpet photo (straightened from an angled shot). Shown whole with
-   `cover`, so the centre medallion sits behind the cards; the photo has its own border. */
 body.bg-galaicha, .bg-preview.bg-galaicha {
   background:
-    radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 40%, rgba(20, 0, 0, .55) 100%),
+    radial-gradient(ellipse at center, rgba(0, 0, 0, .05) 30%, rgba(5, 3, 18, .55) 100%),
+    linear-gradient(rgba(5, 3, 18, .14), rgba(5, 3, 18, .14)),
     url('./textures/galaicha.jpg') center / cover no-repeat,
-    #2a0d0d;
+    #1b1830;
 }
 /* Carved wooden table from a real photo. A dark vignette and a light overall dimming keep the cream cards,
    the gold status line and the player names easy to read on the bright planks. */

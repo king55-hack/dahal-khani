@@ -687,7 +687,7 @@ body.bg-galaicha::before {
 }
 /* keep text readable on light / busy backgrounds */
 .status, .seat .name, header .score, header .round { text-shadow: 0 1px 3px rgba(0,0,0,.7); }
-.bg-gundri .trick, .bg-galaicha .trick, .bg-wood .trick { background: rgba(0,0,0,.18); }
+.bg-gundri .trick, .bg-galaicha .trick, .bg-wood .trick { background: none; } /* no dark oval in the middle of a full-screen picture */
 
 .bgs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .bg-tile {
@@ -1133,23 +1133,12 @@ body.bg-gundri, .bg-preview.bg-gundri {
     url('./textures/gundri.jpg') center / cover no-repeat,
     #7a5226;
 }
-/* On a phone held upright the mat is turned to stand upright too (the weave runs top to bottom); on a computer or a
-   phone held sideways it lies flat. The little preview in Settings always lies flat. */
-@media (orientation: portrait) {
-  body.bg-gundri {
-    background:
-      radial-gradient(ellipse at center, rgba(28, 12, 0, .1) 25%, rgba(28, 12, 0, .62) 100%),
-      linear-gradient(rgba(35, 16, 0, .26), rgba(35, 16, 0, .26)),
-      url('./textures/gundri-portrait.jpg') center / cover no-repeat,
-      #7a5226;
-  }
-}
 body.bg-galaicha, .bg-preview.bg-galaicha {
   background:
-    radial-gradient(ellipse at center, rgba(0, 0, 0, .05) 30%, rgba(5, 3, 18, .55) 100%),
-    linear-gradient(rgba(5, 3, 18, .14), rgba(5, 3, 18, .14)),
+    radial-gradient(ellipse at center, rgba(0, 0, 0, .05) 30%, rgba(30, 0, 6, .55) 100%),
+    linear-gradient(rgba(30, 0, 6, .14), rgba(30, 0, 6, .14)),
     url('./textures/galaicha.jpg') center / cover no-repeat,
-    #1b1830;
+    #5a0f1c;
 }
 /* Carved wooden table from a real photo. A dark vignette and a light overall dimming keep the cream cards,
    the gold status line and the player names easy to read on the bright planks. */
@@ -1387,7 +1376,7 @@ header .live-dot { background: #fff; animation-name: live-pulse-white; }
 .room-glass .mode-opt, .room-glass .seat-card { text-shadow: none; }
 .room-glass .team-col h3 { color: #fff !important; font-weight: 800; }
 
-/* ---------- default table: grass, with the Gundri mat in the middle where the cards are thrown ---------- */
+/* ---------- default table: grass, with a small Gundri mat in the middle, just big enough for the thrown cards ---------- */
 body.bg-normal, .bg-preview.bg-normal {
   background:
     radial-gradient(ellipse at center, rgba(0, 20, 0, .04) 30%, rgba(0, 18, 0, .5) 100%),
@@ -1395,29 +1384,55 @@ body.bg-normal, .bg-preview.bg-normal {
     url('./textures/grass.jpg') center / cover no-repeat,
     #1d5a1d;
 }
-.bg-normal .trick {
-  border-radius: 10px;
-  margin: 2px;
+.trick { --mat-cw: var(--cw); } /* the width of a card on the table, so the mat can be sized from it */
+.bg-normal .trick { background: none; border-radius: 0; }
+.bg-normal .trick::before {
+  content: ''; position: absolute; inset: 0; margin: auto; z-index: 0; pointer-events: none;
+  width: min(100%, calc(var(--mat-cw) * 3.9)); height: min(100%, calc(var(--mat-cw) * 3.5));
+  border-radius: 8px;
   background:
-    radial-gradient(ellipse at center, rgba(28, 12, 0, 0) 40%, rgba(28, 12, 0, .38) 100%),
+    radial-gradient(ellipse at center, rgba(28, 12, 0, 0) 45%, rgba(28, 12, 0, .38) 100%),
     url('./textures/gundri.jpg') center / cover no-repeat,
     #a77a3a;
   box-shadow: 0 0 0 2px rgba(80, 48, 12, .9), 0 8px 18px rgba(0, 0, 0, .55), inset 0 0 14px rgba(20, 8, 0, .5);
 }
+.trick .slot, .trick-cards, .trump-pick, .waiting { z-index: 1; }
 /* the little preview in Settings shows the mat too */
 .bg-preview.bg-normal { position: relative; }
 .bg-preview.bg-normal::after {
-  content: ''; position: absolute; left: 50%; top: 50%; width: 34%; height: 62%; transform: translate(-50%, -50%);
+  content: ''; position: absolute; left: 50%; top: 50%; width: 30%; height: 58%; transform: translate(-50%, -50%);
   border-radius: 3px; box-shadow: 0 0 0 1px rgba(80, 48, 12, .9), 0 2px 5px rgba(0, 0, 0, .5);
   background: url('./textures/gundri.jpg') center / cover no-repeat, #a77a3a;
 }
 /* writing that sits on the mat (choose trump, waiting) must stay readable */
 .bg-normal .trick .waiting, .bg-normal .trick .trump-pick { background: rgba(20, 10, 0, .62); border-radius: 10px; color: #fff; }
+
+/* Card width on the table follows the same small-screen rules as the cards themselves. */
+@media (max-width: 520px) { .trick { --mat-cw: clamp(48px, 15vw, 78px); } }
+@media (orientation: landscape) and (max-height: 560px) { .trick { --mat-cw: min(8vw, 12dvh); } }
+
+/* Phone held upright: every full-screen picture is turned a quarter so it stands upright (the mat's weave, the
+   carpet and the planks run top to bottom). A computer or a sideways phone keeps the flat version. */
 @media (orientation: portrait) {
-  .bg-normal .trick {
+  body.bg-normal { background:
+    radial-gradient(ellipse at center, rgba(0, 20, 0, .04) 30%, rgba(0, 18, 0, .5) 100%),
+    linear-gradient(rgba(0, 24, 0, .12), rgba(0, 24, 0, .12)),
+    url('./textures/grass-portrait.jpg') center / cover no-repeat, #1d5a1d; }
+  body.bg-gundri { background:
+    radial-gradient(ellipse at center, rgba(28, 12, 0, .1) 25%, rgba(28, 12, 0, .62) 100%),
+    linear-gradient(rgba(35, 16, 0, .26), rgba(35, 16, 0, .26)),
+    url('./textures/gundri-portrait.jpg') center / cover no-repeat, #7a5226; }
+  body.bg-galaicha { background:
+    radial-gradient(ellipse at center, rgba(0, 0, 0, .05) 30%, rgba(30, 0, 6, .55) 100%),
+    linear-gradient(rgba(30, 0, 6, .14), rgba(30, 0, 6, .14)),
+    url('./textures/galaicha-portrait.jpg') center / cover no-repeat, #5a0f1c; }
+  body.bg-wood { background:
+    radial-gradient(ellipse at center, rgba(25, 10, 0, .12) 25%, rgba(20, 6, 0, .68) 100%),
+    linear-gradient(rgba(25, 10, 0, .22), rgba(25, 10, 0, .22)),
+    url('./textures/wood-portrait.jpg') center / cover no-repeat, #5c2e12; }
+  .bg-normal .trick::before {
     background:
-      radial-gradient(ellipse at center, rgba(28, 12, 0, 0) 40%, rgba(28, 12, 0, .38) 100%),
-      url('./textures/gundri-portrait.jpg') center / cover no-repeat,
-      #a77a3a;
+      radial-gradient(ellipse at center, rgba(28, 12, 0, 0) 45%, rgba(28, 12, 0, .38) 100%),
+      url('./textures/gundri-portrait.jpg') center / cover no-repeat, #a77a3a;
   }
 }

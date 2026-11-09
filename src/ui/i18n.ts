@@ -567,7 +567,7 @@ const neRom: Strings = {
   backgrounds: { normal: 'Normal', gundri: 'Gundri (paral ko)', galaicha: 'Galaicha', wood: 'Kath ko table' },
   installApp: 'Phone ma app jastai raakhnus',
   installButton: '📲 App install garnus',
-  installHint: 'Android Chrome: ⋮ menu → "Add to Home screen". iPhone Safari: Share ⬆ → "Add to Home Screen".',
+  installHint: 'Android Chrome ma: ⋮ menu → "Add to Home screen". iPhone Safari ma: Share ⬆ → "Add to Home Screen".',
   installed: '✔ App install bhaisakyo',
   allRules: 'Sabai niyam',
   feedbackSection: '💌 Problem, sujhaab wa dhanyabad',

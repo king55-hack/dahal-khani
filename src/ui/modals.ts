@@ -1,6 +1,7 @@
 // HTML for the dialogs: first-launch language picker, ⓘ info (how to play / all rules / credits),
 // ⚙ settings and the 🌐 online lobby.
 // All text comes from i18n.ts; the creator name is inserted with textContent by main.ts.
+import { cardFaceHtml } from './card-face';
 import type { Difficulty, TrumpMode } from '../engine';
 import { COIN_REWARDS, GAME_SETTINGS } from '../settings';
 import type { RoomListing, ServerMsg } from '../online/protocol';
@@ -143,7 +144,7 @@ export function settingsHtml(
     return `<button class="theme-tile shop-tile ${on ? 'on' : ''} ${owned ? '' : 'locked'}"
         data-theme="${th.id}" title="${owned ? t.themes[th.id] : t.unlockFor(th.price)}">
       <span class="theme-preview theme-${th.id}">
-        <span class="card red mini"><span class="corner">A<br>♥</span><span class="pip">♥</span></span>
+        <span class="card red mini">${cardFaceHtml(14, 'H')}</span>
         <span class="mini-back"></span>
         ${tileBadge(owned, on)}
       </span>

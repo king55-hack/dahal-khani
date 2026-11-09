@@ -63,6 +63,7 @@ import {
 } from './feedback';
 import type { FeedbackKind } from '../online/feedback';
 import { bubble, clearFx, dealCards } from './fx';
+import { cardFaceHtml } from './card-face';
 import { createRoom, listRooms, OnlineClient, SERVER_URL, type ConnStatus, type FatalReason } from './online';
 import { loadPrefs, savePrefs } from './prefs';
 import { avatarFor, avatarHtml, type AvatarId } from './avatars';
@@ -385,12 +386,7 @@ function seatThemeClass(seat: Seat): string {
 function cardHtml(card: Card, opts: { cls?: string; data?: string } = {}): string {
   const color = isRed(card.suit) ? 'red' : 'black';
   const ten = isTen(card) ? ' ten' : '';
-  const r = rankLabel(card.rank);
-  const sym = SUIT_SYMBOL[card.suit];
-  return `<div class="card ${color}${ten} ${opts.cls ?? ''}" ${opts.data ?? ''}>
-    <span class="corner">${r}<br>${sym}</span>
-    <span class="pip">${sym}</span>
-  </div>`;
+  return `<div class="card ${color}${ten} ${opts.cls ?? ''}" ${opts.data ?? ''}>${cardFaceHtml(card.rank, card.suit)}</div>`;
 }
 
 /** Dahal lights that just switched on pop once: [team] = { from: lit before, until: time } */

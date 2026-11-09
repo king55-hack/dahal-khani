@@ -218,26 +218,38 @@ body.no-anim .dot.on::after, body.no-anim .dot.new { animation: none; }
   height: var(--ch);
   background: var(--card-face);
   border-radius: calc(var(--cw) * .1);
-  box-shadow: 0 0 0 var(--card-edge-w) var(--card-edge) inset, 0 2px 5px rgba(0,0,0,.35);
+  box-shadow: 0 0 0 var(--card-edge-w) var(--card-edge) inset, 0 0 0 .5px rgba(0,0,0,.28), 0 2px 5px rgba(0,0,0,.35);
   position: relative;
   flex: none;
   font-weight: 700;
 }
 .card.red { color: var(--suit-red); }
 .card.black { color: var(--suit-black); }
-.card .corner {
-  position: absolute;
-  top: 3px; left: 4px;
-  font-size: calc(var(--cw) * .27);
-  line-height: 1;
-  text-align: center;
+/* corner index: the rank with the suit under it, and the same turned upside down in the opposite corner */
+.card .idx {
+  position: absolute; top: calc(var(--cw) * .05); left: calc(var(--cw) * .075);
+  display: flex; flex-direction: column; align-items: center; line-height: 1;
 }
-.card .pip {
-  position: absolute;
-  right: 6%; bottom: 4%;
-  font-size: calc(var(--cw) * .5);
-  line-height: 1;
+.card .idx b { font-size: calc(var(--cw) * .25); font-weight: 800; letter-spacing: -.02em; }
+.card.ten .idx b { font-size: calc(var(--cw) * .21); letter-spacing: -.07em; }
+.card .idx .s { width: calc(var(--cw) * .18); height: calc(var(--cw) * .18); margin-top: calc(var(--cw) * .015); }
+.card .idx.br { top: auto; left: auto; bottom: calc(var(--cw) * .05); right: calc(var(--cw) * .075); transform: rotate(180deg); }
+.s { fill: currentColor; display: block; flex: none; }
+/* the middle of the card */
+.card .pips { position: absolute; left: 35%; right: 35%; top: 20%; bottom: 20%; }
+.card .pips .pip { position: absolute; width: calc(var(--cw) * .2); height: calc(var(--cw) * .2); transform: translate(-50%, -50%); }
+.card .pips .pip.flip { transform: translate(-50%, -50%) rotate(180deg); }
+.card .pips .pip.ace { left: 50%; top: 50%; width: calc(var(--cw) * .5); height: calc(var(--cw) * .5); }
+.card .royal {
+  position: absolute; left: 24%; right: 24%; top: 15%; bottom: 15%;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between;
+  border: calc(var(--cw) * .018) solid currentColor; border-radius: calc(var(--cw) * .05);
+  background: linear-gradient(160deg, color-mix(in srgb, currentColor 14%, transparent), color-mix(in srgb, currentColor 4%, transparent));
+  padding: calc(var(--cw) * .03) 0;
 }
+.card .royal i { font: 700 calc(var(--cw) * .46)/1 Georgia, 'Times New Roman', serif; font-style: normal; }
+.card .royal-s .s { width: calc(var(--cw) * .15); height: calc(var(--cw) * .15); }
+.card .royal-s.flip { transform: rotate(180deg); }
 .card.ten { background: var(--card-ten); }
 .card.ten::after {
   content: 'DAHAL';
@@ -633,7 +645,7 @@ body.no-anim .price-pill.can, body.no-anim .price-pill.can::after, body.no-anim 
   background: radial-gradient(ellipse at center, var(--felt-light), var(--felt-dark));
 }
 .theme-preview .card.mini { --cw: 36px; --ch: 51px; display: block; }
-.theme-preview .card.mini .corner { font-size: 10px; }
+
 .mini-back { width: 36px; height: 51px; border-radius: 4px; background: var(--card-back); border: 2px solid var(--back-edge); }
 .theme-name { font-weight: 700; font-size: 12px; }
 .theme-tag { font-size: 11px; color: #92400e; min-height: 14px; }
@@ -960,7 +972,7 @@ body.no-anim .trick.peek .slot.winner { animation: none; }
   animation-delay: calc(var(--k) * 120ms);
   box-shadow: 0 0 0 2px #ffd54a inset, 0 4px 10px rgba(0, 0, 0, .35);
 }
-.ten-fan .fan-card .corner { font-size: 13px; }
+
 @keyframes fan-in {
   from { transform: translateY(-160px) rotate(calc((var(--k) - 1.5) * 90deg)) scale(.4); opacity: 0; }
 }
@@ -1074,7 +1086,7 @@ header .score { white-space: nowrap; }
   .overlay.result .modal table { margin-bottom: 10px; }
   .overlay.result .ten-fan { height: 58px; margin-bottom: 2px; }
   .overlay.result .ten-fan .fan-card { --cw: 32px; --ch: 45px; margin-left: -16px; }
-  .overlay.result .ten-fan .fan-card .corner { font-size: 10px; }
+
   .overlay.result .why { margin: 2px 0 6px; }
 }
 .hero-art { display: block; margin: 0 auto 4px; width: 112px; height: 112px; border-radius: 24px; box-shadow: 0 6px 18px rgba(0, 0, 0, .3); }
@@ -1436,3 +1448,5 @@ body.bg-normal, .bg-preview.bg-normal {
       url('./textures/gundri-portrait.jpg') center / cover no-repeat, #a77a3a;
   }
 }
+/* my 10s wear the DAHAL ribbon along the bottom, so their pips sit a little higher */
+.hand .card.ten .pips { bottom: 31%; }

@@ -687,7 +687,7 @@ body.bg-galaicha::before {
 }
 /* keep text readable on light / busy backgrounds */
 .status, .seat .name, header .score, header .round { text-shadow: 0 1px 3px rgba(0,0,0,.7); }
-.bg-gundri .trick, .bg-galaicha .trick { background: rgba(0,0,0,.18); }
+.bg-gundri .trick, .bg-galaicha .trick, .bg-wood .trick { background: rgba(0,0,0,.18); }
 
 .bgs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .bg-tile {
@@ -1140,6 +1140,15 @@ body.bg-galaicha, .bg-preview.bg-galaicha {
     radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 40%, rgba(20, 0, 0, .55) 100%),
     url('./textures/galaicha.jpg') center / cover no-repeat,
     #2a0d0d;
+}
+/* Carved wooden table from a real photo. A dark vignette and a light overall dimming keep the cream cards,
+   the gold status line and the player names easy to read on the bright planks. */
+body.bg-wood, .bg-preview.bg-wood {
+  background:
+    radial-gradient(ellipse at center, rgba(25, 10, 0, .12) 25%, rgba(20, 6, 0, .68) 100%),
+    linear-gradient(rgba(25, 10, 0, .22), rgba(25, 10, 0, .22)),
+    url('./textures/wood.jpg') center / cover no-repeat,
+    #5c2e12;
 }
 body.bg-galaicha::before { content: none; } /* the old drawn border is no longer needed */
 

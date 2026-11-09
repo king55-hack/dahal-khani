@@ -19,7 +19,7 @@ export const THEMES: readonly Theme[] = [
 export const isThemeId = (v: unknown): v is ThemeId => THEMES.some((t) => t.id === v);
 
 /** Table backgrounds (styling in style.css under .bg-<id>); prices in coins (0 = free). */
-export type BackgroundId = 'normal' | 'gundri' | 'galaicha';
+export type BackgroundId = 'normal' | 'gundri' | 'galaicha' | 'wood';
 
 export interface Background {
   id: BackgroundId;
@@ -30,6 +30,7 @@ export const BACKGROUNDS: readonly Background[] = [
   { id: 'normal', price: 0 },
   { id: 'gundri', price: 10 },
   { id: 'galaicha', price: 20 },
+  { id: 'wood', price: 30 },
 ];
 export const isBackgroundId = (v: unknown): v is BackgroundId => BACKGROUNDS.some((b) => b.id === v);
 

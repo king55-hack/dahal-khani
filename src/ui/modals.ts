@@ -26,8 +26,8 @@ const MODES: readonly TrumpMode[] = ['open', 'bandHukum', 'cutHukum'];
 const LEVELS: readonly Difficulty[] = ['easy', 'medium', 'hard'];
 const LEVEL_ICON: Record<Difficulty, string> = { easy: '🌱', medium: '⚔️', hard: '🔥' };
 
-function shell(inner: string, opts: { closable: boolean; cls?: string; label: string }) {
-  return `<div class="overlay dialog" data-m="backdrop">
+function shell(inner: string, opts: { closable: boolean; cls?: string; label: string; overlayCls?: string }) {
+  return `<div class="overlay dialog ${opts.overlayCls ?? ''}" data-m="backdrop">
     <div class="modal sheet ${opts.cls ?? ''}" role="dialog" aria-modal="true" aria-label="${opts.label}">
       ${opts.closable ? `<button class="close" data-m="close" aria-label="Close">×</button>` : ''}
       ${inner}
@@ -85,6 +85,7 @@ export function infoHtml(t: Strings, lang: Lang, tab: InfoTab): string {
            <div class="who"></div>
            <div class="copyright"></div>
            <div class="sub">Dahal Khani · Dahal Mara · Dahal Jeet</div>
+           <a class="portfolio" href="https://rajanrimal.com.np" target="_blank" rel="noopener noreferrer">🌐 Portfolio · rajanrimal.com.np</a>
            <div class="suits-line">♠ ♥ ♣ ♦</div>
          </div>
          <p>${t.creditsText}</p>`;
@@ -417,6 +418,11 @@ export function onlineHtml(t: Strings, v: OnlineView): string {
     }
     ${isHost ? `<button class="danger" data-m="close-room">🗑 ${t.closeRoom}</button>` : ''}
     <button class="danger" data-m="leave">${t.leaveRoom}</button>`,
-    { closable: true, cls: 'online-modal', label: t.online },
+    {
+      closable: true,
+      cls: `online-modal ${r.started ? '' : 'room-glass'}`,
+      label: t.online,
+      overlayCls: r.started ? '' : 'room-wait',
+    },
   );
 }

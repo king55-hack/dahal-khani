@@ -2,6 +2,7 @@
 // ⚙ settings and the 🌐 online lobby.
 // All text comes from i18n.ts; the creator name is inserted with textContent by main.ts.
 import { cardFaceHtml } from './card-face';
+import { coinHtml } from './coin';
 import type { Difficulty, TrumpMode } from '../engine';
 import { COIN_REWARDS, GAME_SETTINGS } from '../settings';
 import type { RoomListing, ServerMsg } from '../online/protocol';
@@ -154,7 +155,7 @@ export function settingsHtml(
   }).join('');
   return shell(
     `<h2>⚙ ${t.settings}</h2>
-    <div class="coin-row">🪙 ${t.coins}: <b>${prefs.coins}</b></div>
+    <div class="coin-row">${coinHtml()} ${t.coins}: <b>${prefs.coins}</b></div>
     ${message ? `<div class="settings-msg" role="status">${message}</div>` : ''}
     <section>
       <h3>${t.language}</h3>
@@ -221,7 +222,7 @@ export type RoomInfo = Extract<ServerMsg, { t: 'room' }>;
 /** Coin price on something not bought yet: glows green when the player can afford it. */
 function pricePill(price: number, coins: number): string {
   const can = coins >= price;
-  return `<span class="price-pill ${can ? 'can' : ''}">${can ? '🔓' : '🔒'}<b>${price}</b><i class="coin-dot"></i></span>`;
+  return `<span class="price-pill ${can ? 'can' : ''}">${can ? '🔓' : '🔒'}<b>${price}</b>${coinHtml()}</span>`;
 }
 
 /** Corner badge on a shop tile: a lock while not bought, a tick on the one in use. */

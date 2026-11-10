@@ -27,6 +27,9 @@ Play **offline** against 3 bots (partner Sita; opponents Gajendra and Ranjana) o
 - **Quick reactions and messages** between players (a fixed list, no free typing), a peek at the last trick,
   a first-time guide, and special Kot / Baunne win and lose screens.
 - **Write to the creator** from ⚙ Settings, and a Portfolio link on the credits card.
+- **Natural sound:** made with the browser's audio (no files): a papery card "thwack" that is a little different every time, a ringing coin "tink", a temple bell for each Dahal, plucked-string tunes on a Nepali scale and madal drums for Kot and Baunne, all with a room echo.
+- **Nepali coin:** a gold mohar with a beaded rim and the Himal and sun engraved on it. After a win the coins fly up to the counter in the header and it counts up.
+- **Lively table:** cards fly in arcs when dealt and thrown, the winning card pops, the player whose turn it is has a pulsing ring, and the AI players' portraits (Sita, Ranjana, Gajendra in a dhaka topi) blink. Motion can be turned off in ⚙ Settings, and the game respects the phone's "reduce motion" setting.
 - Sound on/off, installable on phones (Add to Home Screen), and playable offline after the first visit.
 
 **Play online:** https://dahal-mara-game.rajanrimal.com.np/

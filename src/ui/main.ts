@@ -62,8 +62,9 @@ import {
   type Inbox,
 } from './feedback';
 import type { FeedbackKind } from '../online/feedback';
-import { bubble, clearFx, dealCards } from './fx';
+import { bubble, clearFx, dealCards, flyCoins } from './fx';
 import { cardFaceHtml } from './card-face';
+import { coinHtml, withCoin } from './coin';
 import { createRoom, listRooms, OnlineClient, SERVER_URL, type ConnStatus, type FatalReason } from './online';
 import { loadPrefs, savePrefs } from './prefs';
 import { avatarFor, avatarHtml, type AvatarId } from './avatars';
@@ -246,7 +247,7 @@ function dealFx(prev: GameState | null, next: GameState) {
   const ms = dealCards(next.dealer, perPlayer);
   dealingUntil = Date.now() + ms;
   handInUntil = dealingUntil + 450;
-  for (let i = 0; i * 140 < ms; i++) window.setTimeout(() => sfx.card(), i * 140);
+  for (let i = 0; i * 140 < ms; i++) window.setTimeout(() => sfx.deal(), i * 140);
   render(); // hide my hand while it is being dealt
   window.setTimeout(render, ms + 10);
   window.setTimeout(render, ms + 470);
@@ -293,9 +294,18 @@ function react(prev: GameState, next: GameState) {
     roundCoins = coinsFor(r, 0);
     roundLost = coinsLostFor(r, 0, prefs.coins);
     if (roundCoins > 0 || roundLost > 0) {
+      const before = prefs.coins;
       prefs.coins += roundCoins - roundLost;
       savePrefs(prefs);
-      if (roundCoins > 0) window.setTimeout(() => sfx.coin(), 900);
+      if (roundCoins > 0) {
+        // the header keeps showing the old amount until the coins have flown up to it
+        coinHold = true;
+        coinShown = before;
+        window.setTimeout(() => {
+          sfx.coin();
+          celebrateCoins(before, prefs.coins, roundCoins);
+        }, 900);
+      }
     }
     const weWon = r.winningTeam === 0;
     if (weWon) {
@@ -372,6 +382,38 @@ function resetGame() {
   roundCoins = 0;
   roundLost = 0;
   apply(newGame({ ...GAME_SETTINGS, trumpMode: prefs.mode }));
+}
+
+// ---------- coins flying to the header ----------
+
+/** While true the header shows `coinShown` (counting up) instead of the real amount. */
+let coinHold = false;
+let coinShown = 0;
+
+function showCoinCount() {
+  const el = document.querySelector('.coin-n');
+  if (el) el.textContent = String(coinHold ? coinShown : prefs.coins);
+}
+
+/** Coins fly from the result card to the header; each one that lands makes the counter tick up and the chip bounce. */
+function celebrateCoins(before: number, after: number, gained: number) {
+  const chip = document.querySelector('.coin-chip');
+  const from = (document.querySelector('.coins-earned') ?? app).getBoundingClientRect();
+  const n = Math.min(10, Math.max(3, Math.round(gained / 5)));
+  const step = Math.max(1, Math.ceil((after - before) / n));
+  let landed = 0;
+  flyCoins(from, chip, n, prefs.animations, () => {
+    landed++;
+    coinShown = landed >= n ? after : Math.min(after, coinShown + step);
+    if (landed >= n) coinHold = false;
+    showCoinCount();
+    const c = document.querySelector('.coin-chip');
+    if (c && prefs.animations) {
+      c.classList.remove('bump');
+      void (c as HTMLElement).offsetWidth;
+      c.classList.add('bump');
+    }
+  });
 }
 
 // ---------- rendering helpers ----------
@@ -593,7 +635,7 @@ function summaryHtml(): string {
     spread(
       n,
       (_i, left, delay, dur) =>
-        `<i class="coin-fall" style="left:${left}%;animation-delay:${delay / 2}s;animation-duration:${dur * 0.8}s">🪙</i>`,
+        `<i class="coin-fall" style="left:${left}%;animation-delay:${delay / 2}s;animation-duration:${dur * 0.8}s">${coinHtml()}</i>`,
     );
   const bursts = (n: number) =>
     spread(
@@ -620,8 +662,8 @@ function summaryHtml(): string {
       ${mood === 'baunne-win' ? `<div class="result-sub">${t.baunne}</div>` : ''}
       <div class="result-team">${t.roundWonBy(teamName(r.winningTeam), r.points)}</div>
       <div class="why">${why}</div>
-      ${roundCoins > 0 ? `<div class="coins-earned">${t.coinsEarned(roundCoins)}</div>` : ''}
-      ${roundLost > 0 ? `<div class="coins-lost">${t.coinsLost(roundLost)}</div>` : ''}
+      ${roundCoins > 0 ? `<div class="coins-earned">${withCoin(t.coinsEarned(roundCoins))}</div>` : ''}
+      ${roundLost > 0 ? `<div class="coins-lost">${withCoin(t.coinsLost(roundLost))}</div>` : ''}
       </div>
       <div class="result-side">
       <table>
@@ -645,7 +687,7 @@ function render() {
       <div class="score"><span class="team0">${t.us} ${s.score[0]}</span> – <span class="team1">${s.score[1]} ${t.them}</span></div>
       <div class="round">${t.round(s.roundNumber)}</div>
       ${trumpBadge()}
-      <span class="coin-chip" title="${t.coins}">🪙 ${prefs.coins}</span>
+      <span class="coin-chip" title="${t.coins}">${coinHtml()}<span class="coin-n">${coinHold ? coinShown : prefs.coins}</span></span>
       ${
         online
           ? `<button class="small room-chip" data-action="online" title="${t.online}">${online.status === 'open' ? '🌐' : '⏳'}<span class="chip-code">${online.code}</span>${liveBadge()}</button>`
@@ -807,6 +849,7 @@ function burstCoins(el: Element | null) {
   for (let i = 0; i < 8; i++) {
     const c = document.createElement('i');
     c.className = 'coin-burst';
+    c.innerHTML = coinHtml();
     const a = (Math.PI * 2 * i) / 8;
     c.style.setProperty('--dx', `${Math.round(Math.cos(a) * 46)}px`);
     c.style.setProperty('--dy', `${Math.round(Math.sin(a) * 34 - 18)}px`);

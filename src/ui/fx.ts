@@ -1,6 +1,7 @@
 // Visual effects drawn in their own layer above the game (so re-rendering the table never cuts
 // them off): cards flying out when dealing, and speech bubbles for reactions.
 import { dealOrder, type Seat } from '../engine';
+import { coinHtml } from './coin';
 
 const layer = document.createElement('div');
 layer.className = 'fx-layer';
@@ -65,6 +66,46 @@ export function bubble(seat: Seat, who: string, text: string, big: boolean, team
   b.style.top = `${at.y}px`;
   layer.appendChild(b);
   window.setTimeout(() => b.remove(), 3200);
+}
+
+/**
+ * Coins jump out of `from` and fly in an arc to the element `to` (the coin counter in the header).
+ * `onArrive` runs once for every coin that lands. With animations off they all "land" at once.
+ */
+export function flyCoins(from: DOMRect, to: Element | null, n: number, animate: boolean, onArrive: () => void) {
+  const end = to?.getBoundingClientRect();
+  if (!animate || !end || typeof Element.prototype.animate !== 'function') {
+    for (let i = 0; i < n; i++) onArrive();
+    return;
+  }
+  const sx = from.left + from.width / 2;
+  const sy = from.top + from.height / 2;
+  const ex = end.left + end.width / 2;
+  const ey = end.top + end.height / 2;
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement('i');
+    el.className = 'fly-coin';
+    el.innerHTML = coinHtml();
+    el.style.left = `${sx}px`;
+    el.style.top = `${sy}px`;
+    document.body.appendChild(el);
+    const spread = (Math.random() * 2 - 1) * 70;
+    const dx = ex - sx;
+    const dy = ey - sy;
+    const anim = el.animate(
+      [
+        { transform: 'translate(0, 0) scale(.5) rotateY(0deg)', opacity: 0 },
+        { transform: `translate(${spread}px, -50px) scale(1.1) rotateY(360deg)`, opacity: 1, offset: 0.25 },
+        { transform: `translate(${dx * 0.6 + spread * 0.4}px, ${dy * 0.5 - 40}px) scale(1) rotateY(720deg)`, opacity: 1, offset: 0.65 },
+        { transform: `translate(${dx}px, ${dy}px) scale(.55) rotateY(1080deg)`, opacity: 0.9 },
+      ],
+      { duration: 850, delay: i * 90, easing: 'cubic-bezier(.4,.1,.3,1)', fill: 'both' },
+    );
+    anim.onfinish = () => {
+      el.remove();
+      onArrive();
+    };
+  }
 }
 
 export function clearFx() {

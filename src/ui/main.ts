@@ -64,7 +64,7 @@ import {
 import type { FeedbackKind } from '../online/feedback';
 import { bubble, clearFx, dealCards, flyCoins } from './fx';
 import { cardFaceHtml } from './card-face';
-import { coinHtml, withCoin } from './coin';
+import { coinHtml, showCoinZoom, withCoin } from './coin';
 import { createRoom, listRooms, OnlineClient, SERVER_URL, type ConnStatus, type FatalReason } from './online';
 import { loadPrefs, savePrefs } from './prefs';
 import { avatarFor, avatarHtml, type AvatarId } from './avatars';
@@ -993,6 +993,7 @@ modalRoot.addEventListener('click', (e) => {
   const d = el.dataset;
   const mustAnswer = modal?.kind === 'lang' || modal?.kind === 'name';
   if (d.m === 'close' || (d.m === 'backdrop' && el === target && !mustAnswer)) return openModal(null);
+  if (d.m === 'coin-zoom') return showCoinZoom();
   if (d.m === 'name-ok') return submitName();
   if (d.m === 'tour') return openModal({ kind: 'tour', step: 0 });
   if (d.m === 'newgame') {

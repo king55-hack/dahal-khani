@@ -155,7 +155,7 @@ export function settingsHtml(
   }).join('');
   return shell(
     `<h2>⚙ ${t.settings}</h2>
-    <div class="coin-row">${coinHtml()} ${t.coins}: <b>${prefs.coins}</b></div>
+    <div class="coin-row"><button type="button" class="coin-zoom" data-m="coin-zoom" aria-label="${t.coins}">${coinHtml()}<span class="zoom-ico" aria-hidden="true">🔍</span></button> ${t.coins}: <b>${prefs.coins}</b></div>
     ${message ? `<div class="settings-msg" role="status">${message}</div>` : ''}
     <section>
       <h3>${t.language}</h3>

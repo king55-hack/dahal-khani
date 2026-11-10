@@ -1281,11 +1281,12 @@ header .live-dot { width: 7px; height: 7px; }
 .avatar-wrap { position: relative; line-height: 0; }
 .avatar {
   display: grid; place-items: center; overflow: hidden;
-  width: 46px; height: 46px; border-radius: 50%;
+  width: 54px; height: 54px; border-radius: 50%;
   border: 2.5px solid #fff6cf; box-shadow: 0 3px 8px rgba(0,0,0,.45);
   background: #334155;
 }
-.avatar svg { width: 100%; height: 100%; display: block; }
+.avatar svg, .avatar img { width: 100%; height: 100%; display: block; }
+.avatar img { object-fit: cover; user-select: none; -webkit-user-drag: none; }
 .avatar.initial { font-size: 20px; font-weight: 900; color: #fff; line-height: 1; text-shadow: 0 1px 2px rgba(0,0,0,.4); }
 .avatar.initial.team0 { background: linear-gradient(#38bdf8, #0369a1); }
 .avatar.initial.team1 { background: linear-gradient(#fb7185, #be123c); }
@@ -1310,10 +1311,10 @@ header .live-dot { width: 7px; height: 7px; }
 .net-dot.off { background: #374151; box-shadow: none; }
 body.no-anim .ai-tag.temp { animation: none; }
 @media (max-width: 400px) {
-  .avatar { width: 40px; height: 40px; }
+  .avatar { width: 46px; height: 46px; }
 }
 @media (orientation: landscape) and (max-height: 560px) {
-  .avatar { width: 30px; height: 30px; border-width: 2px; }
+  .avatar { width: 36px; height: 36px; border-width: 2px; }
   .avatar.initial { font-size: 14px; }
   .net-dot { width: 9px; height: 9px; border-width: 1.5px; }
 }
@@ -1454,7 +1455,7 @@ body.bg-normal, .bg-preview.bg-normal {
 /* =====================================================================
    Nepali coin, livelier animations, blinking portraits
    ===================================================================== */
-.nc { display: inline-block; width: 1.2em; height: 1.2em; vertical-align: -.25em; filter: drop-shadow(0 1px 1px rgba(60, 30, 0, .45)); }
+.nc { display: inline-block; width: 1.2em; height: 1.2em; vertical-align: -.25em; object-fit: contain; filter: drop-shadow(0 1px 1px rgba(60, 30, 0, .45)); }
 .coin-chip { display: inline-flex; align-items: center; gap: 4px; }
 .coin-chip .nc { width: 17px; height: 17px; vertical-align: 0; }
 .coin-chip.bump { animation: chip-bump .5s cubic-bezier(.3, 1.8, .5, 1); }
@@ -1510,3 +1511,27 @@ body.bg-normal, .bg-preview.bg-normal {
 @media (prefers-reduced-motion: reduce) {
   .av-eyes, .seat.active .avatar, .seat.active .avatar svg, .coin-fall .nc, .trick .slot.winner { animation: none !important; }
 }
+
+/* Settings: tap the coin to see it big (the name written on it can be read there) */
+.coin-zoom {
+  display: inline-flex; align-items: center; gap: 4px; margin: 0; padding: 0 4px; background: none; border: none;
+  color: inherit; font: inherit; cursor: zoom-in; border-radius: 8px; vertical-align: middle;
+}
+.coin-zoom:hover, .coin-zoom:focus-visible { background: rgba(180, 83, 9, .14); }
+.coin-zoom .nc { width: 20px; height: 20px; vertical-align: 0; }
+.coin-zoom .zoom-ico { font-size: 12px; opacity: .65; }
+.coin-lightbox {
+  position: fixed; inset: 0; z-index: 120; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 10px; padding: 16px; background: rgba(8, 6, 0, .82); -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+  cursor: zoom-out; animation: lightbox-in .25s ease-out;
+}
+.coin-lightbox img {
+  width: min(92vw, 520px); max-height: 84dvh; object-fit: contain;
+  filter: drop-shadow(0 12px 28px rgba(0, 0, 0, .65)); animation: coin-zoom-in .45s cubic-bezier(.2, 1.3, .4, 1);
+}
+.coin-lightbox .lb-close {
+  position: absolute; top: max(12px, var(--sat)); right: max(12px, var(--sar)); width: 40px; height: 40px; border-radius: 50%;
+  border: none; background: rgba(255, 255, 255, .16); color: #fff; font-size: 24px; line-height: 1; cursor: pointer;
+}
+@keyframes lightbox-in { from { opacity: 0; } }
+@keyframes coin-zoom-in { from { transform: scale(.4) rotateY(90deg); opacity: 0; } }
